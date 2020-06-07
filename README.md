@@ -15,7 +15,7 @@ Since I work in a Windows environment, I had some interest in learning PowerShel
 
 In addition to learning PowerShell syntax and programming, this project serves to document the use of the Mirth REST API, a murky, poorly documented, but powerful, aspect to Mirth Connect.
 
-Usage
+Installation
 -------------
 Download the PS_Mirth.psm1 module file.
 
@@ -44,3 +44,20 @@ If youi have Windows 10 with PowerShell 5.1 features installed, usage is simple.
     the default module locations, see the "MODULE AND DSC RESOURCE LOCATIONS,
     AND PSMODULEPATH" section.
            
+Usage
+-------------
+The cmdlets are intended to be used in conjunction with each other and from client powershell scripts.  They may be used in an interactive manner in a powershell terminal;  when a connection has been made, a session variable is available by default to all of the commands.
+
+A session is obtained by using the Connect-Mirth command:
+
+    -serverUrl https://localhost:8443 -user admin -userPass admin
+    
+If no parameters are provided, the defaults are as above, the same as a default Mirth installation.
+
+You can also pipe a connection into commands:
+
+    Connect-Mirth | Get-MirthSeverConfig -saveXML -outFile myServerBackup.xml 
+    
+ PowerShell is self-documenting.  Use the Get-Help command to see how to use the various commands and to see examples.
+ 
+ 
