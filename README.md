@@ -11,7 +11,7 @@ I worked on a project where a mirth 3.6 based application was installed on windo
 
 This meant that the install is limited to the features of the Mirth CLI:  groups cannot be imported, channel tags only are set when imported with a channel, server settings were not being set.  The application uses the commercial SSL Manager extension, and keystores for this could not be configured as part of the install.
 
-Since I am force to work in a Windows environment, I had some interest in learning PowerShell, and I wanted to improve our installation process.  So this project combined both goals.  It is a PowerShell learning project with a practical application.
+Since I work in a Windows environment, I had some interest in learning PowerShell, and I wanted to improve our installation process.  So this project combined both goals.  It is a PowerShell learning project with a practical application.
 
 In addition to learning PowerShell syntax and programming, this project serves to document the use of the Mirth REST API, a murky, poorly documented, but powerful, aspect to Mirth Connect.
 
