@@ -1,6 +1,11 @@
 ﻿Add-Type -AssemblyName System.Web
-#Add-Type -AssemblyName Microsoft.PowerShell.Commands.WebRequestSession
 
+# The custom MirthConnection object is created and returned by Connect-Mirth.
+# All of the other functions which make calls to the Mirth REST API will require one.
+# (It is not mandatory because they are designed to work in an "interactive" manner.
+#  When omitted, the dynamically scoped $currentConnection variable is used as the 
+#  default.)
+#
 # New-Object -TypeName MirthConnection -ArgumentList $session, $serverUrl, $userName, $userPass
 class MirthConnection {
     [ValidateNotNullOrEmpty()][Microsoft.PowerShell.Commands.WebRequestSession]$session
@@ -20,24 +25,17 @@ class MirthConnection {
     }
 }
 
+# [UNDER CONSTRUCTION]
+# This class is instended to serve as a container for server metadata.  It is intended to 
+# be used as a basis for server-to-server comparisons.
 class MirthServerSummary { 
     
     [string]$serverUrl
     [string]$id
     [string]$serverName
 
-
 }
 
-# public class GoodController : ApiController
-# {
-#     private static readonly HttpClient HttpClient;
-
-#     static GoodController()
-#     {
-#         HttpClient = new HttpClient();
-#     }
-# }
 
 
 # Dynamically Scoped/Globals
@@ -146,7 +144,7 @@ function global:New-MirthKeyStoreCertificatesPayLoad {
         This was created to provide input for the post to /api/extensions/ssl/all that I couldn't seem to get working.
     #> 
     [CmdletBinding()] 
-    param (
+    PARAM (
 
         # The alias for the server default client public certificate.
         [Parameter()]
@@ -265,7 +263,7 @@ function global:New-MirthKeyStoreCertificatesPayLoad {
         Write-Debug "New-MirthKeyStoreCertificatesPayLoad Ending..."
     }
 
-} # New-MirthKeyStoreCertificatesPayLoad
+}  # New-MirthKeyStoreCertificatesPayLoad
 
 function global:New-MirthSSLMgrPropertiesPayload { 
     <#
@@ -292,7 +290,7 @@ function global:New-MirthSSLMgrPropertiesPayload {
         This was created to provide input for the post to /api/extensions/ssl/all that I couldn't seem to get working.
     #> 
     [CmdletBinding()] 
-    param (
+    PARAM (
 
         # The base64 encoded JKS keystore.
         [Parameter(ValueFromPipeline=$True)]
@@ -380,7 +378,7 @@ function global:New-MirthSSLMgrPropertiesPayload {
         Write-Debug "New-MirthSSLMgrPropertiesPayload Ending..."
     }
 
-} # New-MirthSSLMgrPropertiesPayload
+}  # New-MirthSSLMgrPropertiesPayload
 
 function global:New-MirthChannelTagObject {
        <#
@@ -422,7 +420,7 @@ function global:New-MirthChannelTagObject {
         
     #> 
     [CmdletBinding()] 
-    param (
+    PARAM (
 
         # the channelTag id guid, if not provided one will be generated
         [Parameter(ValueFromPipelineByPropertyName=$True)]
@@ -488,7 +486,7 @@ function global:New-MirthChannelTagObject {
         Write-Debug "New-MirthChannelTagObject Ending"
     }
 
-} # New-MirthChannelTagObject
+}  # New-MirthChannelTagObject
 
 function global:New-MirthConfigMapEntry {
     <#
@@ -514,7 +512,7 @@ function global:New-MirthConfigMapEntry {
         
     #> 
     [CmdletBinding()] 
-    param (
+    PARAM (
 
         # the property key name
         [Parameter(Mandatory=$True,
@@ -549,7 +547,7 @@ function global:New-MirthConfigMapEntry {
     END {
     } 
 
-}  #  New-MirthConfigMapEntry
+}  # New-MirthConfigMapEntry
 
 function global:New-MirthConfigMapFromProperties { 
     <#
@@ -593,7 +591,7 @@ function global:New-MirthConfigMapFromProperties {
         This was created to provide input for the post to /api/extensions/ssl/all that I couldn't seem to get working.
     #> 
     [CmdletBinding()] 
-    param (
+    PARAM (
 
         # hashtable of property names and values, no comments
         [Parameter(ParameterSetName="propertiesProvided",
@@ -686,7 +684,7 @@ function global:New-MirthConfigMapFromProperties {
         Write-Debug "New-MirthConfigMapFromProperties Ending"
     }
 
-}  #  New-MirthConfigMapFromProperties
+}  # New-MirthConfigMapFromProperties
 
 function global:Save-MirthPropertiesFile { 
     <#
@@ -733,7 +731,7 @@ function global:Save-MirthPropertiesFile {
 
     #> 
     [CmdletBinding()] 
-    param (
+    PARAM (
 
         # xml document containing the mirth configuration map
         [Parameter(Mandatory=$True,
@@ -789,7 +787,7 @@ function global:Save-MirthPropertiesFile {
     END { 
         Write-Debug "Save-MirthPropertiesFile Ending"
     }
-}  #  Save-MirthPropertiesFile
+}  # Save-MirthPropertiesFile
 
 function global:Add-PSMirthStringNodes { 
     <#
@@ -814,7 +812,7 @@ function global:Add-PSMirthStringNodes {
 
     #> 
     [CmdletBinding()] 
-    param (
+    PARAM (
 
         # The XMLElement to which the nodes are to be added
         [Parameter()]
@@ -844,28 +842,122 @@ function global:Add-PSMirthStringNodes {
     END { 
         Write-Debug "Add-PSMirthStringNodes Ending"
     }
-}
+}  # Add-PSMirthStringNodes
+
+function global:Invoke-PSMirthTool { 
+    <#
+    .SYNOPSIS
+        Deploys, invokes and fetches payloads from PS_Mirth "tool" channels.
+
+    .DESCRIPTION
+        This function loads in a "tool" channel.  It will import the channel to 
+        the target mirth server, deploy it, send a message to it if necessary, 
+        and fetch the resuling message content from the output destination.
+        The type of payload, xml, JSON, etc, is determined by the destination datatype.
+
+    .INPUTS
+        A -session  WebRequestSession object is required. See Connect-Mirth.
+
+    .OUTPUTS
+        Object representing the resulting tool channel output.
+
+    .EXAMPLE
+        
+    .LINK
+
+    .NOTES
+
+    #> 
+    [CmdletBinding()] 
+    PARAM (
+
+         # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline=$True)]
+        [MirthConnection]$connection = $currentConnection,
+
+        # required path to the tool to deploy
+        [Parameter(Mandatory=$True)]
+        [string]$toolPath,
+
+        # Saves the response from the server as a file in the current location.
+        [Parameter()]
+        [switch]$saveXML = $false,
+        
+        # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
+        [Parameter()]
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
+
+        # Dumps the response from the server to the host console for visual inspection.
+        [Parameter()]
+        [switch]$quiet = $false
+    )     
+    BEGIN { 
+        Write-Debug "Invoke-PSMirthTool Beginning"
+    }
+    PROCESS { 
+        Write-Debug "Loading tool channel..."
+        [xml]$tool = Get-Content $toolPath
+        $toolName  = $tool.channel.name
+        $toolId = $tool.channel.id
+        $toolTransportType = $tool.channel.sourceConnector.transportName
+        Write-Debug "Tool:      $toolName"
+        Write-Debug "Tool ID:   $toolId"
+        Write-Debug "Type:      $toolTransportType"
+        [bool]$pollsOnStart = $tool.channel.sourceConnector.properties.pollConnectorProperties.pollOnStart
+        if ($pollsOnStart) { 
+            Write-Debug "The tool channel polls automatically on deployment"
+        } else { 
+            Write-Debug "The tool channel does NOT poll on deployment!"
+        }
+
+        $result = Import-MirthChannel -connection $connection -payLoad $tool.OuterXml -quiet
+        Write-Debug "Import Result: $result"
+        Write-Debug "Deploying probe channel..."
+        $result = Send-MirthDeployChannels -targetIds $toolId -quiet
+        Write-Debug "Deploy Result: $result"
+        $maxMsgId = Get-MirthChannelMaxMsgId -targetId $toolId -quiet
+        Write-Debug "Probe Channel Max Msg Id: $maxMsgId"
+        Write-Debug "Fetching Probe Results..."
+        [xml]$channelMsg = Get-MirthChannelMsgById -connection $connection -channelId $toolId -messageId $maxMsgId -quiet -saveXML:$saveXML
+        $result = Send-MirthUndeployChannels -connection $connection -targetIds $toolId -quiet
+        Write-Debug "Undeploy Result: $result"
+        $result = Remove-MirthChannels -connection $connection -targetId $toolId -quiet
+        Write-Debug "Remove Result: $result" 
+        $dataType = $channelMsg.message.connectorMessages.entry[1].connectorMessage.encoded.dataType 
+        Write-Debug "The tool output is of dataType: $dataType"
+        #add some logic here to accomodate different dataTypes other than XML, e.g., JSON, CSV, etc
+        $contentNode = $channelMsg.SelectSingleNode("/message/connectorMessages/entry[1]/connectorMessage/encoded/content")
+        Write-Debug "Decoding XML escaped data..." 
+        [xml]$decoded = [System.Web.HttpUtility]::HtmlDecode($contentNode.InnerText)
+        return $decoded
+    }
+    END { 
+        Write-Debug "Invoke-PSMirthTool Ending"
+    }
+}  # Invoke-PSMirthTool [UNDER CONSTRUCTION]
 
 <############################################################################################>
-<#       Server Functions                                                                   #>
+<#       Server Functions                                                                    #>
 <############################################################################################>
 
 function global:Get-MirthServerAbout { 
 
     <#
     .SYNOPSIS
-        Gets a summary XML object about the target mirth server.
+        Get an xml object summarizing mirth about properties.
 
     .DESCRIPTION
         Fetches an XML object that summarizes the Mirth erver, the name, version, type of database, 
         number of channels, connectors and plugins installed.
 
-
     .INPUTS
         A -session  WebRequestSession object is required. See Connect-Mirth.
 
     .OUTPUTS
-        
+        If the -asHashtable switch is set, a Powershell hashtable of the properties and values
+        is returned.  Otherwise, it returns an XML object describing server properties.  
+        This XML has the form:
+
         <map>
           <entry>
             <string>date</string>
@@ -930,17 +1022,20 @@ function global:Get-MirthServerAbout {
         Connect-Mirth | Get-MirthServerAbout 
 
     .LINK
-        Links to further documentation.
 
     .NOTES
 
     #> 
     [CmdletBinding()] 
-    param (
+    PARAM (
 
          # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+         [Parameter(ValueFromPipeline=$True)]
         [MirthConnection]$connection = $currentConnection,
+
+        # If true, return the about properties in a hashtable instead of xml object.
+        [Parameter()]
+        [switch]$asHashtable = $false, 
 
         # Saves the response from the server as a file in the current location.
         [Parameter()]
@@ -951,7 +1046,7 @@ function global:Get-MirthServerAbout {
         [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
 
         # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
+        [Parameter()]              
         [switch]$quiet = $false
     ) 
     BEGIN { 
@@ -971,7 +1066,6 @@ function global:Get-MirthServerAbout {
             $r = Invoke-RestMethod -Uri $uri -Method GET -WebSession $session 
             Write-Debug "...done."
 
-            
             if ($saveXML) { 
                 [string]$o = Get-PSMirthOutputFolder
                 $o = Join-Path $o $outFile 
@@ -982,7 +1076,25 @@ function global:Get-MirthServerAbout {
             if (-NOT $quiet) { 
                 Write-Host $r.OuterXml
             }
-            return $r
+            if ($asHashtable) { 
+                $returnMap = @{}
+                foreach ($entry in $r.map.entry) { 
+                    $node = $entry.FirstChild
+                    while ($node.NodeType -eq "Whitespace") { 
+                        $node = $node.NextSibling
+                    }
+                    $key = $node.InnerText 
+                    $valueNode = $node.NextSibling
+                    while ($valueNode.NodeType -eq "Whitespace") { 
+                        $valueNode = $valueNode.NextSibling
+                    }
+                    $value = $valueNode.InnerText 
+                    $returnMap[$key] = $value
+                }
+                return $returnMap
+            } else { 
+                return $r
+            }
         }
         catch {
             $msg = $MyInvocation.MyCommand + " Failed, Response: " + $_.Exception.Response.StatusCode.value__   + ' : ' + $_.Exception.Response.StatusDescription
@@ -1000,6 +1112,7 @@ function global:Get-MirthServerConfig {
         Gets all the complete server configuration backup XML file for the specified server. 
 
     .DESCRIPTION
+        Creates a single XML file backup of the entire mirth server configuration.
 
     .INPUTS
         A -session  WebRequestSession object is required. See Connect-Mirth.
@@ -1009,15 +1122,16 @@ function global:Get-MirthServerConfig {
         channels, code templates, server settings, keystores, etc.
 
     .EXAMPLE
+         Get-MirthServerConfig -quiet -saveXML -outFile backup-local-dev.xml
+         [xml]$backupXML = Get-MirthServerConfig -connection $connection -quiet
 
     .LINK
-        Links to further documentation.
 
     .NOTES
 
     #> 
     [CmdletBinding()] 
-    param (
+    PARAM (
 
          # A MirthConnection is required. You can obtain one from Connect-Mirth.
         [Parameter(ValueFromPipeline=$True)]
@@ -1074,49 +1188,16 @@ function global:Get-MirthServerConfig {
     END { 
         Write-Debug "Get_MirthServerConfig Ending..."
     } 
-} # Get-MirthServerConfig
+}  # Get-MirthServerConfig
 
 function global:Get-MirthServerVersion { 
 
     <#
     .SYNOPSIS
-        Gets the Mirth configuration map. Returns a String containing the version to the Pipeline.
+        Gets the mirth server version. 
 
     .DESCRIPTION
-        Fetches the Mirth configuration map as a map of propery names and values.
-
-        <map>
-          <entry>
-            <string>file-inbound-folder</string>
-            <com.mirth.connect.util.ConfigurationProperty>
-              <value>C:\FileReaderInput</value>
-              <comment>This is a comment describing the file-inbouind-reader property.</comment>
-            </com.mirth.connect.util.ConfigurationProperty>
-          </entry>
-          <entry>
-            <string>db.url</string>
-            <com.mirth.connect.util.ConfigurationProperty>
-              <value>jdbc:thin:@localhost:1521\dbname</value>
-              <comment>This is a fake db url property.</comment>
-            </com.mirth.connect.util.ConfigurationProperty>
-          </entry>
-        </map>
-        <map>
-          <entry>
-            <string>file-inbound-folder</string>
-            <com.mirth.connect.util.ConfigurationProperty>
-              <value>C:\FileReaderInput</value>
-              <comment>This is a comment describing the file-inbouind-reader property.</comment>
-            </com.mirth.connect.util.ConfigurationProperty>
-          </entry>
-          <entry>
-            <string>db.url</string>
-            <com.mirth.connect.util.ConfigurationProperty>
-              <value>jdbc:thin:@localhost:1521\dbname</value>
-              <comment>This is a fake db url property.</comment>
-            </com.mirth.connect.util.ConfigurationProperty>
-          </entry>
-        </map>
+        Returns a String containing the version to the Pipeline.
 
     .INPUTS
         A -session  WebRequestSession object is required. See Connect-Mirth.
@@ -1128,13 +1209,12 @@ function global:Get-MirthServerVersion {
         Connect-Mirth | Get-MirthServerVersion -quiet -saveXML
 
     .LINK
-        Links to further documentation.
 
     .NOTES
 
     #> 
     [CmdletBinding()] 
-    param (
+    PARAM (
 
          # A MirthConnection is required. You can obtain one from Connect-Mirth.
         [Parameter(ValueFromPipeline=$True)]
@@ -1191,6 +1271,91 @@ function global:Get-MirthServerVersion {
     }
 }  # Get-MirthServerVersion
 
+function global:Get-MirthServerTime { 
+    <#
+    .SYNOPSIS
+        Gets the Mirth server time.
+
+    .DESCRIPTION
+        Fetches the Mirth server time as a "gregorian-calendar" xml object.
+
+    .INPUTS
+        A -session  WebRequestSession object is required. See Connect-Mirth.
+
+    .OUTPUTS
+        Returns xml containing server time and time zone:
+
+        <gregorian-calendar>
+            <time>1591908170092</time>
+            <timezone>America/Chicago</timezone>
+        </gregorian-calendar>
+
+    .EXAMPLE
+        connect-mirth | Get-MirthServerTime -quiet -saveXML -outFile server-update-time.xml
+
+    .LINK
+
+    .NOTES
+
+    #> 
+    [CmdletBinding()] 
+    PARAM (
+
+         # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline=$True)]
+        [MirthConnection]$connection = $currentConnection,
+
+        # Saves the response from the server as a file in the current location.
+        [Parameter()]
+        [switch]$saveXML = $false,
+        
+        # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
+        [Parameter()]
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.txt',
+
+        # Dumps the response from the server to the host console for visual inspection.
+        [Parameter()]
+        [switch]$quiet = $false
+    )     
+    BEGIN { 
+        Write-Debug "Get-MirthServerTime Beginning"
+    }
+    PROCESS {
+        if ($null -eq $connection) { 
+            Write-Error "You must first obtain a MirthConnection by invoking Connect-Mirth"
+            return    
+        }          
+        [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
+        $serverUrl = $connection.serverUrl
+ 
+        $uri = $serverUrl + '/api/server/time'
+        Write-Debug "Invoking GET Mirth API server at: $uri "
+        try { 
+            $r = Invoke-RestMethod -Uri $uri -Method GET -WebSession $session 
+            Write-Debug "...done."
+
+            if ($saveXML) { 
+                [string]$o = Get-PSMirthOutputFolder
+                $o = Join-Path $o $outFile 
+                Write-Debug "Saving Output to $o" 
+                Set-Content -Path $o -Value $r.OuterXml      
+                Write-Debug "Done!" 
+            }
+            if (-NOT $quiet) { 
+                Write-Host $r
+            }
+            return $r
+        }
+        catch {
+            $msg = $MyInvocation.MyCommand + " Failed, Response: " + $_.Exception.Response.StatusCode.value__   + ' : ' + $_.Exception.Response.StatusDescription
+            Write-Error $msg
+        }
+    }
+    END { 
+        Write-Debug "Get-MirthServerTime Ending"
+    }
+}  #  Get-MirthServerTime
+
 function global:Get-MirthChannelGroups { 
     <#
     .SYNOPSIS
@@ -1240,13 +1405,12 @@ function global:Get-MirthChannelGroups {
         $(Get-MirthChannelGroups -quiet).list.channelGroup.id
         
     .LINK
-        Links to further documentation.
 
     .NOTES
 
     #> 
     [CmdletBinding()] 
-    param (
+    PARAM (
 
          # A MirthConnection is required. You can obtain one from Connect-Mirth.
         [Parameter(ValueFromPipeline=$True)]
@@ -1344,7 +1508,7 @@ function global:Set-MirthChannelGroups {
 
     #> 
     [CmdletBinding()] 
-    param (
+    PARAM (
 
          # A MirthConnection is required. You can obtain one from Connect-Mirth.
         [Parameter(ValueFromPipeline=$True)]
@@ -1448,7 +1612,7 @@ function global:Set-MirthChannelGroups {
     END { 
         Write-Debug "Set-MirthChannelGroups Ending"
     }
-}
+}  #  Set-MirthChannelGroups
 
 function global:Remove-MirthChannelGroups { 
     <#
@@ -1464,18 +1628,16 @@ function global:Remove-MirthChannelGroups {
 
     .OUTPUTS
 
-
     .EXAMPLE
         Remove-MirthChannelGroups -targetId 21189e58-2f96-4d47-a0d5-d2879a86cee9,c98b1068-af68-41d9-9647-5ff719b21d67  -saveXML
         
     .LINK
-        Links to further documentation.
 
     .NOTES
 
     #> 
     [CmdletBinding()] 
-    param (
+    PARAM (
 
          # A MirthConnection is required. You can obtain one from Connect-Mirth.
         [Parameter(ValueFromPipeline=$True)]
@@ -1527,7 +1689,7 @@ function global:Remove-MirthChannelGroups {
     END {
         Write-Debug "Remove-MirthChannelGroups ending"
     }
-}
+}  #  Remove-MirthChannelGroups
 
 function global:Get-MirthChannelTags {
     <#
@@ -1536,7 +1698,6 @@ function global:Get-MirthChannelTags {
 
     .DESCRIPTION
         Return xml object describing all channel tags defined and listing the channel ids that belong to them.
-
 
     .INPUTS
         A -session  WebRequestSession object is required. See Connect-Mirth.
@@ -1589,16 +1750,16 @@ function global:Get-MirthChannelTags {
         </set>
 
     .EXAMPLE
-
+        Get-MirthChannelTags -saveXML -outFile nrg-channel-tags.xml
+        $channelGroups = Get-MirthChannelTags -connection $connection -quiet
         
     .LINK
-        Links to further documentation.
 
     .NOTES
 
     #> 
     [CmdletBinding()] 
-    param (
+    PARAM (
 
     
         # A mirth session is required. You can obtain one or pipe one in from Connect-Mirth.
@@ -1704,13 +1865,12 @@ function global:Set-MirthChannelTags {
     .EXAMPLE
 
     .LINK
-        Links to further documentation.
 
     .NOTES
 
     #> 
     [CmdletBinding()] 
-    param (
+    PARAM (
 
          # A MirthConnection is required. You can obtain one from Connect-Mirth.
         [Parameter(ValueFromPipeline=$True)]
@@ -1781,9 +1941,9 @@ function global:Set-MirthChannelTags {
     END { 
         Write-Debug "Set-MirthChannelTags Ending"
     }  
-}
+}  #  Set-MirthChannelTags
 
-function global:Set-MirthTagChannels {
+function global:Set-MirthTaggedChannels {
     <#
     .SYNOPSIS
         Deletes, creates, or assigns an existing tag to a selected list of, or all, channels. 
@@ -1808,7 +1968,7 @@ function global:Set-MirthTagChannels {
     .OUTPUTS
 
     .EXAMPLE
-        Set-MirthTagChannels -tagName 'HALO-RR08' -alpha 255 -red 200 -green 0 -blue 255 -channelIds 0e06727d-55f7-4c91-a363-80521dc834b3 -replaceChannels
+        Set-MirthTaggedChannels -tagName 'HALO-RR08' -alpha 255 -red 200 -green 0 -blue 255 -channelIds 0e06727d-55f7-4c91-a363-80521dc834b3 -replaceChannels
 
     .LINK
 
@@ -1816,7 +1976,7 @@ function global:Set-MirthTagChannels {
 
     #> 
     [CmdletBinding()] 
-    param (
+    PARAM (
 
          # A MirthConnection is required. You can obtain one from Connect-Mirth.
         [Parameter(ValueFromPipeline=$True)]
@@ -1885,7 +2045,7 @@ function global:Set-MirthTagChannels {
         [switch]$quiet = $false
     )  
     BEGIN { 
-        Write-Debug "Set-MirthTagChannels Beginning"
+        Write-Debug "Set-MirthTaggedChannels Beginning"
     }
     PROCESS { 
         if ($null -eq $connection) { 
@@ -2038,9 +2198,9 @@ function global:Set-MirthTagChannels {
 
     }
     END { 
-        Write-Debug "Set-MirthTagChannels Ending"
+        Write-Debug "Set-MirthTaggedChannels Ending"
     } 
-}
+}  #  Set-MirthTaggedChannels
 
 function global:Get-MirthConfigMap {
     <#
@@ -2099,7 +2259,7 @@ function global:Get-MirthConfigMap {
 
     #> 
     [CmdletBinding()] 
-    param (
+    PARAM (
 
          # A MirthConnection is required. You can obtain one from Connect-Mirth.
         [Parameter(ValueFromPipeline=$True)]
@@ -2152,7 +2312,7 @@ function global:Get-MirthConfigMap {
     }
     END {
     }
-} # Get-MirthConfigMap
+}  # Get-MirthConfigMap
 
 function global:Set-MirthConfigMap {
     <#
@@ -2202,7 +2362,7 @@ function global:Set-MirthConfigMap {
 
     #> 
     [CmdletBinding()] 
-    param (
+    PARAM (
 
          # A MirthConnection is required. You can obtain one from Connect-Mirth.
         [Parameter(ValueFromPipeline=$True)]
@@ -2337,7 +2497,7 @@ function global:Get-MirthExtensionProperties {
     #>
     [OutputType([xml])] 
     [CmdletBinding()] 
-    param (
+    PARAM (
 
          # A MirthConnection is required. You can obtain one from Connect-Mirth.
         [Parameter(ValueFromPipeline=$True)]
@@ -2453,7 +2613,7 @@ function global:Set-MirthExtensionProperties {
     #>
     [OutputType([xml])] 
     [CmdletBinding()] 
-    param (
+    PARAM (
 
          # A MirthConnection is required. You can obtain one from Connect-Mirth.
         [Parameter(ValueFromPipeline=$True)]
@@ -2582,7 +2742,7 @@ function global:Get-MirthGlobalScripts {
 
     #> 
     [CmdletBinding()] 
-    param (
+    PARAM (
 
          # A MirthConnection is required. You can obtain one from Connect-Mirth.
         [Parameter(ValueFromPipeline=$True)]
@@ -2697,7 +2857,7 @@ function global:Set-MirthGlobalScripts {
 
     #> 
     [CmdletBinding()] 
-    param (
+    PARAM (
 
          # A MirthConnection is required. You can obtain one from Connect-Mirth.
         [Parameter(ValueFromPipeline=$True)]
@@ -2832,7 +2992,7 @@ function global:Get-MirthServerSettings {
 
     #> 
     [CmdletBinding()] 
-    param (
+    PARAM (
 
          # A MirthConnection is required. You can obtain one from Connect-Mirth.
         [Parameter(ValueFromPipeline=$True)]
@@ -2916,7 +3076,7 @@ function global:Set-MirthServerSettings {
 
     #> 
     [CmdletBinding()] 
-    param (
+    PARAM (
 
          # A MirthConnection is required. You can obtain one from Connect-Mirth.
         [Parameter(ValueFromPipeline=$True)]
@@ -3000,10 +3160,415 @@ function global:Set-MirthServerSettings {
 
 }  #  Set-MirthServerSettings
 
+function global:Get-MirthServerProperties { 
+    <#
+    .SYNOPSIS
+        Gets the Mirth server configuration property file, 
+        located in the Mirth install folder at conf/mirth.properties, 
+        and returns it as an XML object.
+
+    .DESCRIPTION
+        This command relies on a tool probe channel to obtain server-side
+        information not normally available through the REST API.
+
+    .INPUTS
+        A -session  WebRequestSession object is required. See Connect-Mirth.
+
+    .OUTPUTS
+        [xml] object representing the mirth.properties file in XML form.
+
+    .EXAMPLE
+        
+    .LINK
+
+    .NOTES
+
+    #> 
+    [CmdletBinding()] 
+    PARAM (
+
+         # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline=$True)]
+        [MirthConnection]$connection = $currentConnection,
+
+        # If true, return the properties as a hashtable instead of an xml object for convenience
+        [Parameter()]
+        [switch]$asHashtable = $false,
+
+        # Saves the response from the server as a file in the current location.
+        [Parameter()]
+        [switch]$saveXML = $false,
+        
+        # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
+        [Parameter()]
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
+
+        # Dumps the response from the server to the host console for visual inspection.
+        [Parameter()]
+        [switch]$quiet = $false
+    )     
+    BEGIN { 
+        Write-Debug "Get-MirthServerProperties Beginning"
+    }
+    PROCESS { 
+        # import the tool channel and deploy it
+        Write-Debug "Loading probe channel..."
+        $toolPath = "$PSSCriptRoot/tools/Probe_Mirth_Properties.xml"
+        [xml]$toolPayLoad = Invoke-PSMirthTool -connection $connection -toolPath $toolPath -saveXML:$saveXML -quiet:$quiet
+
+        if (-not $asHashtable) { 
+            return $toolPayLoad
+        } else { 
+            $returnMap = @{};
+            # convert to hashtable
+            foreach ($entry in $toolPayLoad.properties.entry) { 
+                $key = $entry.Attributes[0].Value
+                $value = $entry.InnerText
+                Write-Debug ("Adding Key: $key with value: $value")
+                $returnMap[$key] = $value
+            }
+            return $returnMap
+        }
+        
+    }
+    END { 
+        Write-Debug "Get-MirthServerProperties Ending"
+    }
+} #  Get-MirthServerProperties 
 
 <############################################################################################>
 <#        Channel Functions                                                                 #>
 <############################################################################################>
+
+function global:Get-MirthChannelMsgById { 
+    <#
+    .SYNOPSIS
+        Gets a message id from a channel, specified by id.
+
+    .DESCRIPTION
+
+    .INPUTS
+        A -session  WebRequestSession object is required. See Connect-Mirth.
+
+    .OUTPUTS
+        [xml] representation of a channel message;  the message itself is in 
+
+    .EXAMPLE
+        Get-MirthChannelMsgById -channelId  ffe2e62c-5dd8-435e-a877-987d3f6c3d09 -messageId 8
+
+    .LINK
+
+    .NOTES
+
+    #> 
+    [CmdletBinding()] 
+    PARAM (
+
+         # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline=$True)]
+        [MirthConnection] $connection = $currentConnection,
+
+        # The id of the chennel to interrogate, required
+        [Parameter(Mandatory=$True,
+                   ValueFromPipelineByPropertyName=$True)]
+        [string]  $channelId,
+
+        # The message id to retrieve from the channel
+        [Parameter(Mandatory=$True,
+                   ValueFromPipelineByPropertyName=$True)]
+        [long]  $messageId,        
+
+        # Saves the response from the server as a file in the current location.
+        [Parameter()]
+        [switch] $saveXML = $false,
+        
+        # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
+        [Parameter()]
+        [string] $outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
+
+        # Dumps the response from the server to the host console for visual inspection.
+        [Parameter()]
+        [switch] $quiet = $false
+    )         
+    BEGIN { 
+        Write-Debug "Get-MirthChannelMsgById Beginning"
+    }
+    PROCESS { 
+        #GET /channels/{channelId}/messages/maxMessageId
+        if ($null -eq $connection) { 
+            Write-Error "You must first obtain a MirthConnection by invoking Connect-Mirth"
+            return    
+        }          
+        [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
+        $serverUrl = $connection.serverUrl
+             
+        $uri = $serverUrl + "/api/channels/$channelId/messages/$messageId"
+
+        Write-Debug "Invoking GET Mirth  $uri "
+        try { 
+            $r = Invoke-RestMethod -Uri $uri -Method GET -WebSession $session
+            Write-Debug "...done."
+
+            if ($saveXML) { 
+                [string]$o = Get-PSMirthOutputFolder
+                #$o = $o + $outFile
+                $o = Join-Path $o $outFile 
+                Write-Debug "Saving Output to $o"
+                $r.save($o)     
+                Write-Debug "Done!" 
+            }
+            if (-NOT $quiet) { 
+                Write-Host $r.innerXml
+            }
+            return $r
+                
+        }
+        catch {
+            $_.response
+        $errorMessage = $_.Exception.Message
+            if (Get-Member -InputObject $_.Exception -Name 'Response') {
+                try {
+                    $result = $_.Exception.Response.GetResponseStream()
+                    $reader = New-Object System.IO.StreamReader($result)
+                    $reader.BaseStream.Position = 0
+                    $reader.DiscardBufferedData()
+                    $responseBody = $reader.ReadToEnd();
+                } catch {
+                    Throw "An error occurred while calling REST method at: $uri. Error: $errorMessage. Cannot get more information."
+                }
+            }
+            Throw "An error occurred while calling REST method at: $uri. Error: $errorMessage  Response body: $responseBody"
+        }        
+    }
+    END { 
+        Write-Debug "Get-MirthChannelMsgById Ending"
+    }
+}  # Get-MirthChannelMsgById
+
+function global:Get-MirthChannelMaxMsgId { 
+    <#
+    .SYNOPSIS
+        Gets the maximum message id for the channel, specified by id.
+
+    .DESCRIPTION
+
+    .INPUTS
+        A -session  WebRequestSession object is required. See Connect-Mirth.
+
+    .OUTPUTS
+        [long] the maximum message number
+
+    .EXAMPLE
+        
+    .LINK
+
+    .NOTES
+
+    #> 
+    [CmdletBinding()] 
+    PARAM (
+
+         # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline=$True)]
+        [MirthConnection] $connection = $currentConnection,
+
+        # The id of the chennel to interrogate, required
+        [Parameter(Mandatory=$True,
+                   ValueFromPipelineByPropertyName=$True)]
+        [string]  $targetId,
+
+        # Saves the response from the server as a file in the current location.
+        [Parameter()]
+        [switch] $saveXML = $false,
+        
+        # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
+        [Parameter()]
+        [string] $outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
+
+        # Dumps the response from the server to the host console for visual inspection.
+        [Parameter()]
+        [switch] $quiet = $false
+    )         
+    BEGIN { 
+        Write-Debug "Get-MirthChannelMaxMsgId Beginning"
+    }
+    PROCESS { 
+        #GET /channels/{channelId}/messages/maxMessageId
+        if ($null -eq $connection) { 
+            Write-Error "You must first obtain a MirthConnection by invoking Connect-Mirth"
+            return    
+        }          
+        [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
+        $serverUrl = $connection.serverUrl
+             
+        $uri = $serverUrl + "/api/channels/$targetId/messages/maxMessageId"
+
+        Write-Debug "Invoking GET Mirth  $uri "
+        try { 
+            $r = Invoke-RestMethod -Uri $uri -Method GET -WebSession $session
+            Write-Debug "...done."
+
+            if ($saveXML) { 
+                [string]$o = Get-PSMirthOutputFolder
+                #$o = $o + $outFile
+                $o = Join-Path $o $outFile 
+                Write-Debug "Saving Output to $o"
+                $r.save($o)     
+                Write-Debug "Done!" 
+            }
+            if (-NOT $quiet) { 
+                Write-Host $r.innerXml
+            }
+            return [long]$r.long
+                
+        }
+        catch {
+            $_.response
+        $errorMessage = $_.Exception.Message
+            if (Get-Member -InputObject $_.Exception -Name 'Response') {
+                try {
+                    $result = $_.Exception.Response.GetResponseStream()
+                    $reader = New-Object System.IO.StreamReader($result)
+                    $reader.BaseStream.Position = 0
+                    $reader.DiscardBufferedData()
+                    $responseBody = $reader.ReadToEnd();
+                } catch {
+                    Throw "An error occurred while calling REST method at: $uri. Error: $errorMessage. Cannot get more information."
+                }
+            }
+            Throw "An error occurred while calling REST method at: $uri. Error: $errorMessage  Response body: $responseBody"
+        }        
+    }
+    END { 
+        Write-Debug "Get-MirthChannelMaxMsgId Ending"
+    }
+}  # Get-MirthChannelMaxMsgId
+
+function global:Send-MirthDeployChannels {      
+    <#
+    .SYNOPSIS
+        Sends mirth a signal to deployi selected channels.
+        (note "Deploy" is approved in v6)
+
+    .DESCRIPTION
+        Deploys one or more channels on the target server.
+
+    .INPUTS
+        A -session  WebRequestSession object is required. See Connect-Mirth.
+        -channelIds    a list of channel ids to be deployed, all if omitted.
+        -returnErrors  switch, if true error response code and exception will be returned.  
+        
+    .OUTPUTS
+        204 if successful, 500 if any of the channels fail to deploy
+
+    .EXAMPLE
+        
+    .LINK
+
+    .NOTES
+        When the returnErrors switch is set, if any of the channels fail to deploy an 
+        exception is thrown.  The response from the server *should* contain an xml 
+        donkey DeployException that would tell us what channels failed and what the 
+        error is, but I have been unable to obtain this response.  All the code sees
+        is a ConnectionClosed error.
+
+    #> 
+    [CmdletBinding()] 
+    PARAM (
+
+         # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline=$True)]
+        [MirthConnection]$connection = $currentConnection,
+
+        # The id of the channels to undeploy, empty for all
+        [Parameter(ValueFromPipelineByPropertyName=$True)]
+        [string[]]$targetIds,
+
+        # If true, an error response code and exception will be returned.
+        [Parameter()]
+        [switch]$returnErrors = $false,
+   
+        # Saves the response from the server as a file in the current location.
+        [Parameter()]
+        [switch]$saveXML = $false,
+
+        # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
+        [Parameter()]
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
+
+        # Dumps the response from the server to the host console for visual inspection.
+        [Parameter()]
+        [switch]$quiet = $false
+    ) 
+    BEGIN { 
+        Write-Debug "Send-MirthDeployChannels Beginning"
+    }
+    PROCESS { 
+        if ($null -eq $connection) { 
+            Write-Error "You must first obtain a MirthConnection by invoking Connect-Mirth"
+            return    
+        }          
+        [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
+        $serverUrl = $connection.serverUrl
+
+        [xml]$payloadXML = "<set></set>";
+        if ($targetIds.count -gt 0) { 
+            # they provided some channel ids
+            Write-Debug "Attempting to deploy $($targetIds.count) channels"
+            Add-PSMirthStringNodes -parentNode $($payloadXML.SelectSingleNode("/set")) -values $targetIds | Out-Null
+            Write-Debug "Payload generated: $($payloadXML.OuterXml)"
+        }
+
+        $headers = @{}
+        $headers.Add("Accept","application/xml")
+
+        $uri = $serverUrl + '/api/channels/_deploy'
+        $parameters = [System.Web.HttpUtility]::ParseQueryString([String]::Empty)
+        $parameters.Add('returnErrors', $returnErrors)
+        $uri = $uri + '?' + $parameters.toString()
+
+
+        Write-Debug "POST to Mirth $uri "
+        try { 
+            $r = Invoke-RestMethod -UseBasicParsing -Uri $uri -WebSession $session -Headers $headers -Method POST -ContentType 'application/xml' -Body $payloadXML.OuterXml
+            
+            Write-Debug "Deployed"
+            Write-Debug "Type of response object: $($r.getType())"
+
+            if ($saveXML) { 
+                [string]$o = Get-PSMirthOutputFolder
+                $o = Join-Path $o $outFile 
+                Write-Debug "Saving Output to $o"
+                #$r.save($o)  
+                Set-Content $o -Value $r.getType()   
+            }
+            if (-NOT $quiet) { 
+                Write-Host $r.OuterXml
+            }
+            return $true
+        } catch {
+            $_.response
+        $errorMessage = $_.Exception.Message
+            if (Get-Member -InputObject $_.Exception -Name 'Response') {
+                try {
+                    $result = $_.Exception.Response.GetResponseStream()
+                    $reader = New-Object System.IO.StreamReader($result)
+                    $reader.BaseStream.Position = 0
+                    $reader.DiscardBufferedData()
+                    $responseBody = $reader.ReadToEnd();
+                } catch {
+                    Throw "An error occurred while calling REST method at: $uri. Error: $errorMessage. Cannot get more information."
+                }
+            }
+            Throw "An error occurred while calling REST method at: $uri. Error: $errorMessage  Response body: $responseBody"
+        }
+
+    }
+    END { 
+        Write-Debug "Send-MirthDeployChannels Ending"
+
+    }
+}  # Send-MirthDeployChannels
 
 function global:Send-MirthRedeployAllChannels { 
     
@@ -3037,7 +3602,7 @@ function global:Send-MirthRedeployAllChannels {
 
     #> 
     [CmdletBinding()] 
-    param (
+    PARAM (
 
          # A MirthConnection is required. You can obtain one from Connect-Mirth.
         [Parameter(ValueFromPipeline=$True)]
@@ -3149,7 +3714,7 @@ function global:Send-MirthRedeployAllChannels {
         Write-Debug "Send-MirthRedeployAllChannels Ending"
     }
 
-}
+}  # Send-MirthRedployAllChannels
 
 function global:Send-MirthUndeployChannels { 
     <#
@@ -3181,15 +3746,15 @@ function global:Send-MirthUndeployChannels {
 
     #> 
     [CmdletBinding()] 
-    param (
+    PARAM (
 
          # A MirthConnection is required. You can obtain one from Connect-Mirth.
         [Parameter(ValueFromPipeline=$True)]
         [MirthConnection]$connection = $currentConnection,
 
-        # The id of the channels to undeploy, empty for all
+        # The array of the channel ids to undeploy, empty for all
         [Parameter(ValueFromPipelineByPropertyName=$True)]
-        [string[]]$targetId,
+        [string[]]$targetIds,
 
         # If true, an error response code and the exception will be returned.
         [Parameter()]
@@ -3226,10 +3791,18 @@ function global:Send-MirthUndeployChannels {
         $parameters.Add('returnErrors', $returnErrors)
         $uri = $uri + '?' + $parameters.toString()
 
+        [xml]$payloadXML = "<set></set>";
+        if ($targetIds.count -gt 0) { 
+            # they provided some channel ids
+            Write-Debug "Attempting to deploy $($targetIds.count) channels"
+            Add-PSMirthStringNodes -parentNode $($payloadXML.SelectSingleNode("/set")) -values $targetIds | Out-Null
+            Write-Debug "Payload generated: $($payloadXML.OuterXml)"
+        }
+
         Write-Debug "POST to Mirth $uri "
         try { 
-            #$r = Invoke-RestMethod -UseBasicParsing -Uri $uri -WebSession $session -Headers $headers -Method POST -ContentType 'application/xml' 
-            $r = Invoke-WebRequest -UseBasicParsing -Uri $uri -WebSession $session -Headers $headers -Method POST -ContentType 'application/xml' 
+            $r = Invoke-RestMethod -UseBasicParsing -Uri $uri -WebSession $session -Headers $headers -Method POST -ContentType 'application/xml' -Body $payLoadXML.OuterXml
+            #$r = Invoke-WebRequest -UseBasicParsing -Uri $uri -WebSession $session -Headers $headers -Method POST -ContentType 'application/xml' 
             
             Write-Debug "...done."
             Write-Debug "Type of response object: $($r.getType())"
@@ -3267,7 +3840,7 @@ function global:Send-MirthUndeployChannels {
     END { 
         Write-Debug "Send-MirthUndeployChannels Ending"
     }          
-}  #  Send-MirthUndeployChannels
+}  # Send-MirthUndeployChannels
 
 function global:Get-MirthChannels { 
     <#
@@ -3394,7 +3967,7 @@ function global:Get-MirthChannels {
 
     #> 
     [CmdletBinding()] 
-    param (
+    PARAM (
 
          # A MirthConnection is required. You can obtain one from Connect-Mirth.
         [Parameter(ValueFromPipeline=$True)]
@@ -3506,7 +4079,7 @@ function global:Remove-MirthChannels {
 
     #> 
     [CmdletBinding()] 
-    param (
+    PARAM (
 
          # A MirthConnection is required. You can obtain one from Connect-Mirth.
         [Parameter(ValueFromPipeline=$True)]
@@ -3568,7 +4141,7 @@ function global:Remove-MirthChannels {
     END { 
         Write-Debug "Remove-MirthChannels Ending"
     }
-}  #  Remove-MirthChannels
+}  # Remove-MirthChannels
 
 function global:Remove-MirthChannelByName { 
    <#
@@ -3594,7 +4167,7 @@ function global:Remove-MirthChannelByName {
 
     #> 
     [CmdletBinding()] 
-    param (
+    PARAM (
 
          # A MirthConnection is required. You can obtain one from Connect-Mirth.
         [Parameter(ValueFromPipeline=$True)]
@@ -3658,7 +4231,7 @@ function global:Remove-MirthChannelByName {
     END { 
         Write-Debug "Remove-MirthChannelByName Ending"
     }
-}  #  Remove-MirthChannelByName
+}  # Remove-MirthChannelByName
 
 function global:Import-MirthChannel { 
     <#
@@ -3686,7 +4259,7 @@ function global:Import-MirthChannel {
 
     #> 
     [CmdletBinding()] 
-    param (
+    PARAM (
 
          # A MirthConnection is required. You can obtain one from Connect-Mirth.
         [Parameter(ValueFromPipeline=$True)]
@@ -3772,8 +4345,28 @@ function global:Import-MirthChannel {
         Write-Debug "Import-MirthChannel Ending"
     }
 
-}  #  Import-MirthChannel
+}  # Import-MirthChannel
 
+function global:Send-MirthMessage { 
+    BEGIN { 
+        Write-Debug "Send-MirthMessage Beginning"
+    }
+    PROCESS { 
+        # POST /channels/{channelId}/messages
+        #
+        #  body, body string - raw message data to process
+        #  destinationMetaDataId, query parameter, array of integer, destinations to send msg to
+        #  sourceMapEntry, query parameter, array of string, key=value pairs injected into sourceMap
+        #  overwrite, query parameter, boolean, if true and original message id given, this message will overwrite existing
+        #  imported, query parameter, boolean, if true marks this messag as imported, if overwriting statistics not decremented
+        #  originalMessageId, query parameter, long, the original message id this msg is associated with
+
+
+    }
+    END { 
+        Write-Debug "Send-MirthMessage Ending"
+    }
+}  #  Send-MirthMessage [UNDER CONSTRUCTION]
 
 
 <############################################################################################>
@@ -3806,7 +4399,7 @@ function global:Get-MirthCodeTemplateLibraries {
 
     #> 
     [CmdletBinding()] 
-    param (
+    PARAM (
 
          # A MirthConnection is required. You can obtain one from Connect-Mirth.
         [Parameter(ValueFromPipeline=$True)]
@@ -3879,7 +4472,7 @@ function global:Get-MirthCodeTemplateLibraries {
     END { 
         Write-Debug "Get-MirthCodeTemplateLibraries Ending"
     }
-}  #  Get-MirthCodeTemplateLibraries
+}  # Get-MirthCodeTemplateLibraries
 
 function global:Set-MirthCodeTemplateLibraries {
     <#
@@ -3906,7 +4499,7 @@ function global:Set-MirthCodeTemplateLibraries {
 
     #> 
     [CmdletBinding()] 
-    param (
+    PARAM (
 
          # A MirthConnection is required. You can obtain one from Connect-Mirth.
         [Parameter(ValueFromPipeline=$True)]
@@ -4032,7 +4625,7 @@ function global:Set-MirthSSLManagerKeystores {
 
     #> 
     [CmdletBinding()] 
-    param (
+    PARAM (
 
          # A MirthConnection is required. You can obtain one from Connect-Mirth.
         [Parameter(ValueFromPipeline=$True)]
@@ -4150,7 +4743,7 @@ function global:Get-MirthKeyStoreCertificates {
 
     #> 
     [CmdletBinding()] 
-    param (
+    PARAM (
 
          # A MirthConnection is required. You can obtain one from Connect-Mirth.
         [Parameter(ValueFromPipeline=$True)]
@@ -4232,7 +4825,7 @@ function global:Get-MirthKeyStoreBytes {
 
     #> 
     [CmdletBinding()] 
-    param (
+    PARAM (
 
          # A MirthConnection is required. You can obtain one from Connect-Mirth.
         [Parameter(ValueFromPipeline=$True)]
@@ -4324,7 +4917,7 @@ function global:Connect-Mirth {
     #> 
     [OutputType([MirthConnection])] 
     [CmdletBinding()]
-    param (
+    PARAM (
         [Parameter()]
         [string]$serverUrl = "https://localhost:8443",
         [Parameter()]
@@ -4380,7 +4973,7 @@ function global:Connect-Mirth {
 
     }
 
-} # Connect-Mirth
+}  # Connect-Mirth
 
 function global:Set-MirthUserPassword {
     <#
@@ -4407,7 +5000,7 @@ function global:Set-MirthUserPassword {
 
     #> 
     [CmdletBinding()] 
-    param (
+    PARAM (
 
          # A MirthConnection is required. You can obtain one from Connect-Mirth.
         [Parameter(ValueFromPipeline=$True)]
@@ -4502,7 +5095,7 @@ function global:Test-MirthUserLogged {
     #>
     [OutputType([bool])] 
     [CmdletBinding()] 
-    param (
+    PARAM (
 
          # A MirthConnection is required. You can obtain one from Connect-Mirth.
         [Parameter(ValueFromPipeline=$True)]
@@ -4617,7 +5210,7 @@ function global:Get-MirthLoggedUsers {
 
     #> 
     [CmdletBinding()] 
-    param (
+    PARAM (
 
          # A MirthConnection is required. You can obtain one from Connect-Mirth.
         [Parameter(ValueFromPipeline=$True)]
@@ -4732,7 +5325,7 @@ function global:Get-MirthUsers {
 
     #> 
     [CmdletBinding()] 
-    param (
+    PARAM (
 
          # A MirthConnection is required. You can obtain one from Connect-Mirth.
         [Parameter(ValueFromPipeline=$True)]
@@ -4798,7 +5391,7 @@ function global:Get-MirthUsers {
         Write-Debug "Get-MirthUsers Ending"
     }
 
-} # Get-MirthUsers
+}  # Get-MirthUsers
 
 function global:Set-MirthUser {
     <#
@@ -4838,7 +5431,7 @@ function global:Set-MirthUser {
 
     #> 
     [CmdletBinding()] 
-    param (
+    PARAM (
 
          # A MirthConnection is required. You can obtain one from Connect-Mirth.
         [Parameter(ValueFromPipeline=$True)]
@@ -4968,7 +5561,7 @@ function global:Add-MirthUser {
 
     #> 
     [CmdletBinding()] 
-    param (
+    PARAM (
 
          # A MirthConnection is required. You can obtain one from Connect-Mirth.
         [Parameter(ValueFromPipeline=$True)]
@@ -5059,7 +5652,7 @@ function global:Add-MirthUser {
         Write-Debug "Add-MirthUser Ending..."
     }
 
-}  #  Add-MirthUser
+}  # Add-MirthUser
 
 function global:Remove-MirthUser {
     <#
@@ -5087,7 +5680,7 @@ function global:Remove-MirthUser {
 
     #> 
     [CmdletBinding()] 
-    param (
+    PARAM (
 
          # A MirthConnection is required. You can obtain one from Connect-Mirth.
         [Parameter(ValueFromPipeline=$True)]
@@ -5157,30 +5750,3 @@ function global:Remove-MirthUser {
     }
        
 }  # Remove-MirthUser
-
-
-<############################################################################################>
-<#        Misc Functions                                                                    #>
-<############################################################################################>
-
-
-<# -----------Notes------------------------
-
-[System.Drawing.Color]::FromArgb([string],[string],[string])﻿
-
-How to define parameter aliases...
-
-    Param (
-        [parameter(ValueFromPipelineByPropertyName)]
-        [Alias('IPAddress','__Server','CN')]
-        [string[]]$Computername
-    )
-
-return [pscustomobject] @{
-              session   = $session 
-              serverUrl = $serverUrl
-              userName  = $userName
-              userPass  = $userPass
-            }
-
--------------------------------------------#>
