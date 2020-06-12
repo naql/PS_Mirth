@@ -102,7 +102,7 @@ return msg;</script>
   <destinationConnectors>
     <connector version="3.6.2">
       <metaDataId>1</metaDataId>
-      <name>Dummy</name>
+      <name>PS_OUTPUT</name>
       <properties class="com.mirth.connect.connectors.vm.VmDispatcherProperties" version="3.6.2">
         <pluginProperties/>
         <destinationConnectorProperties version="3.6.2">

@@ -911,7 +911,7 @@ function global:Invoke-PSMirthTool {
         }
 
         $result = Import-MirthChannel -connection $connection -payLoad $tool.OuterXml -quiet
-        Write-Debug "Import Result: $result"
+        Write-Debug "Import Result: $($result.OuterXml)"
         Write-Debug "Deploying probe channel..."
         $result = Send-MirthDeployChannels -targetIds $toolId -quiet
         Write-Debug "Deploy Result: $result"
@@ -923,13 +923,28 @@ function global:Invoke-PSMirthTool {
         Write-Debug "Undeploy Result: $result"
         $result = Remove-MirthChannels -connection $connection -targetId $toolId -quiet
         Write-Debug "Remove Result: $result" 
-        $dataType = $channelMsg.message.connectorMessages.entry[1].connectorMessage.encoded.dataType 
+        # Now, find our payload, look for destination 'PS_OUTPUT"
+        $xpath = '/message/connectorMessages/entry/connectorMessage[connectorName = "PS_OUTPUT"]'
+        $connectorMessageNode = $channelMsg.SelectSingleNode($xpath)
+        if ($null -eq $connectorMessageNode) { 
+            Write-Error "Could not locate PS_OUTPUT destination of PSMirthTool channel: $toolName"
+            return $null
+        }     
+        $dataType = $connectorMessageNode.encoded.dataType 
         Write-Debug "The tool output is of dataType: $dataType"
+        if ($dataType -eq "XML") { 
+            [xml]$decoded = [System.Web.HttpUtility]::HtmlDecode($connectorMessageNode.encoded.content)
+            return $decoded
+        } else { 
+            Write-Warning "Unimplemented PSMirthTool datatype"
+            return $connectorMessageNode.encoded.content
+        }
         #add some logic here to accomodate different dataTypes other than XML, e.g., JSON, CSV, etc
-        $contentNode = $channelMsg.SelectSingleNode("/message/connectorMessages/entry[1]/connectorMessage/encoded/content")
-        Write-Debug "Decoding XML escaped data..." 
-        [xml]$decoded = [System.Web.HttpUtility]::HtmlDecode($contentNode.InnerText)
-        return $decoded
+        # $nodeList = $channelMsg.SelectNodes("/message/connectorMessages/entry/connectorMessage/encoded/content")
+        # Write-Debug "SelectNodes finds $($nodeList.Count) nodes..."
+        # Write-Debug "Decoding XML escaped data..." 
+        # $contentNode = $nodeList[$nodeList.count - 1]
+        
     }
     END { 
         Write-Debug "Invoke-PSMirthTool Ending"
