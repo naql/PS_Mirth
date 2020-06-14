@@ -1,5 +1,13 @@
 ﻿Add-Type -AssemblyName System.Web
 
+enum MirthMsgStorageMode {
+    DISABLED = 1
+    METADATA = 2
+    RAW = 3
+    PRODUCTION = 4
+    DEVELOPMENT = 5
+}
+
 # The custom MirthConnection object is created and returned by Connect-Mirth.
 # All of the other functions which make calls to the Mirth REST API will require one.
 # (It is not mandatory because they are designed to work in an "interactive" manner.
@@ -37,7 +45,6 @@ class MirthServerSummary {
 }
 
 
-
 # Dynamically Scoped/Globals
 
 # Set this to 'Continue' to display output from Write-Debug statements, 
@@ -54,7 +61,7 @@ Write-Host "Current PS_Mirth output folder is: " $savePath
 
 
 <############################################################################################>
-<#       PS-Mirth Functions                                                                     #>
+<#       PS-Mirth Functions                                                                 #>
 <############################################################################################>
 
 function Set-PSMirthOutputFolder( $path ) {
@@ -118,6 +125,28 @@ function Set-PSMirthConnection( $connection ) {
 <#   General utilities and functions that create needed XML objects.                        #>
 <#                                                                                          #>
 <############################################################################################>
+
+function global:Convert-XmlElementToDoc { 
+   <#
+    .SYNOPSIS
+        Convert an Xml.XmlElement to an XmlDocument, with the element as the root
+    .DESCRIPTION
+
+    .INPUTS
+        An Xml.XmlElement node
+    .OUTPUTS
+        An Xml Document with the element node as the root
+    #> 
+    [CmdletBinding()] 
+    PARAM (
+        # The alias for the server default client public certificate.
+        [Parameter(Mandatory=$True)]
+        [Xml.XmlElement]$element
+    )
+    $xml = New-Object -TypeName xml
+    $xml.AppendChild($xml.ImportNode($element, $true)) | Out-Null 
+    return $xml
+}  # Convert-XmlElementToDoc
 
 function global:New-MirthKeyStoreCertificatesPayLoad { 
     <#
@@ -852,8 +881,9 @@ function global:Invoke-PSMirthTool {
     .DESCRIPTION
         This function loads in a "tool" channel.  It will import the channel to 
         the target mirth server, deploy it, send a message to it if necessary, 
-        and fetch the resuling message content from the output destination.
-        The type of payload, xml, JSON, etc, is determined by the destination datatype.
+        and fetch the resuling message content from the output destination 
+        named "PS_OUTPUT". The type of payload, xml, JSON, etc, is determined 
+        by the destination datatype.
 
     .INPUTS
         A -session  WebRequestSession object is required. See Connect-Mirth.
@@ -950,6 +980,7 @@ function global:Invoke-PSMirthTool {
         Write-Debug "Invoke-PSMirthTool Ending"
     }
 }  # Invoke-PSMirthTool [UNDER CONSTRUCTION]
+
 
 <############################################################################################>
 <#       Server Functions                                                                    #>
@@ -1706,6 +1737,213 @@ function global:Remove-MirthChannelGroups {
     }
 }  #  Remove-MirthChannelGroups
 
+function global:Get-MirthServerChannelMetadata { 
+    <#
+    .SYNOPSIS
+        Gets all Mirth server channel metadata.
+
+    .DESCRIPTION
+        Return xml object describing channel metadata, enabled status, pruning settings, etc.
+
+    .INPUTS
+        A -session  WebRequestSession object is required. See Connect-Mirth.
+        -targetId if omitted, then all channel groups are returned.  Otherwise, only the channel groups with the 
+        id values specified are returned.
+
+    .OUTPUTS
+        Returns an XML object that represents all channel metadata
+
+        <map>
+            <entry>
+                <string>cdfcb6b1-5fd4-4ef0-a700-68cacf6d0467</string>
+                <com.mirth.connect.model.ChannelMetadata>
+                    <enabled>true</enabled>                  
+                    <lastModified>
+                        <time>1592081530193</time>
+                        <timezone>America/Chicago</timezone>
+                    </lastModified>
+                    <pruningSettings>
+                        <pruneMetaDataDays>30</pruneMetaDataDays>
+                        <pruneContentDays>15</pruneContentDays>
+                        <archiveEnabled>true</archiveEnabled>
+                    </pruningSettings>
+                </com.mirth.connect.model.ChannelMetadata>
+            </entry>
+            ...
+        </map>
+
+    .EXAMPLE
+        
+    .LINK
+
+    .NOTES
+
+    #> 
+    [CmdletBinding()] 
+    PARAM (
+        # A mirth session is required. You can obtain one or pipe one in from Connect-Mirth.
+        [Parameter(ValueFromPipeline=$True)]
+        [MirthConnection]$connection = $currentConnection,
+
+        # If true, return a hashtable of the metadata, using the channel id as the key.
+        [Parameter()]
+        [switch]$asHashtable = $false,
+
+        # Saves the response from the server as a file in the current location.
+        [Parameter()]
+        [switch]$saveXML = $false,
+        
+        # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
+        [Parameter()]
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
+
+        # Dumps the response from the server to the host console for visual inspection.
+        [Parameter()]
+        [switch]$quiet = $false
+    ) 
+    BEGIN { 
+        Write-Debug "Get-MirthServerChannelMetadata Beginning"
+    }
+    PROCESS { 
+        if ($null -eq $connection) { 
+            Write-Error "You must first obtain a MirthConnection by invoking Connect-Mirth"
+            return    
+        }        
+        [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
+        $serverUrl = $connection.serverUrl
+        $uri = $serverUrl + '/api/server/channelMetadata'
+        Write-Debug "Invoking GET Mirth at $uri"
+        try { 
+            $r = Invoke-RestMethod -Uri $uri -Method GET -WebSession $session
+            Write-Debug "...done."
+
+            if ($saveXML) { 
+                [string]$o = Get-PSMirthOutputFolder
+                $o = Join-Path $o $outFile 
+                Write-Debug "Saving Output to $o"  
+                $r.save($o)
+                Write-Debug "Done!" 
+            }
+            if (-NOT $quiet) { 
+                Write-Host $r.OuterXml
+            }
+            if ($asHashtable) { 
+                # construct a hashtable, channel id to metadata for return
+                $returnMap = @{}
+                foreach ($entry in $r.map.entry) { 
+                    $channelId = $entry.string
+                    $metaData  = $entry.SelectSingleNode("com.mirth.connect.model.ChannelMetadata")
+                    $returnMap[$channelId] = $metaData
+                }
+                Write-Host "Returning Hashmap: "
+                Write-Host $returnMap
+                return $returnMap
+            } ekse { 
+                return $r
+            }
+        }
+        catch {
+            Write-Error $_
+        }
+    }        
+    END { 
+        Write-Debug "Get-MirthServerChannelMetadata Ending"
+    }
+}  # Get-MirthServerChannelMetadata 
+
+function global:Set-MirthServerChannelMetadata { 
+    <#
+    .SYNOPSIS
+        Sets all server channel metadata from an XML payload string or file path.
+
+    .DESCRIPTION
+        Sends a map of channel id to metadata to the server to set all server channel metadata.
+
+    .INPUTS
+        A -session  WebRequestSession object is required. See Connect-Mirth.
+        This command expects input as an xml string or a path to a file containing the xml.
+        $payLoad is xml describing the set of channel tags to be uploaded:
+
+    .OUTPUTS
+
+    .EXAMPLE
+
+    .LINK
+
+    .NOTES
+
+    #> 
+    [CmdletBinding()] 
+    PARAM (
+
+         # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline=$True)]
+        [MirthConnection]$connection = $currentConnection,
+
+        # xml of set of channelTags to be added
+        [Parameter(ParameterSetName="xmlProvided",
+                   Mandatory=$True,
+                   ValueFromPipelineByPropertyName=$True)]
+        [string]$payLoad,
+
+        # path to file containing the xml for the payload
+        [Parameter(ParameterSetName="pathProvided",
+                   Mandatory=$True,
+                   ValueFromPipelineByPropertyName=$True)]
+        [string]$payloadFilePath,     
+
+        # Saves the response from the server as a file in the current location.
+        [Parameter()]
+        [switch]$saveXML = $false,
+        
+        # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
+        [Parameter()]
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
+
+        # Dumps the response from the server to the host console for visual inspection.
+        [Parameter()]
+        [switch]$quiet = $false
+    )   
+    BEGIN { 
+        Write-Debug "Set-MirthServerChannelMetadata Beginning"
+    }
+    PROCESS { 
+        [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
+        $serverUrl = $connection.serverUrl
+
+        [xml]$payloadXML = $null 
+        if ([string]::IsNullOrEmpty($payLoad) -or [string]::IsNullOrWhiteSpace($payLoad)) {
+            if ([string]::IsNullOrEmpty($payloadFilePath) -or [string]::IsNullOrWhiteSpace($payloadFilePath)) {
+                Write-Error "A server channel metadata XML payLoad string is required!"
+                return $null
+            } else {
+                Write-Debug "Loading server channel metadata from path $payLoadFilePath"
+                [xml]$payloadXML = Get-Content $payLoadFilePath  
+            }
+        } else {
+            $payloadXML = [xml]$payLoad
+        }
+
+        $uri = $serverUrl + '/api/server/channelMetadata'
+        $headers = @{}
+        $headers.Add("Accept","application/xml")  
+
+        Write-Debug "PUT to Mirth $uri "
+
+        try {
+            # Returns the response gotten from the server (we pass it on).
+            #
+            Invoke-RestMethod -WebSession $session -Uri $uri -Method PUT  -ContentType 'application/xml'  -TimeoutSec 20 -Body $payloadXML.OuterXml
+        }
+        catch [System.Net.WebException] {
+            throw $_
+        }
+    } 
+    END { 
+        Write-Debug "Set-MirthServerChannelMetadata Ending"
+    }    
+}  # Set-MirthServerChannelMetadata 
+
 function global:Get-MirthChannelTags {
     <#
     .SYNOPSIS
@@ -2106,6 +2344,13 @@ function global:Set-MirthTaggedChannels {
                 $newTag = New-Object -TypeName xml
                 $newTag.AppendChild($newTag.ImportNode($foundTag, $true)) | Out-Null
                 $targetTag = $newTag
+            } else { 
+                # The tag id does not exist, so they must be trying to add
+                # ensure that the tagName parameter was also set
+                Write-Debug "Adding tagId: $tagId"
+                if ((-not $PSBoundParameters.containsKey("tagName")) -or ([string]::IsNullOrEmpty($tagName))) { 
+                    Throw "A tagName must be provided to add a new tag!"
+                }
             }            
         } 
         if ($null -eq $targetTag) {
@@ -3255,6 +3500,276 @@ function global:Get-MirthServerProperties {
 <#        Channel Functions                                                                 #>
 <############################################################################################>
 
+function global:Set-MirthChannelProperties { 
+    <#
+    .SYNOPSIS
+        Sets channel properties for a list of channels, or all channels, deployed on the target server.
+
+    .DESCRIPTION
+        Only the parameters that are passed in are set.  The primary properties are 
+
+        MessageStoreMode
+
+        DEVELOPMENT - Content: All; Metadata: All; Durable Message Delivery On, 
+        PRODUCTION  - Content: Raw,Encoded,Sent,Response,Maps; Metadata: All; Durable Message Delivery: On
+        RAW         - Content: Raw; Metadata: All; Durable Message Delivery: Reprocess Only
+        METADATA    - Content: (none); Metadata: All; Durable Message Delivery: Off
+        DISABLED    - Content: (none); Metadata: (none); Durable Message Delivery: Off
+
+        And there are performance/storage consequences for the mirth server in how these are 
+        set.  Development offers the lowest performance with most data retained and highest storage requirements.
+        Disabled offers the maximum performance, lowest amount of data retained, and lowest storage requirements.
+
+        There are also trade-offs to be considered when reducing the data retained as regards troubleshooting.
+        In QA/Development tiers it is usually necessary maintain data for development and validation.  In other
+        environments it is only necessary when troubleshooting specific issues.  It may be better to keep channels
+        running at higher performance levels and only enable DEVELOPMENT mode when it is necessary to troubleshoot 
+        an issue.
+
+    .INPUTS
+        A -session              - WebRequestSession object is required. See Connect-Mirth.
+        [string[]] $channelIds  - Optional list of channel ids, if omitted all channels are updated.
+        Pass in only the properties you wish to set.
+
+    .OUTPUTS
+
+    .EXAMPLE
+        Set-MirthChannelProperties  -messageStorageMode PRODUCTION -clearGlobalChannelMap $True -pruneMetaDataDays 30 -pruneContentDays 15  -removeOnlyFilteredOnCompletion $True  
+
+    .LINK
+
+    .NOTES
+        This command essentially fetches the list of channels specified, or all channels, and then 
+        updates the specified channel properties, only if they were explicitly specified as parameters.
+
+        There are many parameters.  Consider using splatting.
+
+        It does NOT deploy the modified channels.  There may be consequences to deploying channels;  it may cause 
+        unintended polls for channels that poll once on deployment.  Therefore, this command does not deploy.
+        It is left up to the calling client code to know whether or not they should deploy the channels at this
+        time.  The client code would need to call redeploy the affected channels.
+
+
+    #> 
+    [CmdletBinding()] 
+    PARAM (
+         # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline=$True)]
+        [MirthConnection]$connection = $currentConnection,
+
+        # The id of the channels to be set to the specified message storage mode, empty for all
+        [Parameter(ValueFromPipelineByPropertyName=$True)]
+        [string[]]$channelIds,
+
+        # If true, the channel is enabled and can be deployed
+        [Parameter()]
+        [bool] $enabled,  
+
+        # The messages storage mode setting to be activated
+        [Parameter()]
+        [MirthMsgStorageMode] $messageStorageMode,
+
+        # clear the global channel map on deployment if true
+        [Parameter()]
+        [bool] $clearGlobalChannelMap,
+
+        # encrypt the data if true
+        [Parameter()]
+        [bool] $encryptData,
+
+        # remove content on successful completion if true
+        [Parameter()]
+        [bool] $removeContentOnCompletion,
+
+        # remove only filtered destinations on completion if true
+        [Parameter()]
+        [bool] $removeOnlyFilteredOnCompletion,
+
+        # remove attachments on completion
+        [Parameter()]
+        [bool] $removeAttachmentsOnCompletion,
+
+        # store attachments if true
+        [Parameter()]
+        [bool] $storeAttachments,
+
+        # If set to a positive value, the number of days before pruning metadata.  If negative, store indefinitely.
+        [Parameter()]
+        [int] $pruneMetaDataDays,
+
+        # If set to a positive value, the number of days before pruning content.  Cannot be greater than than pruneMetaDays. 
+        # If negative, then store content until metadata is removed.
+        [Parameter()]
+        [ValidateScript({
+            if ($PSBoundParameters.containsKey('pruneMetaDays')) {
+                # A pruneMetaDays parameter was provided along with pruneContentDays...
+                if ($_ -gt $pruneMetaDataDays) {
+                    Throw "pruneContentDays ($_) cannot be greater than pruneMetaDays!"
+                }
+                else { 
+                    $True
+                }
+            } else {
+                # they only specified pruneContentDays, so we'll have to check it at time of update
+                $True
+            }
+        })]
+        [int] $pruneContentDays,
+
+        # Allow message archiving
+        [Parameter()]
+        [bool] $allowArchiving,        
+   
+        # Saves the response from the server as a file in the current location.
+        [Parameter()]
+        [switch]$saveXML,
+
+        # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
+        [Parameter()]
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
+
+        # Dumps the response from the server to the host console for visual inspection.
+        [Parameter()]
+        [switch]$quiet = $false
+    ) 
+    BEGIN { 
+        Write-Debug "Set-MirthChannelProperties Beginning"
+    }
+    PROCESS { 
+        [xml] $channelList = Get-MirthChannels -connection $connection -targetId $channelIds -quiet
+        $channelNodes = $channelList.SelectNodes("/list/channel")
+        Write-Debug "There are $($channelNodes.count) channels to be processed."
+        foreach ($channelNode in $channelNodes) {
+            Write-Debug "Updating message properties for channel [$($channelNode.id)] $($channelNode.name)"
+            if ($PSBoundParameters.containsKey('messageStorageMode')) {
+                Write-Debug "Updating messageStorageMode"
+                $channelNode.properties.messageStorageMode = $messageStorageMode.toString()
+            }
+            if ($PSBoundParameters.containsKey('clearGlobalChannelMap')) {
+                Write-Debug "Updating clearGlobalChannelMap"
+                $channelNode.properties.clearGlobalChannelMap = $clearGlobalChannelMap.ToString()
+            }
+            if ($PSBoundParameters.containsKey('encryptData')) {
+                Write-Debug "Updating encryptData"
+                $channelNode.properties.encryptData = $encryptData.ToString()
+            }
+            if ($PSBoundParameters.containsKey('removeContentOnCompletion')) {
+                Write-Debug "Updating removeContentOnCompletion"
+                $channelNode.properties.removeContentOnCompletion = $removeContentOnCompletion.ToString()
+            }
+            if ($PSBoundParameters.containsKey('removeOnlyFilteredOnCompletion')) {
+                Write-Debug "Updating removeOnlyFilteredOnCompletion"
+                $channelNode.properties.removeOnlyFilteredOnCompletion = $removeOnlyFilteredOnCompletion.ToString()
+            }
+            if ($PSBoundParameters.containsKey('removeAttachmentsOnCompletion')) {
+                Write-Debug "Updating removeAttachmentsOnCompletion"
+                $channelNode.properties.removeAttachmentsOnCompletion = $removeAttachmentsOnCompletion.ToString()
+            }                          
+            if ($PSBoundParameters.containsKey('storeAttachments')) {
+                Write-Debug "Updating storeAttachments"
+                $channelNode.properties.storeAttachments = $storeAttachments.ToString()
+            }
+            # were we passed an exportData parameter   
+            if (($PSBoundParameters.containsKey('enabled')) -or
+                ($PSBoundParameters.containsKey('pruneMetaDataDays'))  -or 
+                ($PSBoundParameters.containsKey('pruneContentDays'))  -or
+                ($PSBoundParameters.containsKey('allowArchiving'))) { 
+                Write-Host "Searching for pruningSettings node"
+                [Xml.XmlElement] $psNode = $channelNode.SelectSingleNode("exportData/metadata/pruningSettings")
+                if ($null -ne $psNode) {
+                    Write-Debug "pruningSettings node found..."
+                    if ($PSBoundParameters.containsKey('enabled')) {
+                        Write-Debug "Updating enabled"
+                        $channelNode.exportData.metadata.enabled = $enabled.ToString()
+                    }  
+                    if ($PSBoundParameters.containsKey('pruneMetaDataDays')) {
+                        Write-Debug "Updating pruneMetaDataDays"
+                        $pruneMetaDataDaysNode = $psNode.SelectSingleNode("pruneMetaDataDays")
+
+                        if ($pruneMetaDataDays -lt 0) { 
+                            # indefinite, remove the pruneMetaDataDays element, leaving nothing
+                            # Write-Debug "Fetching pruneMetaDataDays node for deletion"
+                            # $pruneMetaDataDaysNode = $psNode.SelectSingleNode("pruneMetaDataDays")
+                            if ($null -ne $pruneMetaDataDaysNode) { 
+                                Write-Debug "Removing pruneMetaDaysNode"
+                                $psNode.removeChild($pruneMetaDataDaysNode) | Out-Null
+                            } else { 
+                                Write-Debug "There is no pruneMetaDaysNode node to remove"
+                            }  
+                        } else {
+                            # updating
+                            if (-not $PSBoundParameters.containsKey('pruneContentDays')) { 
+                                # no validation has been performed
+                                $pruneContentDays = $channelNode.exportData.metadata.pruningSettings.pruneContentDays
+                                if ($null -ne $pruneContentDays) { 
+                                    if ($pruneContentDays -gt $pruneMetaDataDays) { 
+                                        Throw "pruneMetaDataData value specified [$($pruneMetaDataDays)] is less than current pruneContentDays [$($pruneContentDays)]! Increase or specify pruneContentDays parameter."
+                                    }
+                                }
+                            }
+                            if ($null -ne $pruneMetaDataDaysNode) { 
+                                Write-Debug "Updating pruneMetaDataDays node"
+                                $channelNode.exportData.metadata.pruningSettings.pruneMetaDataDays = $pruneMetaDataDays.ToString()
+                            } else { 
+                                # add pruneMetaDataDays here
+                                $pruneMetaDataDaysNode = $channelList.CreateElement('pruneMetaDataDays')
+                                $pruneMetaDataDaysNode.set_InnerText($pruneMetaDataDays.ToString())
+                                $pruneMetaDataDaysNode = $psNode.AppendChild($pruneMetaDataDaysNode)
+                            } 
+                           
+                        }
+                    }
+                    if ($PSBoundParameters.containsKey('pruneContentDays')) {
+                        Write-Debug "Updating pruneContentDays"
+                        $pruneContentDaysNode = $psNode.SelectSingleNode("pruneContentDays")
+                        if ($pruneContentDays -lt 0) { 
+                            if ($null -ne $pruneContentDaysNode) { 
+                                Write-Debug "Removing pruneContentDaysNode"
+                                $psNode.removeChild($pruneContentDaysNode)  | Out-Null
+                            } else { 
+                                Write-Debug "There is no pruneContentDaysNode node to remove"
+                            }                 
+                        } else { 
+                            # updating
+                            if (-not $PSBoundParameters.containsKey('pruneMetaDataDays')) { 
+                                # no validation has been performed
+                                $pruneMetaDataDays = $channelNode.exportData.metadata.pruningSettings.pruneMetaDataDays
+                                if ($null -ne $pruneContentDays) { 
+                                    if ($pruneContentDays -gt $pruneMetaDataDays) { 
+                                        Throw "pruneMetaDataData value specified [$($pruneMetaDataDays)] is less than current pruneContentDays [$($pruneContentDays)]! Increase or specify pruneContentDays parameter."
+                                    }
+                                }
+                            }
+                            if ($null -ne $pruneContentDaysNode) { 
+                                Write-Debug "Updating existing pruneContentDays node"                
+                                $channelNode.exportData.metadata.pruningSettings.pruneContentDays = $pruneContentDays.ToString()
+                            } else { 
+                                # add a pruneContentDays node and update
+                                $pruneContentDaysNode = $channelList.CreateElement('pruneContentDays')
+                                $pruneContentDaysNode.set_InnerText($pruneContentDays.ToString())
+                                $pruneContentDaysNode = $psNode.AppendChild($pruneContentDaysNode)                                
+                            } 
+
+                        }
+                    }   
+                    if ($PSBoundParameters.containsKey('allowArchiving')) {
+                        Write-Debug "Updating archiveEnabled"
+                        $channelNode.exportData.metadata.pruningSettings.archiveEnabled = $allowArchiving.ToString()
+                    }  
+                } else { 
+                    # If passed a channel xml which has not been merged with metadata,if so, we'll warn and skip
+                    Write-Warn "The channel has no pruningSettings node, skipping."
+                }
+            }  # if an exportdata parameter was passed                                  
+            Import-MirthChannel -connection $connection -payLoad $channelNode.OuterXml | Out-Null
+        }  #  foreach $channelNode
+
+    }
+    END { 
+        Write-Debug "Set-MirthChannelProperties Ending"
+    }
+}  # Set-MirthChannelProperties
+
 function global:Get-MirthChannelMsgById { 
     <#
     .SYNOPSIS
@@ -3863,8 +4378,9 @@ function global:Get-MirthChannels {
         Gets a list of all channels, or multiple channels by ID
 
     .DESCRIPTION
-        Return xml object describing a list of the requested channels.
-
+        Return xml object describing a list of the requested channels.  Also fetches 
+        server channel metadata and merges into the channel xml as a /channel/exportData
+        element, just as if it were exported from the mirth gui.
 
     .INPUTS
         A -session  WebRequestSession object is required. See Connect-Mirth.
@@ -4037,6 +4553,76 @@ function global:Get-MirthChannels {
         try { 
             $r = Invoke-RestMethod -Uri $uri -Method GET -WebSession $session
             Write-Debug "...done."
+            # we have some result, so get the channel metadata map
+            Write-Debug "Fetching Server channel metadata map"
+            $channelMetaDataMap = Get-MirthServerChannelMetadata -connection $connection -asHashtable -quiet:$quiet -saveXML:$saveXML
+            Write-Debug "Channel Metadata map contains $($channelMetaDataMap.Count) entries..."
+
+            $currentTagSet = Get-MirthChannelTags -connection $connection -quiet:$quiet -saveXML:$saveXML
+            $channelTagMap = @{}
+            Write-Debug "Building channel to tag map..."
+            foreach ($channelTag in $currentTagSet.set.channelTag) { 
+                $channelIds = $channelTag.SelectNodes("channelIds/string")
+                Write-Debug "There are $($channelIds.Count) channelIds for this tag [$($channelTag.name)]"
+                foreach ($channelId in $channelIds) {
+                    $key = $channelId.InnerText
+                    Write-Debug "Key inserting into channelTagMap: $key"
+                    if ($channelTagMap.containsKey($key)) {
+                        $channelTagMap[$key] += $channelTag
+                    } else { 
+                        $channelTagMap[$key] = @($channelTag)
+                    }
+                    Write-Debug "There are now $($channelTagMap[ $key].Count) tag entries for channelID  $key in the channelTagMap"
+                }
+            }
+            Write-Debug "There are $($channelTagMap.count) total entries in the channelTagMap"
+
+            # for each channel, we will merge in metadata and channelTags as if exported from gui
+            foreach ($channel in $r.list.channel) {
+                Write-Debug "Merging export metadata for $($channel.name)"
+                $channelId = $channel.id
+                $exportNode = $r.CreateElement('exportData')
+                $exportNode = $channel.AppendChild($exportNode)
+
+                $metaDataNode = $r.CreateElement('metadata')
+                $metaDataNode = $exportNode.AppendChild($metaDataNode)
+                $entry = $channelMetaDataMap[$($channel.id)]
+                if ($null -ne $entry) {
+                    # enabled
+                    $enabledNode = $entry.SelectSingleNode("enabled")
+                    $enabledNode = $r.ImportNode($enabledNode,$true) 
+                    $enabledNode = $metaDataNode.AppendChild($enabledNode)
+                    # lastModified
+                    $lastModifiedNode = $entry.SelectSingleNode("lastModified")
+                    $lastModifiedNode = $r.ImportNode($lastModifiedNode,$true) 
+                    $lastModifiedNode = $metaDataNode.AppendChild($lastModifiedNode)
+                    # pruningSettings
+                    $pruningSettingsNode = $entry.SelectSingleNode("pruningSettings")
+                    $pruningSettingsNode = $r.ImportNode($pruningSettingsNode,$true) 
+                    $pruningSettingsNode = $metaDataNode.AppendChild($pruningSettingsNode)
+                } else { 
+                    Write-Warning "No metadata was found!"
+                }
+                Write-Debug "All channel metadata processed"
+
+                Write-Debug "Processing channelTags..."
+                $channelTagArray = $channelTagMap[$channelId]
+                if (($null -ne $channelTagArray) -and ($channelTagArray.Count -gt 0)) { 
+                    Write-Debug "There are $($channelTagArray.Count) channelTags to be merged."
+                    $channelTagsNode = $r.CreateElement('channelTags')
+                    $channelTagsNode = $exportNode.AppendChild($channelTagsNode)
+                    foreach ($channelTag in $channelTagArray) { 
+                        Write-Debug "Importing and appending channelTag"
+                        $channelIdNode = $r.ImportNode($channelTag,$true)
+                        $channelTagsNode.AppendChild($channelIdNode) | Out-Null
+                    }
+                    Write-Debug "channel tag data processed"
+                } else { 
+                    Write-Debug "There were no channelTags associated with this channel id."
+                }
+                
+            }  # foreach channel in the list
+
 
             if ($saveXML) { 
                 if ($exportChannels) {
@@ -4325,6 +4911,7 @@ function global:Import-MirthChannel {
                 [xml]$channelXML = Get-Content $payLoadFilePath  
             }
         } else {
+            Write-Debug "Import channel payload delivered via string parameter"
             $channelXML = [xml]$payLoad
         }
 
