@@ -1100,8 +1100,7 @@ function global:Get-MirthServerAbout {
     }
     PROCESS {
         if ($null -eq $connection) { 
-            Write-Error "You must first obtain a MirthConnection by invoking Connect-Mirth"
-            return    
+            Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"    
         }          
         [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
         $serverUrl = $connection.serverUrl
@@ -1200,8 +1199,7 @@ function global:Get-MirthServerConfig {
     }
     PROCESS {
         if ($null -eq $connection) { 
-            Write-Error "You must first obtain a MirthConnection by invoking Connect-Mirth"
-            return    
+            Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"    
         }          
         [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
         $serverUrl = $connection.serverUrl
@@ -1283,8 +1281,7 @@ function global:Get-MirthServerVersion {
     }
     PROCESS {
         if ($null -eq $connection) { 
-            Write-Error "You must first obtain a MirthConnection by invoking Connect-Mirth"
-            return    
+            Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"    
         }          
         [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
         $serverUrl = $connection.serverUrl
@@ -1368,8 +1365,7 @@ function global:Get-MirthServerTime {
     }
     PROCESS {
         if ($null -eq $connection) { 
-            Write-Error "You must first obtain a MirthConnection by invoking Connect-Mirth"
-            return    
+            Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"    
         }          
         [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
         $serverUrl = $connection.serverUrl
@@ -1484,8 +1480,7 @@ function global:Get-MirthChannelGroups {
     }
     PROCESS { 
         if ($null -eq $connection) { 
-            Write-Error "You must first obtain a MirthConnection by invoking Connect-Mirth"
-            return    
+            Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"    
         }  
         [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
         $serverUrl = $connection.serverUrl
@@ -1806,8 +1801,7 @@ function global:Get-MirthServerChannelMetadata {
     }
     PROCESS { 
         if ($null -eq $connection) { 
-            Write-Error "You must first obtain a MirthConnection by invoking Connect-Mirth"
-            return    
+            Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"    
         }        
         [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
         $serverUrl = $connection.serverUrl
@@ -2036,8 +2030,7 @@ function global:Get-MirthChannelTags {
     }
     PROCESS { 
         if ($null -eq $connection) { 
-            Write-Error "You must first obtain a MirthConnection by invoking Connect-Mirth"
-            return    
+            Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"    
         }        
         [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
         $serverUrl = $connection.serverUrl
@@ -2302,8 +2295,7 @@ function global:Set-MirthTaggedChannels {
     }
     PROCESS { 
         if ($null -eq $connection) { 
-            Write-Error "You must first obtain a MirthConnection by invoking Connect-Mirth"
-            return    
+            Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"    
         }
 
         # if the list of channels is empty, then go and fetch a complete list of 
@@ -2541,8 +2533,7 @@ function global:Get-MirthConfigMap {
     }
     PROCESS { 
         if ($null -eq $connection) { 
-            Write-Error "You must first obtain a MirthConnection by invoking Connect-Mirth"
-            return    
+            Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"    
         }          
         [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
         $serverUrl = $connection.serverUrl
@@ -2658,8 +2649,7 @@ function global:Set-MirthConfigMap {
     }
     PROCESS {
         if ($null -eq $connection) { 
-            Write-Error "You must first obtain a MirthConnection by invoking Connect-Mirth"
-            return    
+            Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"    
         }
         [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
         $serverUrl = $connection.serverUrl
@@ -2789,8 +2779,7 @@ function global:Get-MirthExtensionProperties {
     }
     PROCESS {
         if ($null -eq $connection) { 
-            Write-Error "You must first obtain a MirthConnection by invoking Connect-Mirth"
-            return    
+            Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"    
         }          
         [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
         $serverUrl = $connection.serverUrl
@@ -2907,8 +2896,7 @@ function global:Set-MirthExtensionProperties {
     }
     PROCESS {
         if ($null -eq $connection) { 
-            Write-Error "You must first obtain a MirthConnection by invoking Connect-Mirth"
-            return    
+            Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"    
         }          
         [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
         $serverUrl = $connection.serverUrl
@@ -3025,8 +3013,7 @@ function global:Get-MirthGlobalScripts {
     }
     PROCESS {
         if ($null -eq $connection) { 
-            Write-Error "You must first obtain a MirthConnection by invoking Connect-Mirth"
-            return    
+            Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"    
         }          
         [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
         $serverUrl = $connection.serverUrl
@@ -3276,8 +3263,7 @@ function global:Get-MirthServerSettings {
     }
     PROCESS {
         if ($null -eq $connection) { 
-            Write-Error "You must first obtain a MirthConnection by invoking Connect-Mirth"
-            return    
+            Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"    
         }
         [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
         $serverUrl = $connection.serverUrl
@@ -3370,8 +3356,7 @@ function global:Set-MirthServerSettings {
     }
     PROCESS {
         if ($null -eq $connection) { 
-            Write-Error "You must first obtain a MirthConnection by invoking Connect-Mirth"
-            return    
+            Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"    
         }
         [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
         $serverUrl = $connection.serverUrl
@@ -3826,8 +3811,7 @@ function global:Get-MirthChannelMsgById {
     PROCESS { 
         #GET /channels/{channelId}/messages/maxMessageId
         if ($null -eq $connection) { 
-            Write-Error "You must first obtain a MirthConnection by invoking Connect-Mirth"
-            return    
+            Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"    
         }          
         [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
         $serverUrl = $connection.serverUrl
@@ -3925,8 +3909,7 @@ function global:Get-MirthChannelMaxMsgId {
     PROCESS { 
         #GET /channels/{channelId}/messages/maxMessageId
         if ($null -eq $connection) { 
-            Write-Error "You must first obtain a MirthConnection by invoking Connect-Mirth"
-            return    
+            Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"    
         }          
         [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
         $serverUrl = $connection.serverUrl
@@ -4035,8 +4018,7 @@ function global:Send-MirthDeployChannels {
     }
     PROCESS { 
         if ($null -eq $connection) { 
-            Write-Error "You must first obtain a MirthConnection by invoking Connect-Mirth"
-            return    
+            Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"    
         }          
         [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
         $serverUrl = $connection.serverUrl
@@ -4159,8 +4141,7 @@ function global:Send-MirthRedeployAllChannels {
     }
     PROCESS { 
         if ($null -eq $connection) { 
-            Write-Error "You must first obtain a MirthConnection by invoking Connect-Mirth"
-            return    
+            Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"    
         }          
         [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
         $serverUrl = $connection.serverUrl
@@ -4307,8 +4288,7 @@ function global:Send-MirthUndeployChannels {
     }
     PROCESS { 
         if ($null -eq $connection) { 
-            Write-Error "You must first obtain a MirthConnection by invoking Connect-Mirth"
-            return    
+            Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"    
         }          
         [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
         $serverUrl = $connection.serverUrl
@@ -4531,8 +4511,7 @@ function global:Get-MirthChannels {
     }
     PROCESS {
         if ($null -eq $connection) { 
-            Write-Error "You must first obtain a MirthConnection by invoking Connect-Mirth"
-            return    
+            Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"    
         }           
         [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
         $serverUrl = $connection.serverUrl
@@ -4595,11 +4574,11 @@ function global:Get-MirthChannels {
                     # lastModified
                     $lastModifiedNode = $entry.SelectSingleNode("lastModified")
                     $lastModifiedNode = $r.ImportNode($lastModifiedNode,$true) 
-                    $lastModifiedNode = $metaDataNode.AppendChild($lastModifiedNode)
+                    $lastModifiedNode = $metaDataNode.AppendChild($lastModifiedNode,$True)
                     # pruningSettings
                     $pruningSettingsNode = $entry.SelectSingleNode("pruningSettings")
                     $pruningSettingsNode = $r.ImportNode($pruningSettingsNode,$true) 
-                    $pruningSettingsNode = $metaDataNode.AppendChild($pruningSettingsNode)
+                    $pruningSettingsNode = $metaDataNode.AppendChild($pruningSettingsNode,$True)
                 } else { 
                     Write-Warning "No metadata was found!"
                 }
@@ -4610,11 +4589,11 @@ function global:Get-MirthChannels {
                 if (($null -ne $channelTagArray) -and ($channelTagArray.Count -gt 0)) { 
                     Write-Debug "There are $($channelTagArray.Count) channelTags to be merged."
                     $channelTagsNode = $r.CreateElement('channelTags')
-                    $channelTagsNode = $exportNode.AppendChild($channelTagsNode)
+                    $channelTagsNode = $exportNode.AppendChild($channelTagsNode,$True)
                     foreach ($channelTag in $channelTagArray) { 
                         Write-Debug "Importing and appending channelTag"
                         $channelIdNode = $r.ImportNode($channelTag,$true)
-                        $channelTagsNode.AppendChild($channelIdNode) | Out-Null
+                        $channelTagsNode.AppendChild($channelIdNode,$True) | Out-Null
                     }
                     Write-Debug "channel tag data processed"
                 } else { 
@@ -4895,8 +4874,7 @@ function global:Import-MirthChannel {
     }
     PROCESS {
         if ($null -eq $connection) { 
-            Write-Error "You must first obtain a MirthConnection by invoking Connect-Mirth"
-            return    
+            Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"    
         }          
         [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
         $serverUrl = $connection.serverUrl
@@ -5032,8 +5010,7 @@ function global:Get-MirthCodeTemplateLibraries {
     }
     PROCESS { 
         if ($null -eq $connection) { 
-            Write-Error "You must first obtain a MirthConnection by invoking Connect-Mirth"
-            return    
+            Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"    
         }  
         [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
         $serverUrl = $connection.serverUrl
@@ -5266,8 +5243,7 @@ function global:Set-MirthSSLManagerKeystores {
     }
     PROCESS {
         if ($null -eq $connection) { 
-            Write-Error "You must first obtain a MirthConnection by invoking Connect-Mirth"
-            return    
+            Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"    
         }  
         $payLoad = New-MirthSSLMgrPropertiesPayload -keyStore $keyStore -keyStorePath $keyStorePath -keyStorePass $keyStorePass -trustStore $trustStore -trustStorePath $trustStorePath -quiet:$quiet -saveXML:$saveXML
         return Set-MirthExtensionProperties -connection $connection -targetId "SSL Manager" -payLoad $payLoad -quiet:$quiet
@@ -5368,8 +5344,7 @@ function global:Get-MirthKeyStoreCertificates {
     }
     PROCESS {
         if ($null -eq $connection) { 
-            Write-Error "You must first obtain a MirthConnection by invoking Connect-Mirth"
-            return    
+            Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"    
         }          
         [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
         $serverUrl = $connection.serverUrl
@@ -5450,8 +5425,7 @@ function global:Get-MirthKeyStoreBytes {
     }
     PROCESS {
         if ($null -eq $connection) { 
-            Write-Error "You must first obtain a MirthConnection by invoking Connect-Mirth"
-            return    
+            Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"    
         }          
         [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
         $serverUrl = $connection.serverUrl
@@ -5572,7 +5546,6 @@ function global:Connect-Mirth {
     }
     END {
         Write-Debug "Connect-Mirth Ending>..."
-
     }
 
 }  # Connect-Mirth
@@ -5580,11 +5553,13 @@ function global:Connect-Mirth {
 function global:Set-MirthUserPassword {
     <#
     .SYNOPSIS
-        Updates the password for the mirth user specified by "targetId" to the 
-        password specified by the parameter, newPassword, defaulting to "changeit"
-        if none is provided. 
+        Update Mirth user passwords
 
     .DESCRIPTION
+        Updates the password for the mirth user specified by "targetId" to the 
+        password specified by the parameter, newPassword, defaulting to "changeit"
+        if none is provided.  It can perform this action for one user, by id or name,
+        or for all users if no targetId is provided.
 
     .INPUTS
         A -session  WebRequestSession object is required. See Connect-Mirth.
@@ -5594,9 +5569,6 @@ function global:Set-MirthUserPassword {
     .EXAMPLE
         Connect-Mirth | Set-MirthUserPassword -targetId admin -newPassword M1rth@dm1n!! 
         Connect-Mirth -userPass M1rth@dm1n!! | Set-MirthUserPassword -targetId admin -newPassword admin -saveXML
-
-    .LINK
-        Links to further documentation.
 
     .NOTES
 
@@ -5633,36 +5605,43 @@ function global:Set-MirthUserPassword {
     }
     PROCESS { 
         if ($null -eq $connection) { 
-            Write-Error "You must first obtain a MirthConnection by invoking Connect-Mirth"
-            return    
+            Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"    
         }          
         [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
         $serverUrl = $connection.serverUrl
 
-        $u = Get-MirthUsers -connection $connection -targetId $targetId -saveXML:$saveXML -quiet:$quiet
-        $msg = "Changing password user: " + $u.user.id + ") " + $u.user.username + " assigned to " + $u.user.firstName + " " + $u.user.lastName
-        Write-Debug $msg
-            
-        $uri = $serverUrl + '/api/users/' + $u.user.id + '/password'
-        Write-Debug "PUT to Mirth at $uri"
-        try { 
-            $r = Invoke-RestMethod -Uri $uri -WebSession $session -Method PUT -ContentType 'text/plain' -Body $newPassword
-            Write-Debug "...Password set"
-            if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder
-                $o = Join-Path $o $outFile 
-                Write-Debug "Saving Output to $o"     
-                Set-Content -Path $o -Value "$targetId : $newPassword" 
-                Write-Debug "Done!" 
-            }
-            if (-NOT $quiet) { 
-                Write-Host $r.OuterXml
-            }
+        $ulist = Get-MirthUsers -connection $connection -targetId $targetId -saveXML:$saveXML -quiet:$quiet
+        Write-Host "ulist"
+        Write-Host $ulist.OuterXml
+        if ($null -ne $ulist) {
+            $users = $ulist.SelectNodes("/list/user")
         }
-        catch {
-            $msg = $MyInvocation.MyCommand + " Failed, Response: " + $_.Exception.Response.StatusCode.value__   + ' : ' + $_.Exception.Response.StatusDescription
-            Write-Error $msg
-        }
+        Write-Debug "There were $($users.Count) users retrieved for set password command"
+
+        foreach ($u in $users) {
+            Write-Debug "Changing password user: $($u.id): $($u.username) assigned to $()  $($u.lastName)"
+                
+            $uri = $serverUrl + '/api/users/' + $u.id + '/password'
+            Write-Debug "PUT to Mirth at $uri"
+            try { 
+                $r = Invoke-RestMethod -Uri $uri -WebSession $session -Method PUT -ContentType 'text/plain' -Body $newPassword
+                Write-Debug "...Password set"
+                if ($saveXML) { 
+                    [string]$o = Get-PSMirthOutputFolder
+                    $o = Join-Path $o $outFile 
+                    Write-Debug "Saving Output to $o"     
+                    Set-Content -Path $o -Value "$targetId : $newPassword" 
+                    Write-Debug "Done!" 
+                }
+                if (-NOT $quiet) { 
+                    Write-Host $r
+                }
+            }
+            catch {
+                $msg = $MyInvocation.MyCommand + " Failed, Response: " + $_.Exception.Response.StatusCode.value__   + ' : ' + $_.Exception.Response.StatusDescription
+                Write-Error $msg
+            }
+        }  # For each user selected
     } 
     END { 
         Write-Debug "Set-MirthUserPassword Ending" 
@@ -5678,7 +5657,6 @@ function global:Test-MirthUserLogged {
     .DESCRIPTION
         Tests the user to see if logged in.
 
-
     .INPUTS
         A -session  WebRequestSession object is required. See Connect-Mirth.
         A valid Mirth user id must be provided in the targetId parameter.
@@ -5688,9 +5666,6 @@ function global:Test-MirthUserLogged {
 
     .EXAMPLE
         Connect-Mirth | Test-MirthUserLogged -targetId 1 -quiet
-
-    .LINK
-        Links to further documentation.
 
     .NOTES
 
@@ -5725,8 +5700,7 @@ function global:Test-MirthUserLogged {
     }
     PROCESS {
         if ($null -eq $connection) { 
-            Write-Error "You must first obtain a MirthConnection by invoking Connect-Mirth"
-            return    
+            Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"    
         }          
         [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
         $serverUrl = $connection.serverUrl
@@ -5778,7 +5752,6 @@ function global:Get-MirthLoggedUsers {
     .DESCRIPTION
         Returns a list of mirth users that are currently logged in.
 
-
     .INPUTS
         A -session  WebRequestSession object is required. See Connect-Mirth.
         -targetId if omitted, then all channel groups are returned.  Otherwise, only the channel groups with the 
@@ -5804,9 +5777,7 @@ function global:Get-MirthLoggedUsers {
         </list>
 
     .EXAMPLE
-        
-    .LINK
-        Links to further documentation.
+        Connect-Mirth | Get-MirthLoggedUsers
 
     .NOTES
 
@@ -5835,13 +5806,11 @@ function global:Get-MirthLoggedUsers {
         [switch]$quiet = $false
     ) 
     BEGIN {
-        Write-Debug 'Get-MirthLoggedUsers Beginning'
-        
+        Write-Debug 'Get-MirthLoggedUsers Beginning'  
     }
     PROCESS { 
         if ($null -eq $connection) { 
-            Write-Error "You must first obtain a MirthConnection by invoking Connect-Mirth"
-            return    
+            Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"    
         }  
         [xml]$loggedUsers = '<list></list>' 
         $allUsers = Get-MirthUsers -connection $connection 
@@ -5866,6 +5835,7 @@ function global:Get-MirthLoggedUsers {
         return $loggedUsers
     }
     END { 
+        Write-Debug 'Get-MirthLoggedUsers Ending'
     }
 
 }  # Get-MirthLoggedUsers
@@ -5882,7 +5852,7 @@ function global:Get-MirthUsers {
         A -session  WebRequestSession object is required. See Connect-Mirth.
 
     .OUTPUTS
-        Returns an XML object that is either a list of user elements or a single user element.
+        Returns an XML object that is a list of user elements.
 
             <list>
               <user>
@@ -5900,20 +5870,6 @@ function global:Get-MirthUsers {
                 </lastLogin>
               </user>
                 [...]
-              <user>
-                <id>14</id>
-                <username>myNewUserToo</username>
-                <email>andy@datasprite.com</email>
-                <firstName>Fred</firstName>
-                <lastName>Flintstone</lastName>
-                <organization>DataSprite</organization>
-                <description>This is a test user, added from PowerShell.</description>
-                <phoneNumber>210-724-2457</phoneNumber>
-                <lastLogin>
-                  <time>1590094200465</time>
-                  <timezone>America/Chicago</timezone>
-                </lastLogin>
-              </user>
             </list>
 
     .EXAMPLE
@@ -5954,15 +5910,16 @@ function global:Get-MirthUsers {
     }
     PROCESS {
         if ($null -eq $connection) { 
-            Write-Error "You must first obtain a MirthConnection by invoking Connect-Mirth"
-            return    
+            Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"    
         }          
         [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
         $serverUrl = $connection.serverUrl
              
         $uri = $serverUrl + '/api/users'
+        $singleUser = $False
         if (-NOT [string]::IsNullOrEmpty($targetId)) { 
             Write-Debug 'Getting user by target identifier'
+            $singleUser = $True
             $uri = "$uri/$targetId"
         }
         Write-Debug "Invoking GET Mirth  $uri "
@@ -5970,29 +5927,38 @@ function global:Get-MirthUsers {
             $r = Invoke-RestMethod -Uri $uri -Method GET -WebSession $session
             Write-Debug "...done."
 
+            if ($singleUser) { 
+                #wrap in a list element for consistency
+                Write-Debug "Wrapping single user in list for return"
+                $userNode = $r.SelectSingleNode("/user")
+                [Xml]$newXml = New-Object -TypeName xml
+                $listNode = $newXml.CreateElement("list")
+                $userNode = $listNode.OwnerDocument.ImportNode($userNode,$True)
+                $listNode.AppendChild($userNode) | Out-Null  
+                $newXml.AppendChild($listNode) | Out-Null
+
+                $r = $newXml
+            }
+
             if ($saveXML) { 
                 [string]$o = Get-PSMirthOutputFolder
                 #$o = $o + $outFile
                 $o = Join-Path $o $outFile 
-                Write-Debug "Saving Output to $o"
                 $r.save($o)     
-                Write-Debug "Done!" 
+                Write-Debug "Output saved to $o"
             }
             if (-NOT $quiet) { 
-                Write-Host $r.innerXml
+                Write-Host $r.OuterXml
             }
-            return $r
-                
+            return $r   
         }
         catch {
-            $msg = $MyInvocation.MyCommand + " Failed, Response: " + $_.Exception.Response.StatusCode.value__   + ' : ' + $_.Exception.Response.StatusDescription
-            Write-Error $msg
+            Write-Error $_
         }
     }
     END { 
         Write-Debug "Get-MirthUsers Ending"
     }
-
 }  # Get-MirthUsers
 
 function global:Set-MirthUser {
@@ -6066,8 +6032,7 @@ function global:Set-MirthUser {
     }
     PROCESS {
         if ($null -eq $connection) { 
-            Write-Error "You must first obtain a MirthConnection by invoking Connect-Mirth"
-            return    
+            Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"    
         }          
         [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
         $serverUrl = $connection.serverUrl
@@ -6203,8 +6168,7 @@ function global:Add-MirthUser {
     PROCESS { 
 
         if ($null -eq $connection) { 
-            Write-Error "You must first obtain a MirthConnection by invoking Connect-Mirth"
-            return    
+            Throw "You must first obtain a MirthConnection by invoking Connect-Mirth" 
         }          
         [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
         $serverUrl = $connection.serverUrl
@@ -6240,13 +6204,10 @@ function global:Add-MirthUser {
             if (-NOT $quiet) { 
                 Write-Host $r.OuterXml
             }
-
             Set-MirthUserPassword -connection $connection -targetId $userXML.user.username -newPassword $newPassword
-
         }
         catch {
             Write-Error $_
-
         }
 
     } 
@@ -6267,16 +6228,11 @@ function global:Remove-MirthUser {
         A -session  WebRequestSession object is required. See Connect-Mirth.
 
         $targetId   The id of the user to delete.
-                    NOte, the default admin user, id = 1,  cannot be deleted.
-
-
+                    Note, the default admin user, id = 1,  cannot be deleted.
 
     .OUTPUTS
 
     .EXAMPLE
-
-    .LINK
-        Links to further documentation.
 
     .NOTES
 
@@ -6306,8 +6262,7 @@ function global:Remove-MirthUser {
     }
     PROCESS {
         if ($null -eq $connection) { 
-            Write-Error "You must first obtain a MirthConnection by invoking Connect-Mirth"
-            return    
+            Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"  
         }          
         [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
         $serverUrl = $connection.serverUrl
@@ -6316,8 +6271,7 @@ function global:Remove-MirthUser {
             Write-Debug 'Getting user by target identifier'
             $uri = "$uri/$targetId"
         } else { 
-            Write-Error "A targetId is required!"
-            return $null
+            Throw "A targetId is required!"
         }
 
         $msg = "Deleting user: " + $targetId
@@ -6343,8 +6297,7 @@ function global:Remove-MirthUser {
             return $r
         }
         catch {
-            $msg = $MyInvocation.MyCommand + " Failed, Response: " + $_.Exception.Response.StatusCode.value__   + ' : ' + $_.Exception.Response.StatusDescription
-            Write-Error $msg
+            Write-Error $_
         }
     }
     END {
