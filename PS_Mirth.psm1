@@ -5611,8 +5611,6 @@ function global:Set-MirthUserPassword {
         $serverUrl = $connection.serverUrl
 
         $ulist = Get-MirthUsers -connection $connection -targetId $targetId -saveXML:$saveXML -quiet:$quiet
-        Write-Host "ulist"
-        Write-Host $ulist.OuterXml
         if ($null -ne $ulist) {
             $users = $ulist.SelectNodes("/list/user")
         }
