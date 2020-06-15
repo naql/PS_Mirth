@@ -49,8 +49,7 @@ class MirthServerSummary {
 
 # Set this to 'Continue' to display output from Write-Debug statements, 
 # or to 'SilentylyContinue' to suppress them.
-$DebugPreference = 'Continue'
-#$DebugPreference = 'SilentlyContinue'
+$DebugPreference = 'SilentlyContinue'
 
 # This is where the -saveXML flag will cause files to be saved.  It 
 # defaults to a subfolder in the current location.  Call Set-Mirth
@@ -64,6 +63,17 @@ Write-Host "Current PS_Mirth output folder is: " $savePath
 <#       PS-Mirth Functions                                                                 #>
 <############################################################################################>
 
+function Set-PSMirthDebug( [bool]$debug ) {
+    <#
+    .SYNOPSIS
+        Call to set the module $DebugPreference 
+    #> 
+    if ($debug) { 
+        $Script:DebugPreference = 'Continue'
+    } else { 
+        $Script:DebugPreference = 'SilentlyContinue'
+    }
+}
 function Set-PSMirthOutputFolder( $path ) {
     <#
     .SYNOPSIS
@@ -4562,23 +4572,27 @@ function global:Get-MirthChannels {
                 $channelId = $channel.id
                 $exportNode = $r.CreateElement('exportData')
                 $exportNode = $channel.AppendChild($exportNode)
-
+                Write-Debug "exportData node added"
                 $metaDataNode = $r.CreateElement('metadata')
                 $metaDataNode = $exportNode.AppendChild($metaDataNode)
+                Write-Debug "metadata node added"
                 $entry = $channelMetaDataMap[$($channel.id)]
                 if ($null -ne $entry) {
                     # enabled
+                    Write-Debug "setting enabled"
                     $enabledNode = $entry.SelectSingleNode("enabled")
                     $enabledNode = $r.ImportNode($enabledNode,$true) 
                     $enabledNode = $metaDataNode.AppendChild($enabledNode)
                     # lastModified
+                    Write-Debug "setting lastModified"
                     $lastModifiedNode = $entry.SelectSingleNode("lastModified")
                     $lastModifiedNode = $r.ImportNode($lastModifiedNode,$true) 
-                    $lastModifiedNode = $metaDataNode.AppendChild($lastModifiedNode,$True)
+                    $lastModifiedNode = $metaDataNode.AppendChild($lastModifiedNode)
                     # pruningSettings
+                    Write-Debug "setting pruningSettings"
                     $pruningSettingsNode = $entry.SelectSingleNode("pruningSettings")
                     $pruningSettingsNode = $r.ImportNode($pruningSettingsNode,$true) 
-                    $pruningSettingsNode = $metaDataNode.AppendChild($pruningSettingsNode,$True)
+                    $pruningSettingsNode = $metaDataNode.AppendChild($pruningSettingsNode)
                 } else { 
                     Write-Warning "No metadata was found!"
                 }
@@ -4589,11 +4603,11 @@ function global:Get-MirthChannels {
                 if (($null -ne $channelTagArray) -and ($channelTagArray.Count -gt 0)) { 
                     Write-Debug "There are $($channelTagArray.Count) channelTags to be merged."
                     $channelTagsNode = $r.CreateElement('channelTags')
-                    $channelTagsNode = $exportNode.AppendChild($channelTagsNode,$True)
+                    $channelTagsNode = $exportNode.AppendChild($channelTagsNode)
                     foreach ($channelTag in $channelTagArray) { 
                         Write-Debug "Importing and appending channelTag"
                         $channelIdNode = $r.ImportNode($channelTag,$true)
-                        $channelTagsNode.AppendChild($channelIdNode,$True) | Out-Null
+                        $channelTagsNode.AppendChild($channelIdNode) | Out-Null
                     }
                     Write-Debug "channel tag data processed"
                 } else { 
