@@ -32,7 +32,7 @@ If youi have Windows 10 with PowerShell 5.1 features installed, usage is simple.
 
         2. Copy the entire module folder into the Modules directory. If you download a zip of the project, be 
            sure to rename the extracted folder to "PS_Mirth".  So, the entire pathname would be:
-           $home\Documents\WindowsPowerShell\Modules
+           $home\Documents\WindowsPowerShell\Modules\PS_Mirth
 
            You can use any method to copy the folder, including Windows
            Explorer and Cmd.exe, as well as Windows PowerShell.
