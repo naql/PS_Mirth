@@ -30,7 +30,9 @@ If youi have Windows 10 with PowerShell 5.1 features installed, usage is simple.
 
                New-Item -Type Directory -Path $home\Documents\WindowsPowerShell\Modules
 
-        2. Copy the entire module folder into the Modules directory.
+        2. Copy the entire module folder into the Modules directory. If you download a zip of the project, be 
+           sure to rename the extracted folder to "PS_Mirth".  So, the entire pathname would be:
+           $home\Documents\WindowsPowerShell\Modules
 
            You can use any method to copy the folder, including Windows
            Explorer and Cmd.exe, as well as Windows PowerShell.
@@ -48,6 +50,9 @@ Usage
 -------------
 The cmdlets are intended to be used in conjunction with each other and from client powershell scripts.  They may be used in an interactive manner in a powershell terminal;  when a connection has been made, a session variable is available by default to all of the commands.
 
+From a powershell terminal type:  Import-Module PS_Mirth
+You should see the current PS_Mirth output folder displayed when the module is imported.  This will generally be a new folder called PS_Mirth_Output created under the current working directory when a cmdlet saves output.
+
 A session is obtained by using the Connect-Mirth command:
 
     -serverUrl https://localhost:8443 -user admin -userPass admin
@@ -58,6 +63,8 @@ You can also pipe a connection into commands:
 
     Connect-Mirth | Get-MirthSeverConfig -saveXML -outFile myServerBackup.xml 
     
+ At this point, you can play with various commands.  By default, PS_Mirth is verbose.  This was because it is also intended as a tool to explore the Mirth API and the responses that it sends. If you wish to suppress this, use the -quiet flag on all commands.  This is an administrative tool.  Be aware that there are some commands which could be considered "dangerous" in that they will apply changes en masse to all channels. 
+ 
  PowerShell is self-documenting.  Use the Get-Help command to see how to use the various commands and to see examples.
  
  
