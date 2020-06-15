@@ -50,8 +50,11 @@ Usage
 -------------
 The cmdlets are intended to be used in conjunction with each other and from client powershell scripts.  They may be used in an interactive manner in a powershell terminal;  when a connection has been made, a session variable is available by default to all of the commands.
 
-From a powershell terminal type:  Import-Module PS_Mirth
-You should see the current PS_Mirth output folder displayed when the module is imported.  This will generally be a new folder called PS_Mirth_Output created under the current working directory when a cmdlet saves output.
+From a powershell terminal type:  
+
+    Import-Module PS_Mirth
+    
+You should see the current PS_Mirth output folder displayed when the module is imported.  This will generally be a new folder path called PS_Mirth_Output under the current working directory, and will be created when a PS_Mirth cmdlet saves output using the -saveXML switch.
 
 A session is obtained by using the Connect-Mirth command:
 
