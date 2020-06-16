@@ -943,48 +943,65 @@ function global:Invoke-PSMirthTool {
         Write-Debug "Tool:      $toolName"
         Write-Debug "Tool ID:   $toolId"
         Write-Debug "Type:      $toolTransportType"
-        [bool]$pollsOnStart = $tool.channel.sourceConnector.properties.pollConnectorProperties.pollOnStart
+        [string]$pollSetting = $tool.channel.sourceConnector.properties.pollConnectorProperties.pollOnStart
+        $pollsOnStart = ($pollSetting.ToUpper() -eq "TRUE")
         if ($pollsOnStart) { 
             Write-Debug "The tool channel polls automatically on deployment"
         } else { 
             Write-Debug "The tool channel does NOT poll on deployment!"
+            # we will add some logic to support this later
         }
 
+        $returnValue = $null
         $result = Import-MirthChannel -connection $connection -payLoad $tool.OuterXml -quiet
         Write-Debug "Import Result: $($result.OuterXml)"
         Write-Debug "Deploying probe channel..."
         $result = Send-MirthDeployChannels -targetIds $toolId -quiet
         Write-Debug "Deploy Result: $result"
+
         $maxMsgId = Get-MirthChannelMaxMsgId -targetId $toolId -quiet
         Write-Debug "Probe Channel Max Msg Id: $maxMsgId"
-        Write-Debug "Fetching Probe Results..."
-        [xml]$channelMsg = Get-MirthChannelMsgById -connection $connection -channelId $toolId -messageId $maxMsgId -quiet -saveXML:$saveXML
+        if (-not $maxMsgId -gt 0) { 
+            if (-not $quiet) { 
+                Write-Host "No probe telemetry available, pausing for 3 seconds to reattempt..."
+            }
+            Start-Sleep -Seconds 3
+            if (-not $quiet) { 
+                Write-Host "Looking for probe telemetry..."
+            }            
+            $maxMsgId = Get-MirthChannelMaxMsgId -targetId $toolId -quiet
+        }
+        if (-not $maxMsgId -gt 0) { 
+            Write-Warning "No tool telemetry could be obtained"
+        } else { 
+            Write-Debug "Fetching Probe Results..."
+            [xml]$channelMsg = Get-MirthChannelMsgById -connection $connection -channelId $toolId -messageId $maxMsgId -quiet -saveXML:$saveXML
+
+            # Now, find our payload, look for destination 'PS_OUTPUT"
+            $xpath = '/message/connectorMessages/entry/connectorMessage[connectorName = "PS_OUTPUT"]'
+            $connectorMessageNode = $channelMsg.SelectSingleNode($xpath)
+            if ($null -eq $connectorMessageNode) { 
+                Write-Error "Could not locate PS_OUTPUT destination of PSMirthTool channel: $toolName"
+                # return $null
+            }     
+            $dataType = $connectorMessageNode.encoded.dataType 
+            Write-Debug "The tool output is of dataType: $dataType"
+            if ($dataType -eq "XML") { 
+                [xml]$decoded = [System.Web.HttpUtility]::HtmlDecode($connectorMessageNode.encoded.content)
+                Set-Variable returnValue -Value ($decoded -as [Xml])
+            } else { 
+                Write-Warning "Unimplemented PSMirthTool datatype"
+                $toolMessage = [System.Web.HttpUtility]::HtmlDecode($connectorMessageNode.encoded.content)
+                Set-Variable returnValue -Value ($toolMessage -as [String])                
+            }
+        }
+
         $result = Send-MirthUndeployChannels -connection $connection -targetIds $toolId -quiet
         Write-Debug "Undeploy Result: $result"
         $result = Remove-MirthChannels -connection $connection -targetId $toolId -quiet
         Write-Debug "Remove Result: $result" 
-        # Now, find our payload, look for destination 'PS_OUTPUT"
-        $xpath = '/message/connectorMessages/entry/connectorMessage[connectorName = "PS_OUTPUT"]'
-        $connectorMessageNode = $channelMsg.SelectSingleNode($xpath)
-        if ($null -eq $connectorMessageNode) { 
-            Write-Error "Could not locate PS_OUTPUT destination of PSMirthTool channel: $toolName"
-            return $null
-        }     
-        $dataType = $connectorMessageNode.encoded.dataType 
-        Write-Debug "The tool output is of dataType: $dataType"
-        if ($dataType -eq "XML") { 
-            [xml]$decoded = [System.Web.HttpUtility]::HtmlDecode($connectorMessageNode.encoded.content)
-            return $decoded
-        } else { 
-            Write-Warning "Unimplemented PSMirthTool datatype"
-            return $connectorMessageNode.encoded.content
-        }
-        #add some logic here to accomodate different dataTypes other than XML, e.g., JSON, CSV, etc
-        # $nodeList = $channelMsg.SelectNodes("/message/connectorMessages/entry/connectorMessage/encoded/content")
-        # Write-Debug "SelectNodes finds $($nodeList.Count) nodes..."
-        # Write-Debug "Decoding XML escaped data..." 
-        # $contentNode = $nodeList[$nodeList.count - 1]
-        
+
+        return $returnValue
     }
     END { 
         Write-Debug "Invoke-PSMirthTool Ending"
@@ -1839,8 +1856,6 @@ function global:Get-MirthServerChannelMetadata {
                     $metaData  = $entry.SelectSingleNode("com.mirth.connect.model.ChannelMetadata")
                     $returnMap[$channelId] = $metaData
                 }
-                Write-Host "Returning Hashmap: "
-                Write-Host $returnMap
                 return $returnMap
             } ekse { 
                 return $r
@@ -3633,52 +3648,73 @@ function global:Set-MirthChannelProperties {
     PROCESS { 
         [xml] $channelList = Get-MirthChannels -connection $connection -targetId $channelIds -quiet
         $channelNodes = $channelList.SelectNodes("/list/channel")
-        Write-Debug "There are $($channelNodes.count) channels to be processed."
+        if (-not $quiet) { 
+            Write-Host "There are $($channelNodes.count) channels to be processed."
+        }
         foreach ($channelNode in $channelNodes) {
-            Write-Debug "Updating message properties for channel [$($channelNode.id)] $($channelNode.name)"
+            if (-not $quiet) {
+                Write-Host "Updating message properties for channel [$($channelNode.id)] $($channelNode.name)"
+            }
             if ($PSBoundParameters.containsKey('messageStorageMode')) {
-                Write-Debug "Updating messageStorageMode"
+                if (-not $quiet) { 
+                    Write-Host "Updating messageStorageMode"
+                }
                 $channelNode.properties.messageStorageMode = $messageStorageMode.toString()
             }
             if ($PSBoundParameters.containsKey('clearGlobalChannelMap')) {
-                Write-Debug "Updating clearGlobalChannelMap"
+                if (-not $quiet) {
+                    Write-Host "Updating clearGlobalChannelMap"
+                }
                 $channelNode.properties.clearGlobalChannelMap = $clearGlobalChannelMap.ToString()
             }
             if ($PSBoundParameters.containsKey('encryptData')) {
-                Write-Debug "Updating encryptData"
+                if (-not $quiet) {
+                    Write-Host "Updating encryptData"
+                }
                 $channelNode.properties.encryptData = $encryptData.ToString()
             }
             if ($PSBoundParameters.containsKey('removeContentOnCompletion')) {
-                Write-Debug "Updating removeContentOnCompletion"
+                if (-not $quiet) {
+                    Write-Host "Updating removeContentOnCompletion"
+                }
                 $channelNode.properties.removeContentOnCompletion = $removeContentOnCompletion.ToString()
             }
             if ($PSBoundParameters.containsKey('removeOnlyFilteredOnCompletion')) {
-                Write-Debug "Updating removeOnlyFilteredOnCompletion"
+                if (-not $quiet) {
+                    Write-Host "Updating removeOnlyFilteredOnCompletion"
+                }
                 $channelNode.properties.removeOnlyFilteredOnCompletion = $removeOnlyFilteredOnCompletion.ToString()
             }
             if ($PSBoundParameters.containsKey('removeAttachmentsOnCompletion')) {
-                Write-Debug "Updating removeAttachmentsOnCompletion"
+                if (-not $quiet) {
+                    Write-Host "Updating removeAttachmentsOnCompletion"
+                }
                 $channelNode.properties.removeAttachmentsOnCompletion = $removeAttachmentsOnCompletion.ToString()
             }                          
             if ($PSBoundParameters.containsKey('storeAttachments')) {
-                Write-Debug "Updating storeAttachments"
+                if (-not $quiet) {
+                    Write-Host "Updating storeAttachments"
+                }
                 $channelNode.properties.storeAttachments = $storeAttachments.ToString()
             }
-            # were we passed an exportData parameter   
             if (($PSBoundParameters.containsKey('enabled')) -or
                 ($PSBoundParameters.containsKey('pruneMetaDataDays'))  -or 
                 ($PSBoundParameters.containsKey('pruneContentDays'))  -or
                 ($PSBoundParameters.containsKey('allowArchiving'))) { 
-                Write-Host "Searching for pruningSettings node"
+                Write-Debug "Searching for pruningSettings node"
                 [Xml.XmlElement] $psNode = $channelNode.SelectSingleNode("exportData/metadata/pruningSettings")
                 if ($null -ne $psNode) {
                     Write-Debug "pruningSettings node found..."
                     if ($PSBoundParameters.containsKey('enabled')) {
-                        Write-Debug "Updating enabled"
+                        if (-not $quiet) {
+                            Write-Host "Updating enabled"
+                        }
                         $channelNode.exportData.metadata.enabled = $enabled.ToString()
                     }  
                     if ($PSBoundParameters.containsKey('pruneMetaDataDays')) {
-                        Write-Debug "Updating pruneMetaDataDays"
+                        if (-not $quiet) {
+                            Write-Host "Updating pruneMetaDataDays"
+                        }
                         $pruneMetaDataDaysNode = $psNode.SelectSingleNode("pruneMetaDataDays")
 
                         if ($pruneMetaDataDays -lt 0) { 
@@ -3703,7 +3739,7 @@ function global:Set-MirthChannelProperties {
                                 }
                             }
                             if ($null -ne $pruneMetaDataDaysNode) { 
-                                Write-Debug "Updating pruneMetaDataDays node"
+                                Write-Host "Updating pruneMetaDataDays node"
                                 $channelNode.exportData.metadata.pruningSettings.pruneMetaDataDays = $pruneMetaDataDays.ToString()
                             } else { 
                                 # add pruneMetaDataDays here
@@ -3715,7 +3751,9 @@ function global:Set-MirthChannelProperties {
                         }
                     }
                     if ($PSBoundParameters.containsKey('pruneContentDays')) {
-                        Write-Debug "Updating pruneContentDays"
+                        if (-not $quiet) {
+                            Write-Host "Updating pruneContentDays"
+                        }
                         $pruneContentDaysNode = $psNode.SelectSingleNode("pruneContentDays")
                         if ($pruneContentDays -lt 0) { 
                             if ($null -ne $pruneContentDaysNode) { 
@@ -3748,7 +3786,9 @@ function global:Set-MirthChannelProperties {
                         }
                     }   
                     if ($PSBoundParameters.containsKey('allowArchiving')) {
-                        Write-Debug "Updating archiveEnabled"
+                        if (-not $quiet) {
+                            Write-Host "Updating archiveEnabled"
+                        }
                         $channelNode.exportData.metadata.pruningSettings.archiveEnabled = $allowArchiving.ToString()
                     }  
                 } else { 
