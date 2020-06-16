@@ -3447,6 +3447,16 @@ function global:Get-MirthServerProperties {
     .OUTPUTS
         [xml] object representing the mirth.properties file in XML form.
 
+        <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+        <!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd"[]>
+        <properties>
+        <comment>exported by probe channel</comment>
+        <entry key="keystore.keypass">81uWxplDtB</entry>
+        <entry key="password.minspecial">0</entry>
+        [...]
+        <entry key="http.host">0.0.0.0</entry>
+        </properties>
+
     .EXAMPLE
         
     .LINK
@@ -3481,25 +3491,54 @@ function global:Get-MirthServerProperties {
         Write-Debug "Get-MirthServerProperties Beginning"
     }
     PROCESS { 
+        [string]$outPath = Get-PSMirthOutputFolder
+        $outPath = Join-Path $outPath $outFile 
         # import the tool channel and deploy it
-        Write-Debug "Loading probe channel..."
+        Write-Debug "Invoking tool channel Probe_Mirth_Properties.xml"
         $toolPath = "$PSSCriptRoot/tools/Probe_Mirth_Properties.xml"
         [xml]$toolPayLoad = Invoke-PSMirthTool -connection $connection -toolPath $toolPath -saveXML:$saveXML -quiet:$quiet
-
-        if (-not $asHashtable) { 
-            return $toolPayLoad
-        } else { 
-            $returnMap = @{};
-            # convert to hashtable
-            foreach ($entry in $toolPayLoad.properties.entry) { 
-                $key = $entry.Attributes[0].Value
-                $value = $entry.InnerText
-                Write-Debug ("Adding Key: $key with value: $value")
-                $returnMap[$key] = $value
+        if ($null -ne $toolPayLoad) {
+            if (-NOT $quiet) { 
+                Write-Host $toolPayLoad.OuterXml
             }
-            return $returnMap
+            if (-not $asHashtable) { 
+                if ($saveXML) { 
+                    Write-Debug "Saving to $outPath"    
+                    $toolPayLoad.save($outPath)
+                }
+                return $toolPayLoad
+            } else { 
+                Write-Debug "Converting XML response to hashtable"
+                $returnMap = @{};
+                if ($saveXML) {
+                    if (Test-Path -Path $outPath) {
+                        Clear-Content -path $outPath 
+                        $line = "#  PS_Mirth fetched from $($connection.serverUrl) on $(Get-Date)"
+                        Add-Content -Path $outPath -value $line
+                    }
+                } 
+                foreach ($entry in $toolPayLoad.properties.entry) { 
+                    $key = $entry.Attributes[0].Value
+                    $value = $entry.InnerText
+                    Write-Debug ("Adding Key: $key with value: $value")
+                    $returnMap[$key] = $value
+                } 
+                Write-Debug "Sorting by key for output..."
+                $sorted = $returnMap.GetEnumerator() | Sort-Object -Property name 
+                if ($saveXML) {
+                    Write-Debug "Saving hash map to $outPath"
+                    foreach ($property in $sorted) { 
+                        $key    = $property.Name
+                        $value  = $property.Value
+                        $line = “{0,-40} {1,1} {2}” -f $key, "=", $value
+                        Add-Content -Path $outPath -value $line
+                    }  
+                }         
+                return $returnMap
+            }
+        } else { 
+            Throw "Mirth properties probe returned no results"
         }
-        
     }
     END { 
         Write-Debug "Get-MirthServerProperties Ending"
@@ -3888,20 +3927,7 @@ function global:Get-MirthChannelMsgById {
                 
         }
         catch {
-            $_.response
-        $errorMessage = $_.Exception.Message
-            if (Get-Member -InputObject $_.Exception -Name 'Response') {
-                try {
-                    $result = $_.Exception.Response.GetResponseStream()
-                    $reader = New-Object System.IO.StreamReader($result)
-                    $reader.BaseStream.Position = 0
-                    $reader.DiscardBufferedData()
-                    $responseBody = $reader.ReadToEnd();
-                } catch {
-                    Throw "An error occurred while calling REST method at: $uri. Error: $errorMessage. Cannot get more information."
-                }
-            }
-            Throw "An error occurred while calling REST method at: $uri. Error: $errorMessage  Response body: $responseBody"
+            Write-Error $_
         }        
     }
     END { 
