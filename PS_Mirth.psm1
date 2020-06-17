@@ -104,12 +104,27 @@ function Set-PSMirthOutputFolder( $path ) {
     }
     If (!(Test-Path -Path $path -PathType Container)) {
         Write-Debug "Folder does not exist, creating..."
-        New-Item -ItemType Directory -Force -Path $savePath  
+        New-Item -ItemType Directory -Force -Path $savePath  | Out-Null
     }
     
-    $script:savePath = $path
+    $script:savePath = PathAddBackslash($path)
     Write-Debug "Current PS_Mirth output folder is: $savePath"
     return $script:savePath
+    
+}
+
+function PathAddBackslash($path) {
+    $separator1 = [IO.Path]::DirectorySeparatorChar
+    $separator2 = [System.IO.Path]::AltDirectorySeparatorChar 
+
+    $path = $path.TrimEnd()
+    if ($path.EndsWith($separator1) -or $path.EndsWith($separator2)) {
+        return $path;
+    }
+    if ($path.Contains($separator2)) {
+        return $path + $separator2;
+    }
+    return $path + $separator1;
 }
 
 function Get-PSMirthOutputFolder () { 
@@ -815,8 +830,9 @@ function global:Save-MirthPropertiesFile {
             if (-NOT $quiet) { 
                 Get-Content -path $outPath | Write-Host  
             }
-            # We output the text contents of the created property file to the pipeline
-            return Get-Content -path $outPath
+            # Return the properties as a hashtable
+            [hashtable]$returnMap = ConvertFrom-StringData (Get-Content $outPath | Out-String)
+            return $returnMap
 
         } else { 
             Write-Error "payLoad is not XML document"
@@ -975,7 +991,7 @@ function global:Invoke-PSMirthTool {
             Write-Warning "No tool telemetry could be obtained"
         } else { 
             Write-Debug "Fetching Probe Results..."
-            [xml]$channelMsg = Get-MirthChannelMsgById -connection $connection -channelId $toolId -messageId $maxMsgId -quiet -saveXML:$saveXML
+            [xml]$channelMsg = Get-MirthChannelMsgById -connection $connection -channelId $toolId -messageId $maxMsgId -quiet 
 
             # Now, find our payload, look for destination 'PS_OUTPUT"
             $xpath = '/message/connectorMessages/entry/connectorMessage[connectorName = "PS_OUTPUT"]'
@@ -1857,7 +1873,7 @@ function global:Get-MirthServerChannelMetadata {
                     $returnMap[$channelId] = $metaData
                 }
                 return $returnMap
-            } ekse { 
+            } else { 
                 return $r
             }
         }
