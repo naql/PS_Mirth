@@ -4783,19 +4783,31 @@ function global:Get-MirthChannels {
                 if ($null -ne $entry) {
                     # enabled
                     Write-Debug "setting enabled"
-                    $enabledNode = $entry.SelectSingleNode("enabled")
-                    $enabledNode = $r.ImportNode($enabledNode,$true) 
-                    $enabledNode = $metaDataNode.AppendChild($enabledNode)
+                    try { 
+                        $enabledNode = $entry.SelectSingleNode("enabled")
+                        $enabledNode = $r.ImportNode($enabledNode,$true) 
+                        $enabledNode = $metaDataNode.AppendChild($enabledNode)
+                    } catch { 
+                        Write-Error $_
+                    }
                     # lastModified
                     Write-Debug "setting lastModified"
-                    $lastModifiedNode = $entry.SelectSingleNode("lastModified")
-                    $lastModifiedNode = $r.ImportNode($lastModifiedNode,$true) 
-                    $lastModifiedNode = $metaDataNode.AppendChild($lastModifiedNode)
+                    try {
+                        $lastModifiedNode = $entry.SelectSingleNode("lastModified")
+                        $lastModifiedNode = $r.ImportNode($lastModifiedNode,$true) 
+                        $lastModifiedNode = $metaDataNode.AppendChild($lastModifiedNode)
+                    } catch { 
+                        Write-Error $_
+                    }                        
                     # pruningSettings
                     Write-Debug "setting pruningSettings"
-                    $pruningSettingsNode = $entry.SelectSingleNode("pruningSettings")
-                    $pruningSettingsNode = $r.ImportNode($pruningSettingsNode,$true) 
-                    $pruningSettingsNode = $metaDataNode.AppendChild($pruningSettingsNode)
+                    try { 
+                        $pruningSettingsNode = $entry.SelectSingleNode("pruningSettings")
+                        $pruningSettingsNode = $r.ImportNode($pruningSettingsNode,$true) 
+                        $pruningSettingsNode = $metaDataNode.AppendChild($pruningSettingsNode)
+                    } catch { 
+                        Write-Error $_
+                    }                        
                 } else { 
                     Write-Warning "No metadata was found!"
                 }
