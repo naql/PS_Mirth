@@ -302,10 +302,8 @@ function global:New-MirthKeyStoreCertificatesPayLoad {
 
         if ($saveXML) { 
             [string]$o = Get-PSMirthOutputFolder
-            $o = Join-Path $o $outFile 
-            Write-Debug "Saving Output to $o"       
+            $o = Join-Path $o $outFile     
             $templateXML.save($o)
-            Write-Debug "Done!" 
         }
         Write-Verbose $templateXML.OuterXml
 
@@ -412,10 +410,8 @@ function global:New-MirthSSLMgrPropertiesPayload {
 
         if ($saveXML) { 
             [string]$o = Get-PSMirthOutputFolder
-            $o = Join-Path $o $outFile 
-            Write-Debug "Saving Output to $o"       
+            $o = Join-Path $o $outFile    
             $templateXML.save($o)
-            Write-Debug "Done!" 
         }
         Write-Verbose $templateXML.OuterXml
         return $templateXML
@@ -709,9 +705,7 @@ function global:New-MirthConfigMapFromProperties {
         if ($saveXML) { 
             [string]$o = Get-PSMirthOutputFolder
             $o = Join-Path $o $outFile 
-            Write-Debug "Saving Output to $o"    
             $mapXML.save($o)
-            Write-Debug "Done!" 
         }
         Write-Verbose $mapXML.OuterXml
         return $mapXML
@@ -1125,9 +1119,7 @@ function global:Get-MirthServerAbout {
             if ($saveXML) { 
                 [string]$o = Get-PSMirthOutputFolder
                 $o = Join-Path $o $outFile 
-                Write-Debug "Saving Output to $o"    
                 $r.save($o)
-                Write-Debug "Done!" 
             }
             Write-Verbose $r.OuterXml
             if ($asHashtable) { 
@@ -1151,8 +1143,7 @@ function global:Get-MirthServerAbout {
             }
         }
         catch {
-            $msg = $MyInvocation.MyCommand + " Failed, Response: " + $_.Exception.Response.StatusCode.value__   + ' : ' + $_.Exception.Response.StatusDescription
-            Write-Error $msg
+            Write-Error $_
         }
     }
     END {
@@ -1219,17 +1210,14 @@ function global:Get-MirthServerConfig {
             if ($saveXML) { 
                 [string]$o = Get-PSMirthOutputFolder
                 $o = Join-Path $o $outFile 
-                Write-Debug "Saving Output to $o"    
                 $r.save($o)
-                Write-Debug "Done!" 
             }
             Write-Verbose $r.innerXml
             return $r
 
         }
         catch {
-            $msg = $MyInvocation.MyCommand + " Failed, Response: " + $_.Exception.Response.StatusCode.value__   + ' : ' + $_.Exception.Response.StatusDescription
-            Write-Error $msg
+            Write-Error $_
         }     
     }
     END { 
@@ -1302,8 +1290,7 @@ function global:Get-MirthServerVersion {
             return $r
         }
         catch {
-            $msg = $MyInvocation.MyCommand + " Failed, Response: " + $_.Exception.Response.StatusCode.value__   + ' : ' + $_.Exception.Response.StatusDescription
-            Write-Error $msg
+            Write-Error $_
         }
     }
     END { 
@@ -1311,7 +1298,7 @@ function global:Get-MirthServerVersion {
     }
 }  # Get-MirthServerVersion
 
-function global:Get-MirthServerTime { 
+    function global:Get-MirthServerTime { 
     <#
     .SYNOPSIS
         Gets the Mirth server time.
@@ -1372,16 +1359,13 @@ function global:Get-MirthServerTime {
             if ($saveXML) { 
                 [string]$o = Get-PSMirthOutputFolder
                 $o = Join-Path $o $outFile 
-                Write-Debug "Saving Output to $o" 
                 Set-Content -Path $o -Value $r.OuterXml      
-                Write-Debug "Done!" 
             }
             Write-Verbose $r
             return $r
         }
         catch {
-            $msg = $MyInvocation.MyCommand + " Failed, Response: " + $_.Exception.Response.StatusCode.value__   + ' : ' + $_.Exception.Response.StatusDescription
-            Write-Error $msg
+            Write-Error $_
         }
     }
     END { 
@@ -1492,16 +1476,13 @@ function global:Get-MirthChannelGroups {
             if ($saveXML) { 
                 [string]$o = Get-PSMirthOutputFolder
                 $o = Join-Path $o $outFile 
-                Write-Debug "Saving Output to $o"    
                 $r.save($o)
-                Write-Debug "Done!" 
             }
             Write-Verbose $r.OuterXml
             return $r;
         }
         catch {
-            $msg = $MyInvocation.MyCommand + " Failed, Response: " + $_.Exception.Response.StatusCode.value__   + ' : ' + $_.Exception.Response.StatusDescription
-            Write-Error $msg
+            Write-Error $_
         }
     }
     END {
@@ -1931,9 +1912,7 @@ function global:Get-MirthServerChannelMetadata {
             if ($saveXML) { 
                 [string]$o = Get-PSMirthOutputFolder
                 $o = Join-Path $o $outFile 
-                Write-Debug "Saving Output to $o"  
                 $r.save($o)
-                Write-Debug "Done!" 
             }
             Write-Verbose $r.OuterXml
             if ($asHashtable) { 
@@ -2149,9 +2128,7 @@ function global:Get-MirthChannelTags {
             if ($saveXML) { 
                 [string]$o = Get-PSMirthOutputFolder
                 $o = Join-Path $o $outFile 
-                Write-Debug "Saving Output to $o"  
                 $r.save($o)
-                Write-Debug "Done!" 
             }
             Write-Verbose $r.OuterXml
             return $r
@@ -2635,16 +2612,13 @@ function global:Get-MirthConfigMap {
             if ($saveXML) { 
                 [string]$o = Get-PSMirthOutputFolder
                 $o = Join-Path $o $outFile 
-                Write-Debug "Saving Output to $o"   
                 $r.save($o)
-                Write-Debug "Done!" 
             }
             Write-Verbose $r.OuterXml
             return $r;
         }
         catch {
-            $msg = $MyInvocation.MyCommand + " Failed, Response: " + $_.Exception.Response.StatusCode.value__   + ' : ' + $_.Exception.Response.StatusDescription
-            Write-Error $msg
+            Write-Error $_
         }
     }
     END {
@@ -2760,10 +2734,8 @@ function global:Set-MirthConfigMap {
             if ($saveXML) { 
                 [string]$o = Get-PSMirthOutputFolder
                 $o = Join-Path $o $outFile 
-                Write-Debug "Saving Output to $o"     
                 $output = "Configuration Map Updated Successfully: $payLoad"
                 Set-Content -Path $o -Value $output   
-                Write-Debug "Done!" 
             }
             Write-Verbose $r.OuterXml
 
@@ -2875,9 +2847,7 @@ function global:Get-MirthExtensionProperties {
             if ($saveXML) { 
                 [string]$o = Get-PSMirthOutputFolder
                 $o = Join-Path $o $outFile 
-                Write-Debug "Saving Output to $o"      
                 $r.save($o)
-                Write-Debug "Done!" 
             }
             Write-Verbose $r.OuterXml
 
@@ -2986,17 +2956,14 @@ function global:Set-MirthExtensionProperties {
             if ($saveXML) { 
                 [string]$o = Get-PSMirthOutputFolder
                 $o = Join-Path $o $outFile 
-                Write-Debug "Saving Output to $o"     
                 $r.save($o)
-                Write-Debug "Done!" 
             }
             Write-Verbose $r.OuterXml
 
             return $r
         }
         catch {
-            $msg = $MyInvocation.MyCommand + " Failed, Response: " + $_.Exception.Response.StatusCode.value__   + ' : ' + $_.Exception.Response.StatusDescription
-            Write-Error $msg
+            Write-Error $_
         }    
     }
     END { 
@@ -3091,16 +3058,13 @@ function global:Get-MirthGlobalScripts {
             if ($saveXML) { 
                 [string]$o = Get-PSMirthOutputFolder
                 $o = Join-Path $o $outFile 
-                Write-Debug "Saving Output to $o"  
                 $r.save($o)
-                Write-Debug "Done!" 
             }
             Write-Verbose $r.OuterXml
             return $r
         }
         catch {
-            $msg = $MyInvocation.MyCommand + " Failed, Response: " + $_.Exception.Response.StatusCode.value__   + ' : ' + $_.Exception.Response.StatusDescription
-            Write-Error $msg
+            Write-Error $_
         }
     }
     END {
@@ -3222,19 +3186,16 @@ function global:Set-MirthGlobalScripts {
             Write-Debug "...done."
             if ($saveXML) { 
                 [string]$o = Get-PSMirthOutputFolder
-                $o = Join-Path $o $outFile 
-                Write-Debug "Saving Output to $o"     
+                $o = Join-Path $o $outFile  
                 $output = "Global Scripts Updated Successfully: $payLoad"
                 Set-Content -Path $o -Value $output   
-                Write-Debug "Done!" 
             }
             Write-Verbose $r.OuterXml
 
             return $r
         }
         catch {
-            $msg = $MyInvocation.MyCommand + " Failed, Response: " + $_.Exception.Response.StatusCode.value__   + ' : ' + $_.Exception.Response.StatusDescription
-            Write-Error $msg
+            Write-Error $_
         }  
     }
     END {
@@ -3330,9 +3291,7 @@ function global:Get-MirthServerSettings {
             if ($saveXML) { 
                 [string]$o = Get-PSMirthOutputFolder
                 $o = Join-Path $o $outFile 
-                Write-Debug "Saving Output to $o"    
                 $r.save($o)
-                Write-Debug "Done!" 
             }
             Write-Verbose $r.OuterXml
             return $r
@@ -3431,10 +3390,8 @@ function global:Set-MirthServerSettings {
             if ($saveXML) { 
                 [string]$o = Get-PSMirthOutputFolder
                 $o = Join-Path $o $outFile 
-                Write-Debug "Saving Output to $o"     
                 $output = "Server Settings Updated Successfully: $payLoad"
                 Set-Content -Path $o -Value $output   
-                Write-Debug "Done!" 
             }
              Write-Verbose $r.OuterXml
 
@@ -4179,7 +4136,7 @@ function global:Send-MirthDeployChannels {
         [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
         $serverUrl = $connection.serverUrl
 
-        [xml]$payloadXML = "<set></set>";
+        [xml]$payloadXML = "<set></set>"
         if ($targetIds.count -gt 0) { 
             # they provided some channel ids
             Write-Debug "Attempting to deploy $($targetIds.count) channels"
@@ -4195,22 +4152,17 @@ function global:Send-MirthDeployChannels {
         $parameters.Add('returnErrors', $returnErrors)
         $uri = $uri + '?' + $parameters.toString()
 
-
         Write-Debug "POST to Mirth $uri "
         try { 
             $r = Invoke-RestMethod -UseBasicParsing -Uri $uri -WebSession $session -Headers $headers -Method POST -ContentType 'application/xml' -Body $payloadXML.OuterXml
-            
-            Write-Debug "Deployed"
-            Write-Debug "Type of response object: $($r.getType())"
 
             if ($saveXML) { 
                 [string]$o = Get-PSMirthOutputFolder
                 $o = Join-Path $o $outFile 
                 Write-Debug "Saving Output to $o"
-                #$r.save($o)  
-                Set-Content $o -Value $r.getType()   
+                Set-Content $o -Value $r  
             }
-            Write-Verbose $r.OuterXml
+            Write-Verbose -Message "Deployed: $r"
             return $true
         } catch {
             $_.response
@@ -4306,22 +4258,28 @@ function global:Send-MirthRedeployAllChannels {
 
         Write-Debug "POST to Mirth $uri "
         try { 
+            # using the returnErrors parameter set to true should cause channel deployment errors
+            # to be returned, but I have been unable to access this.  That's why the attempt to use 
+            # Invoke-WebRequest instead of Invoke-RestMethod and the weird error handling...  To be continued.
             #$r = Invoke-RestMethod -UseBasicParsing -Uri $uri -WebSession $session -Headers $headers -Method POST -ContentType 'application/xml' 
             $r = Invoke-WebRequest -UseBasicParsing -Uri $uri -WebSession $session -Headers $headers -Method POST -ContentType 'application/xml' 
-            
-            Write-Debug "...done."
-            Write-Debug "Type of response object: $($r.getType())"
-
+            #Type of response object:Microsoft.PowerShell.Commands.WebResponseObject
+            # Write-Debug "...done."
+            # Write-Debug "Type of response object: $($r.getType())"
+            # Write-Debug $r.BaseResponse
+            # Write-Debug $r.StatusCode
+            # Write-Debug $r.StatusDescription
+            # Write-Debug $r.RawContent
             if ($saveXML) { 
                 [string]$o = Get-PSMirthOutputFolder
                 $o = Join-Path $o $outFile 
                 Set-Content $o -Value $r.getType()   
             }
-            Write-Verbose $r.OuterXml
+            Write-Verbose "$r"
             return $true
         } catch {
             $_.response
-        $errorMessage = $_.Exception.Message
+            $errorMessage = $_.Exception.Message
             if (Get-Member -InputObject $_.Exception -Name 'Response') {
                 try {
                     $result = $_.Exception.Response.GetResponseStream()
@@ -4335,36 +4293,6 @@ function global:Send-MirthRedeployAllChannels {
             }
             Throw "An error occurred while calling REST method at: $uri. Error: $errorMessage  Response body: $responseBody"
         }
-        
-        # catch [System.Net.WebException] 
-        # {
-        #     Write-Host "Exception Occurred" $_.getType()
-        #     $statusCode = $_.Exception.Status
-        #     $category   = $_.CategoryInfo
-        #     $response   = $_.Exception.Response
-        #     $exception  = $_.Exception
-        #     $details    = $_.Exception.message
-        #     $errorId    = $_.FullyQualifiedErrorId
-        #     $data       = $_.Data
-
-        #     Write-Host "Status Code: $statusCode"
-        #     Write-Host "Response:    $response"
-        #     Write-Host "Details:     $details"
-        #     Write-Host "Exception:   $exception"
-        #     Write-Host "Category:    $category"
-        #     Write-Host "ErrorID:     $errorId"
-        #     Write-Host "Data:        "$exception.data
-        #     Write-Host "StackTrace:  "$exception.StrackTrace
-        #     Write-Host "Exception.getType: $($exception.getType())"
-        #     $baseEx     = $exception.GetBaseException()
-        #     Write-Host "Base Exc:    $($baseEx.getType())"
-        #     Write-Host "Status Code: " $baseEx.Status
-        #     Write-Host "Response:    " $baseEx.response
-        #     #$innerException = $exception.innerException
-        #     #Write-Host "Inner Exception Type: $($innerException.getType())"
-        # }
-
-
     }
     END { 
         Write-Debug "Send-MirthRedeployAllChannels Ending"
@@ -4453,18 +4381,13 @@ function global:Send-MirthUndeployChannels {
         Write-Debug "POST to Mirth $uri "
         try { 
             $r = Invoke-RestMethod -UseBasicParsing -Uri $uri -WebSession $session -Headers $headers -Method POST -ContentType 'application/xml' -Body $payLoadXML.OuterXml
-            #$r = Invoke-WebRequest -UseBasicParsing -Uri $uri -WebSession $session -Headers $headers -Method POST -ContentType 'application/xml' 
-            
-            Write-Debug "...done."
-            Write-Debug "Type of response object: $($r.getType())"
 
             if ($saveXML) { 
                 [string]$o = Get-PSMirthOutputFolder
                 $o = Join-Path $o $outFile 
-                Write-Debug "Saving Output to $o" 
-                Set-Content $o -Value $r.getType()   
+                Set-Content $o -Value $r 
             }
-            Write-Verbose $r.OuterXml
+            Write-Verbose "Undeployed: $r"
             return $true
         } catch {
             $_.response
@@ -4762,10 +4685,8 @@ function global:Get-MirthChannels {
                     }
                 } else {
                     [string]$o = Get-PSMirthOutputFolder
-                    $o = Join-Path $o $outFile 
-                    Write-Debug "Saving Output to $o"       
+                    $o = Join-Path $o $outFile   
                     $r.save($o)
-                    Write-Debug "Done!" 
                 }
             }
             Write-Verbose $r.OuterXml
@@ -4839,21 +4760,17 @@ function global:Remove-MirthChannels {
         Write-Debug "Invoking DELETE Mirth at $uri"
         try { 
             $r = Invoke-RestMethod -Uri $uri -Method DELETE -WebSession $session
-            Write-Debug "...done."
 
             if ($saveXML) { 
                 [string]$o = Get-PSMirthOutputFolder
-                $o = Join-Path $o $outFile 
-                Write-Debug "Saving Output to $o"       
+                $o = Join-Path $o $outFile      
                 Set-Content -Path $o -Value "Deleted Channels: $targetId" 
-                Write-Debug "Done!" 
             }
-            Write-Verbose $r.OuterXml
+            Write-Verbose $r
             return $r
         }
         catch {
-            $msg = $MyInvocation.MyCommand + " Failed, Response: " + $_.Exception.Response.StatusCode.value__   + ' : ' + $_.Exception.Response.StatusDescription
-            Write-Error $msg
+            Write-Error $_
         }      
     }
     END { 
@@ -4933,8 +4850,7 @@ function global:Remove-MirthChannelByName {
 
         if ($saveXML) { 
             [string]$o = Get-PSMirthOutputFolder
-            $o = Join-Path $o $outFile 
-            Write-Debug "Saving Output to $o"       
+            $o = Join-Path $o $outFile    
         }
         Write-Verbose $r.OuterXml
         return $r
@@ -5042,8 +4958,7 @@ function global:Import-MirthChannel {
 
         }
         catch {
-            $msg = $MyInvocation.MyCommand + " Failed, Response: " + $_.Exception.Response.StatusCode.value__   + ' : ' + $_.Exception.Response.StatusDescription
-            Write-Error $msg
+            Write-Error $_
         }
 
     } 
@@ -5157,9 +5072,7 @@ function global:Get-MirthCodeTemplateLibraries {
             if ($saveXML) { 
                 [string]$o = Get-PSMirthOutputFolder
                 $o = Join-Path $o $outFile 
-                Write-Debug "Saving Output to $o"    
                 $r.save($o)
-                Write-Debug "Done!" 
             }
             Write-Verbose $r.OuterXml
             return $r;
@@ -5264,16 +5177,13 @@ function global:Set-MirthCodeTemplateLibraries {
             if ($saveXML) { 
                 [string]$o = Get-PSMirthOutputFolder
                 $o = Join-Path $o $outFile 
-                Write-Debug "Saving Output to $o"     
                 $r.save($o)
-                Write-Debug "Done!" 
             }
             Write-Verbose $r.OuterXml
             return $r
         }
         catch {
-            $msg = $MyInvocation.MyCommand + " Failed, Response: " + $_.Exception.Response.StatusCode.value__   + ' : ' + $_.Exception.Response.StatusDescription
-            Write-Error $msg
+            Write-Error $_
         }  
     }
     END { 
@@ -5463,17 +5373,14 @@ function global:Get-MirthKeyStoreCertificates {
             if ($saveXML) { 
                 [string]$o = Get-PSMirthOutputFolder
                 $o = Join-Path $o $outFile 
-                Write-Debug "Saving Output to $o"     
                 $r.save($o)
-                Write-Debug "Done!" 
             }
             Write-Verbose $r.OuterXml
             return $r
                 
         }
         catch {
-            $msg = $MyInvocation.MyCommand + " Failed, Response: " + $_.Exception.Response.StatusCode.value__   + ' : ' + $_.Exception.Response.StatusDescription
-            Write-Error $msg
+            Write-Error $_
         }     
     }
     END { 
@@ -5538,9 +5445,7 @@ function global:Get-MirthKeyStoreBytes {
             if ($saveXML) { 
                 [string]$o = Get-PSMirthOutputFolder
                 $o = Join-Path $o $outFile 
-                Write-Debug "Saving Output to $o"     
                 $r.save($o)
-                Write-Debug "Done!" 
             }
             Write-Verbose $r.OuterXml
             return $r
@@ -5720,15 +5625,12 @@ function global:Set-MirthUserPassword {
                 if ($saveXML) { 
                     [string]$o = Get-PSMirthOutputFolder
                     $o = Join-Path $o $outFile 
-                    Write-Debug "Saving Output to $o"     
                     Set-Content -Path $o -Value "$targetId : $newPassword" 
-                    Write-Debug "Done!" 
                 }
                 Write-Verbose $r
             }
             catch {
-                $msg = $MyInvocation.MyCommand + " Failed, Response: " + $_.Exception.Response.StatusCode.value__   + ' : ' + $_.Exception.Response.StatusDescription
-                Write-Error $msg
+                Write-Error $_
             }
         }  # For each user selected
     } 
@@ -5799,9 +5701,7 @@ function global:Test-MirthUserLogged {
             if ($saveXML) { 
                 [string]$o = Get-PSMirthOutputFolder
                 $o = Join-Path $o $outFile 
-                Write-Debug "Saving Output to $o"     
                 Set-Content -Path $o -Value $r.OuterXml
-                Write-Debug "Done!" 
             }
             Write-Verbose $r.OuterXml
             $loggedIn = [System.Convert]::ToBoolean($r.boolean)
