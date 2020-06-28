@@ -54,7 +54,7 @@ $DebugPreference = 'SilentlyContinue'
 # This is where the -saveXML flag will cause files to be saved.  It 
 # defaults to a subfolder in the current location.  Call Set-Mirth
 [string]$savePath = Join-Path -Path $pwd -ChildPath "/PS_Mirth_Output/" 
-Write-Host "Current PS_Mirth output folder is: " $savePath
+Write-Verbose "Current PS_Mirth output folder is: $savePath"
 
 [MirthConnection]$currentConnection = $null;
 
@@ -234,11 +234,8 @@ function global:New-MirthKeyStoreCertificatesPayLoad {
 
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
 
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
     )
     BEGIN {
         Write-Debug "New-MirthKeyStoreCertificatesPayLoad Beginning..."
@@ -310,9 +307,8 @@ function global:New-MirthKeyStoreCertificatesPayLoad {
             $templateXML.save($o)
             Write-Debug "Done!" 
         }
-        if (-NOT $quiet) { 
-            Write-Host $templateXML.OuterXml
-        }
+        Write-Verbose $templateXML.OuterXml
+
         return $templateXML
     }
     END { 
@@ -374,11 +370,7 @@ function global:New-MirthSSLMgrPropertiesPayload {
 
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     )
     BEGIN {
         Write-Debug "New-MirthSSLMgrPropertiesPayload Beginning..."
@@ -425,9 +417,7 @@ function global:New-MirthSSLMgrPropertiesPayload {
             $templateXML.save($o)
             Write-Debug "Done!" 
         }
-        if (-NOT $quiet) { 
-            Write-Host $templateXML.OuterXml
-        }
+        Write-Verbose $templateXML.OuterXml
         return $templateXML
     }
     END { 
@@ -535,7 +525,7 @@ function global:New-MirthChannelTagObject {
 "@
         # If any channel ids were added, we need to add them to the channelIds element as <string /> values...
         Add-PSMirthStringNodes -parentNode $($objectXML.SelectSingleNode("/channelTag/channelIds")) -values $channelIds | Out-Null
-        Write-Host "XML Object" $objectXML.OuterXml
+        Write-Verbose "XML Object: $($objectXML.OuterXml)"
         return $objectXML
     }
     END { 
@@ -667,11 +657,7 @@ function global:New-MirthConfigMapFromProperties {
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     ) 
 
     BEGIN { 
@@ -693,7 +679,7 @@ function global:New-MirthConfigMapFromProperties {
                   # built so far, and then flushing it
                   [string]$line = $_
                   $line = $line.trim()
-                  Write-Host "Read line: " $_ 
+                  Write-Verbose "Read line: $_ "
                   [bool]$isComment = $line.StartsWith('#')
                   if ($isComment) {
                     #Write-Debug "Comment Found"
@@ -704,9 +690,9 @@ function global:New-MirthConfigMapFromProperties {
                     $propLine = $line.Split('=')
                     $keyName  = $propLine[0].trim()
                     $value    = $propLine[1].trim()
-                    Write-Host "Key:     " $keyName
-                    Write-Host "Value:   " $value
-                    Write-Host "Comment: " $commentBuffer
+                    Write-Verbose "Key:     $keyName"
+                    Write-Verbose "Value:   $value"
+                    Write-Verbose "Comment: $commentBuffer"
                     $entryXML = New-MirthConfigMapEntry -entryKey $keyName -entryValue $value -entryComment $commentBuffer
                     $mapXML.DocumentElement.AppendChild($mapXML.ImportNode($entryXML.entry, $true)) | Out-Null
 
@@ -727,9 +713,7 @@ function global:New-MirthConfigMapFromProperties {
             $mapXML.save($o)
             Write-Debug "Done!" 
         }
-        if (-NOT $quiet) { 
-            Write-Host $mapXML.OuterXml
-        }
+        Write-Verbose $mapXML.OuterXml
         return $mapXML
         <# Output a custom object with both $rValue and the server address
         return [pscustomobject] @{
@@ -778,7 +762,7 @@ function global:Save-MirthPropertiesFile {
         Outputs the text contents of the created property file to the pipeline on return.
 
     .EXAMPLE
-        Connect-Mirth | Get-MirthConfigMap -quiet | Save-MirthPropertiesFile -outFile new.properties
+        Connect-Mirth | Get-MirthConfigMap | Save-MirthPropertiesFile -outFile new.properties
 
     .LINK
         Links to further documentation.
@@ -800,11 +784,7 @@ function global:Save-MirthPropertiesFile {
 
         # A switch to suppress sorting of the created property file.
         [Parameter()]
-        [switch]$unsorted = $false,
-
-        # Dumps output to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [switch]$unsorted = $false
     ) 
 
     BEGIN { 
@@ -829,9 +809,7 @@ function global:Save-MirthPropertiesFile {
                 $line = “{0,-40} {1,1} {2}” -f $entry.string, "=", $entry.'com.mirth.connect.util.ConfigurationProperty'.value
                 Add-Content -Path $outPath -value $line
             }
-            if (-NOT $quiet) { 
-                Get-Content -path $outPath | Write-Host  
-            }
+            Get-Content -path $outPath | Write-Verbose  
             # Return the properties as a hashtable
             [hashtable]$returnMap = ConvertFrom-StringData (Get-Content $outPath | Out-String)
             return $returnMap
@@ -943,11 +921,7 @@ function global:Invoke-PSMirthTool {
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     )     
     BEGIN { 
         Write-Debug "Invoke-PSMirthTool Beginning"
@@ -971,29 +945,25 @@ function global:Invoke-PSMirthTool {
         }
 
         $returnValue = $null
-        $result = Import-MirthChannel -connection $connection -payLoad $tool.OuterXml -quiet
+        $result = Import-MirthChannel -connection $connection -payLoad $tool.OuterXml 
         Write-Debug "Import Result: $($result.OuterXml)"
         Write-Debug "Deploying probe channel..."
-        $result = Send-MirthDeployChannels -targetIds $toolId -quiet
+        $result = Send-MirthDeployChannels -targetIds $toolId 
         Write-Debug "Deploy Result: $result"
 
-        $maxMsgId = Get-MirthChannelMaxMsgId -targetId $toolId -quiet
+        $maxMsgId = Get-MirthChannelMaxMsgId -targetId $toolId 
         Write-Debug "Probe Channel Max Msg Id: $maxMsgId"
         if (-not $maxMsgId -gt 0) { 
-            if (-not $quiet) { 
-                Write-Host "No probe telemetry available, pausing for 3 seconds to reattempt..."
-            }
+            Write-Verbose "No probe telemetry available, pausing for 3 seconds to reattempt..."
             Start-Sleep -Seconds 3
-            if (-not $quiet) { 
-                Write-Host "Looking for probe telemetry..."
-            }            
-            $maxMsgId = Get-MirthChannelMaxMsgId -targetId $toolId -quiet
+            Write-Verbose "Looking for probe telemetry..."       
+            $maxMsgId = Get-MirthChannelMaxMsgId -targetId $toolId 
         }
         if (-not $maxMsgId -gt 0) { 
             Write-Warning "No tool telemetry could be obtained"
         } else { 
             Write-Debug "Fetching Probe Results..."
-            [xml]$channelMsg = Get-MirthChannelMsgById -connection $connection -channelId $toolId -messageId $maxMsgId -quiet 
+            [xml]$channelMsg = Get-MirthChannelMsgById -connection $connection -channelId $toolId -messageId $maxMsgId  
 
             # Now, find our payload, look for destination 'PS_OUTPUT"
             $xpath = '/message/connectorMessages/entry/connectorMessage[connectorName = "PS_OUTPUT"]'
@@ -1014,9 +984,9 @@ function global:Invoke-PSMirthTool {
             }
         }
 
-        $result = Send-MirthUndeployChannels -connection $connection -targetIds $toolId -quiet
+        $result = Send-MirthUndeployChannels -connection $connection -targetIds $toolId 
         Write-Debug "Undeploy Result: $result"
-        $result = Remove-MirthChannels -connection $connection -targetId $toolId -quiet
+        $result = Remove-MirthChannels -connection $connection -targetId $toolId 
         Write-Debug "Remove Result: $result" 
 
         return $returnValue
@@ -1134,11 +1104,7 @@ function global:Get-MirthServerAbout {
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]              
-        [switch]$quiet = $false
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     ) 
     BEGIN { 
         Write-Debug "Get-MirthServerAbout Beginning"
@@ -1163,9 +1129,7 @@ function global:Get-MirthServerAbout {
                 $r.save($o)
                 Write-Debug "Done!" 
             }
-            if (-NOT $quiet) { 
-                Write-Host $r.OuterXml
-            }
+            Write-Verbose $r.OuterXml
             if ($asHashtable) { 
                 $returnMap = @{}
                 foreach ($entry in $r.map.entry) { 
@@ -1212,8 +1176,8 @@ function global:Get-MirthServerConfig {
         channels, code templates, server settings, keystores, etc.
 
     .EXAMPLE
-         Get-MirthServerConfig -quiet -saveXML -outFile backup-local-dev.xml
-         [xml]$backupXML = Get-MirthServerConfig -connection $connection -quiet
+         Get-MirthServerConfig  -saveXML -outFile backup-local-dev.xml
+         [xml]$backupXML = Get-MirthServerConfig -connection $connection 
 
     .LINK
 
@@ -1233,11 +1197,7 @@ function global:Get-MirthServerConfig {
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     )
     BEGIN {
         Write-Debug  "Get-MirthServerConfig Beginning..."
@@ -1263,9 +1223,7 @@ function global:Get-MirthServerConfig {
                 $r.save($o)
                 Write-Debug "Done!" 
             }
-            if (-NOT $quiet) { 
-                Write-Host $r.innerXml
-            }
+            Write-Verbose $r.innerXml
             return $r
 
         }
@@ -1295,7 +1253,7 @@ function global:Get-MirthServerVersion {
         Returns a string containing the version of the Mirth server, e.g., "3.6.2"
 
     .EXAMPLE
-        Connect-Mirth | Get-MirthServerVersion -quiet -saveXML
+        Connect-Mirth | Get-MirthServerVersion  -saveXML
 
     .LINK
 
@@ -1315,11 +1273,7 @@ function global:Get-MirthServerVersion {
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.txt',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.txt'
     ) 
     BEGIN {
         Write-Debug "Get-MirthServerVersion Beginning..." 
@@ -1344,9 +1298,7 @@ function global:Get-MirthServerVersion {
                 Set-Content -Path $o -Value $r      
                 Write-Debug "Done!" 
             }
-            if (-NOT $quiet) { 
-                Write-Host $r
-            }
+            Write-Verbose $r
             return $r
         }
         catch {
@@ -1379,7 +1331,7 @@ function global:Get-MirthServerTime {
         </gregorian-calendar>
 
     .EXAMPLE
-        connect-mirth | Get-MirthServerTime -quiet -saveXML -outFile server-update-time.xml
+        connect-mirth | Get-MirthServerTime  -saveXML -outFile server-update-time.xml
 
     .LINK
 
@@ -1399,11 +1351,7 @@ function global:Get-MirthServerTime {
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.txt',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.txt'
     )     
     BEGIN { 
         Write-Debug "Get-MirthServerTime Beginning"
@@ -1428,9 +1376,7 @@ function global:Get-MirthServerTime {
                 Set-Content -Path $o -Value $r.OuterXml      
                 Write-Debug "Done!" 
             }
-            if (-NOT $quiet) { 
-                Write-Host $r
-            }
+            Write-Verbose $r
             return $r
         }
         catch {
@@ -1485,11 +1431,11 @@ function global:Get-MirthChannelGroups {
 
     .EXAMPLE
         Connect-Mirth | Get-MirthChannelGroups 
-        Connect-Mirth | Get-MirthChannelGroups -targetId bb2c8399-d05b-443c-a77f-05b5484fdfe9 -quiet
+        Connect-Mirth | Get-MirthChannelGroups -targetId bb2c8399-d05b-443c-a77f-05b5484fdfe9 
         Connect-Mirth | Get-MirthChannelGroups -targetId bb2c8399-d05b-443c-a77f-05b5484fdfe9,fdae2c23-8b01-48ac-9357-8da33082fe93
 
         # fetch a list of the current mirth channel group ids...
-        $(Get-MirthChannelGroups -quiet).list.channelGroup.id
+        $(Get-MirthChannelGroups ).list.channelGroup.id
         
     .LINK
 
@@ -1513,11 +1459,7 @@ function global:Get-MirthChannelGroups {
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     ) 
     BEGIN { 
         Write-Debug "Get-MirthChannelGroups Beginning..."
@@ -1554,9 +1496,7 @@ function global:Get-MirthChannelGroups {
                 $r.save($o)
                 Write-Debug "Done!" 
             }
-            if (-NOT $quiet) { 
-                Write-Host $r.OuterXml
-            }
+            Write-Verbose $r.OuterXml
             return $r;
         }
         catch {
@@ -1628,11 +1568,7 @@ function global:Set-MirthChannelGroups {
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     )   
     BEGIN { 
         Write-Debug "Set-MirthChannelGroups Beginning"
@@ -1739,36 +1675,32 @@ function global:Remove-MirthChannelGroups {
 
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     ) 
     BEGIN { 
         Write-Debug "Remove-MirthChannelGroups beginning"
     }
     PROCESS { 
         [xml]$payLoad = "<set />"
-        [xml]$currentGroups = Get-MirthChannelGroups -saveXML:$saveXML -quiet:$quiet
+        [xml]$currentGroups = Get-MirthChannelGroups -saveXML:$saveXML
         $channelGroups = $currentGroups.list.channelGroup
         if ($targetIds.count -gt 0) { 
             foreach ($channelGroup in $channelGroups) {
-                Write-Host "ChannelGroup id: " $channelGroup.id " name: " $channelGroup.name 
+                Write-Verbose "ChannelGroup id: $($channelGroup.id) name: $($channelGroup.name)" 
                 if ($targetIds.contains($channelGroup.id)) { 
-                    Write-Host "This channel is marked for removal, skipping..."
+                    Write-Verbose "This channel is marked for removal, skipping..."
                 } else { 
                     # add this channelGroup we are keeping to the set
                     $payLoad.DocumentElement.AppendChild($payLoad.ImportNode($channelGroup,$true))
                 }
             }
-            Set-MirthChannelGroups -payLoad $payLoad.OuterXml -removedChannelGroupIds $targetIds -override -quiet:$quiet -saveXML:$saveXML 
+            Set-MirthChannelGroups -payLoad $payLoad.OuterXml -removedChannelGroupIds $targetIds -override -saveXML:$saveXML 
 
         } else { 
             Write-Debug "All groups are to be deleted"
             $channelGroupIds = $currentGroups.list.channelGroup.id
             Write-Debug "There will be $($currentGroups.Count) channel groups deleted."
-            Set-MirthChannelGroups -payLoad '<set />' -removedChannelGroupIds $channelGroupIds  -override -quiet:$quiet -saveXML:$saveXML 
+            Set-MirthChannelGroups -payLoad '<set />' -removedChannelGroupIds $channelGroupIds  -override -saveXML:$saveXML 
         }
         
     }
@@ -1826,11 +1758,7 @@ function global:Add-MirthChannelGroups {
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     )   
     BEGIN { 
         Write-Debug "Add-MirthChannelGroups Beginning"
@@ -1864,7 +1792,7 @@ function global:Add-MirthChannelGroups {
         }
 
         # Get the current list of channelGroups
-        $currChannelGroups = Get-MirthChannelGroups -connection $connection -quiet:$quiet
+        $currChannelGroups = Get-MirthChannelGroups -connection $connection
         [hashtable] $currChannelGroupMap = @{}
        
         foreach ($channelGroup in $currChannelGroups.list.channelGroup) { 
@@ -1910,16 +1838,14 @@ function global:Add-MirthChannelGroups {
         }
 
         # Update the channelGroups with the new list
-        $r = Set-MirthChannelGroups -connection $connection -payLoad $newGroupSet.OuterXml -override -quiet:$quiet 
+        $r = Set-MirthChannelGroups -connection $connection -payLoad $newGroupSet.OuterXml -override
         if ($saveXML) { 
             [string]$o = Get-PSMirthOutputFolder
             $o = Join-Path $o $outFile 
-            Write-Host "Saving merged channelGroups to $o"
+            Write-Verbose "Saving merged channelGroups to $o"
             Set-Content $o $newGroupSet.OuterXml
         }
-        if (-NOT $quiet) { 
-            Write-Host $newGroupSet.OuterXml
-        }
+        Write-Verbose $newGroupSet.OuterXml
         return $r
     } 
     END { 
@@ -1985,11 +1911,7 @@ function global:Get-MirthServerChannelMetadata {
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     ) 
     BEGIN { 
         Write-Debug "Get-MirthServerChannelMetadata Beginning"
@@ -2013,9 +1935,7 @@ function global:Get-MirthServerChannelMetadata {
                 $r.save($o)
                 Write-Debug "Done!" 
             }
-            if (-NOT $quiet) { 
-                Write-Host $r.OuterXml
-            }
+            Write-Verbose $r.OuterXml
             if ($asHashtable) { 
                 # construct a hashtable, channel id to metadata for return
                 $returnMap = @{}
@@ -2085,11 +2005,7 @@ function global:Set-MirthServerChannelMetadata {
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     )   
     BEGIN { 
         Write-Debug "Set-MirthServerChannelMetadata Beginning"
@@ -2191,7 +2107,7 @@ function global:Get-MirthChannelTags {
 
     .EXAMPLE
         Get-MirthChannelTags -saveXML -outFile nrg-channel-tags.xml
-        $channelGroups = Get-MirthChannelTags -connection $connection -quiet
+        $channelGroups = Get-MirthChannelTags -connection $connection 
         
     .LINK
 
@@ -2212,11 +2128,7 @@ function global:Get-MirthChannelTags {
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     ) 
     BEGIN {
         Write-Debug "Get-MirthChannelTags Beginning" 
@@ -2241,9 +2153,7 @@ function global:Get-MirthChannelTags {
                 $r.save($o)
                 Write-Debug "Done!" 
             }
-            if (-NOT $quiet) { 
-                Write-Host $r.OuterXml
-            }
+            Write-Verbose $r.OuterXml
             return $r
         }
         catch {
@@ -2333,11 +2243,7 @@ function global:Set-MirthChannelTags {
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     )   
     BEGIN { 
         Write-Debug "Set-MirthChannelTags Beginning"
@@ -2477,11 +2383,7 @@ function global:Set-MirthTaggedChannels {
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     )  
     BEGIN { 
         Write-Debug "Set-MirthTaggedChannels Beginning"
@@ -2500,13 +2402,13 @@ function global:Set-MirthTaggedChannels {
             } else { 
                 # go and get them all
                 Write-Debug "Assigning tag to all existing channels"
-                $channelIds = $(Get-MirthChannels -quiet).list.channel.id
+                $channelIds = $(Get-MirthChannels ).list.channel.id
             }
         }
 
         # First, fetch the current set of Mirth channel tags.
 
-        $currentTagSet = Get-MirthChannelTags -connection $connection -quiet:$quiet -saveXML:$saveXML
+        $currentTagSet = Get-MirthChannelTags -connection $connection -saveXML:$saveXML
         [xml]$targetTag = $null
         $tagIdMap = @{}
         $tagNameMap = @{}
@@ -2572,15 +2474,12 @@ function global:Set-MirthTaggedChannels {
             Write-Debug "Channel Tag already exists... updating it."
         }
         if ($remove -and ($null -eq $targetTag)) { 
-            Write-Debug "Nothing to be removed, returning..."
-            if (-not $quiet) { 
-                Write-Host "Channel Tag $tagId was not found to be removed."
-                return $null
-            }
+            Write-Verbose "Channel Tag $tagId was not found to be removed."
+            return $null
         }
         Write-Debug "Creating new tag set..."
-        Write-Host "targetTag ID:   " $targetTag.channelTag.id
-        Write-Host "targetTag Name: " $targetTag.channelTag.name
+        Write-Verbose "targetTag ID:   $($targetTag.channelTag.id)"
+        Write-Verbose "targetTag Name: $($targetTag.channelTag.name)"
 
         [xml]$newTagSet = "<set />"
         # Write out a new set of tags skipping the tag if it is being 
@@ -2695,7 +2594,7 @@ function global:Get-MirthConfigMap {
         A map of entries with string key names and com.mirth.connect.util.ConfigurationProperty objects.
 
     .EXAMPLE
-        Connect-Mirth | Get-MirthConfigMap -quiet
+        Connect-Mirth | Get-MirthConfigMap 
 
     .LINK
         Links to further documentation.
@@ -2716,11 +2615,7 @@ function global:Get-MirthConfigMap {
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     ) 
     BEGIN { 
     }
@@ -2744,9 +2639,7 @@ function global:Get-MirthConfigMap {
                 $r.save($o)
                 Write-Debug "Done!" 
             }
-            if (-NOT $quiet) { 
-                Write-Host $r.OuterXml
-            }
+            Write-Verbose $r.OuterXml
             return $r;
         }
         catch {
@@ -2830,11 +2723,7 @@ function global:Set-MirthConfigMap {
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     )    
     BEGIN { 
         Write-Debug "Set-MirthConfigMap Beginning"
@@ -2876,9 +2765,7 @@ function global:Set-MirthConfigMap {
                 Set-Content -Path $o -Value $output   
                 Write-Debug "Done!" 
             }
-            if (-NOT $quiet) { 
-                Write-Host $r.OuterXml
-            }
+            Write-Verbose $r.OuterXml
 
             return $r
         }
@@ -2930,7 +2817,7 @@ function global:Get-MirthExtensionProperties {
 
     .EXAMPLE
         Connect-Mirth | Get-MirthExtensionProperties -targetId "User Authorization" -decode
-        Connect-Mirth | Get-MirthExtensionProperties -targetId "SSL Manager" -quiet -decode
+        Connect-Mirth | Get-MirthExtensionProperties -targetId "SSL Manager"  -decode
 
     .LINK
         Links to further documentation.
@@ -2961,11 +2848,7 @@ function global:Get-MirthExtensionProperties {
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-' + $targetId + '-Output.xml',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-' + $targetId + '-Output.xml'
     ) 
     BEGIN { 
         Write-Debug "Get-MirthExtensionProperties Beginning"
@@ -2996,9 +2879,7 @@ function global:Get-MirthExtensionProperties {
                 $r.save($o)
                 Write-Debug "Done!" 
             }
-            if (-NOT $quiet) { 
-                Write-Host $r.OuterXml
-            }
+            Write-Verbose $r.OuterXml
 
             return $r
         }
@@ -3045,7 +2926,7 @@ function global:Set-MirthExtensionProperties {
         &lt;/com.mirth.connect.plugins.ssl.model.SSLManagerSettings&gt;</property>
         </properties>
         "@
-        Connect-Mirth | Set-MirthExtensionProperties -targetId "SSL Manager" -payLoad $payLoad -quiet
+        Connect-Mirth | Set-MirthExtensionProperties -targetId "SSL Manager" -payLoad $payLoad 
 
     .LINK
         Links to further documentation.
@@ -3078,11 +2959,7 @@ function global:Set-MirthExtensionProperties {
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-' + $targetId + '-Output.xml',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-' + $targetId + '-Output.xml'
     ) 
     BEGIN { 
         Write-Debug "Set-MirthExtensionProperties Beginning"
@@ -3113,9 +2990,7 @@ function global:Set-MirthExtensionProperties {
                 $r.save($o)
                 Write-Debug "Done!" 
             }
-            if (-NOT $quiet) { 
-                Write-Host $r.OuterXml
-            }
+            Write-Verbose $r.OuterXml
 
             return $r
         }
@@ -3195,11 +3070,7 @@ function global:Get-MirthGlobalScripts {
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     ) 
     BEGIN { 
         Write-Debug "Get-MirthGlobalScripts Beginning"
@@ -3224,9 +3095,7 @@ function global:Get-MirthGlobalScripts {
                 $r.save($o)
                 Write-Debug "Done!" 
             }
-            if (-NOT $quiet) { 
-                Write-Host $r.OuterXml
-            }
+            Write-Verbose $r.OuterXml
             return $r
         }
         catch {
@@ -3321,11 +3190,7 @@ function global:Set-MirthGlobalScripts {
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     )  
     BEGIN { 
         Write-Debug "Set-MirthGlobalScripts Beginning"
@@ -3363,9 +3228,7 @@ function global:Set-MirthGlobalScripts {
                 Set-Content -Path $o -Value $output   
                 Write-Debug "Done!" 
             }
-            if (-NOT $quiet) { 
-                Write-Host $r.OuterXml
-            }
+            Write-Verbose $r.OuterXml
 
             return $r
         }
@@ -3444,11 +3307,7 @@ function global:Get-MirthServerSettings {
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     ) 
     BEGIN {
         Write-Debug "Get-MirthServerSettings Beginning" 
@@ -3475,9 +3334,7 @@ function global:Get-MirthServerSettings {
                 $r.save($o)
                 Write-Debug "Done!" 
             }
-            if (-NOT $quiet) { 
-                Write-Host $r.OuterXml
-            }
+            Write-Verbose $r.OuterXml
             return $r
         }
         catch {
@@ -3539,11 +3396,7 @@ function global:Set-MirthServerSettings {
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     ) 
     BEGIN { 
     }
@@ -3583,9 +3436,7 @@ function global:Set-MirthServerSettings {
                 Set-Content -Path $o -Value $output   
                 Write-Debug "Done!" 
             }
-            if (-NOT $quiet) { 
-                Write-Host $r.OuterXml
-            }
+             Write-Verbose $r.OuterXml
 
             return $r
         }
@@ -3649,11 +3500,7 @@ function global:Get-MirthServerProperties {
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     )     
     BEGIN { 
         Write-Debug "Get-MirthServerProperties Beginning"
@@ -3664,11 +3511,9 @@ function global:Get-MirthServerProperties {
         # import the tool channel and deploy it
         Write-Debug "Invoking tool channel Probe_Mirth_Properties.xml"
         $toolPath = "$PSSCriptRoot/tools/Probe_Mirth_Properties.xml"
-        [xml]$toolPayLoad = Invoke-PSMirthTool -connection $connection -toolPath $toolPath -saveXML:$saveXML -quiet:$quiet
+        [xml]$toolPayLoad = Invoke-PSMirthTool -connection $connection -toolPath $toolPath -saveXML:$saveXML
         if ($null -ne $toolPayLoad) {
-            if (-NOT $quiet) { 
-                Write-Host $toolPayLoad.OuterXml
-            }
+            Write-Verbose $toolPayLoad.OuterXml
             if (-not $asHashtable) { 
                 if ($saveXML) { 
                     Write-Debug "Saving to $outPath"    
@@ -3730,8 +3575,8 @@ function global:Test-MirthFileReadWrite {
         [bool] $True if the folder passes the test, otherwise $False 
 
     .EXAMPLE
-        $result = Test-MirthFileReadWrite -testPath D:/TEMP -mode R -quiet
-        if ($(Test-MirthFileReadWrite -testPath $path -mode RW -quiet)) { ... }
+        $result = Test-MirthFileReadWrite -testPath D:/TEMP -mode R 
+        if ($(Test-MirthFileReadWrite -testPath $path -mode RW )) { ... }
 
     .NOTES
 
@@ -3750,11 +3595,7 @@ function global:Test-MirthFileReadWrite {
         # File mode to test: R = Read, W = Write, RW = Read/Write
         [Parameter()]
         [ValidateSet('R','W','RW')]        
-        [String]$mode   = "R",        
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [String]$mode   = "R"
     ) 
     BEGIN { 
         Write-Debug "Test-MirthFileReadWrite Beginning"
@@ -3803,10 +3644,8 @@ function global:Test-MirthFileReadWrite {
                 Write-Debug "Invoking POST Mirth API server at: $uri "
                 $r = Invoke-RestMethod -Uri $uri -Headers $headers -ContentType 'application/xml' -Method POST -WebSession $session -Body $testReadXML.OuterXml
                 [String] $testResult = $r.'com.mirth.connect.util.ConnectionTestResponse'.type
-                if (-NOT $quiet) {
-                    Write-Host "READ Test:" 
-                    Write-Host $r.OuterXml
-                }
+                Write-Verbose "READ Test:" 
+                Write-Verbose $r.OuterXml
                 $result = ($result -and ($testResult -eq "SUCCESS")) 
             }
             if ($mode.Contains('W')) {
@@ -3815,10 +3654,8 @@ function global:Test-MirthFileReadWrite {
                 Write-Debug "Invoking POST Mirth API server at: $uri "
                 $r = Invoke-RestMethod -Uri $uri -Headers $headers -ContentType 'application/xml' -Method POST -WebSession $session -Body $testWriteXML.OuterXml
                 [String] $testResult = $r.'com.mirth.connect.util.ConnectionTestResponse'.type
-                if (-NOT $quiet) {
-                    Write-Host "Write Test:" 
-                    Write-Host $r.OuterXml
-                }
+                Write-Verbose "Write Test:" 
+                Write-Verbose $r.OuterXml
                 $result = ($result -and ($testResult -eq "SUCCESS"))                 
             }
             return $result
@@ -3964,65 +3801,43 @@ function global:Set-MirthChannelProperties {
 
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
-    ) 
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
+    )
     BEGIN { 
         Write-Debug "Set-MirthChannelProperties Beginning"
     }
     PROCESS { 
-        [xml] $channelList = Get-MirthChannels -connection $connection -targetId $channelIds -quiet
+        [xml] $channelList = Get-MirthChannels -connection $connection -targetId $channelIds 
         $channelNodes = $channelList.SelectNodes("/list/channel")
-        if (-not $quiet) { 
-            Write-Host "There are $($channelNodes.count) channels to be processed."
-        }
+        Write-Verbose "There are $($channelNodes.count) channels to be processed."
         foreach ($channelNode in $channelNodes) {
-            if (-not $quiet) {
-                Write-Host "Updating message properties for channel [$($channelNode.id)] $($channelNode.name)"
-            }
+            Write-Verbose "Updating message properties for channel [$($channelNode.id)] $($channelNode.name)"
             if ($PSBoundParameters.containsKey('messageStorageMode')) {
-                if (-not $quiet) { 
-                    Write-Host "Updating messageStorageMode"
-                }
+                Write-Verbose "Updating messageStorageMode"
                 $channelNode.properties.messageStorageMode = $messageStorageMode.toString()
             }
             if ($PSBoundParameters.containsKey('clearGlobalChannelMap')) {
-                if (-not $quiet) {
-                    Write-Host "Updating clearGlobalChannelMap"
-                }
+                Write-Verbose "Updating clearGlobalChannelMap"
                 $channelNode.properties.clearGlobalChannelMap = $clearGlobalChannelMap.ToString()
             }
             if ($PSBoundParameters.containsKey('encryptData')) {
-                if (-not $quiet) {
-                    Write-Host "Updating encryptData"
-                }
+                Write-Verbose "Updating encryptData"
                 $channelNode.properties.encryptData = $encryptData.ToString()
             }
             if ($PSBoundParameters.containsKey('removeContentOnCompletion')) {
-                if (-not $quiet) {
-                    Write-Host "Updating removeContentOnCompletion"
-                }
+                Write-Verbose "Updating removeContentOnCompletion"
                 $channelNode.properties.removeContentOnCompletion = $removeContentOnCompletion.ToString()
             }
             if ($PSBoundParameters.containsKey('removeOnlyFilteredOnCompletion')) {
-                if (-not $quiet) {
-                    Write-Host "Updating removeOnlyFilteredOnCompletion"
-                }
+                Write-Verbose "Updating removeOnlyFilteredOnCompletion"
                 $channelNode.properties.removeOnlyFilteredOnCompletion = $removeOnlyFilteredOnCompletion.ToString()
             }
             if ($PSBoundParameters.containsKey('removeAttachmentsOnCompletion')) {
-                if (-not $quiet) {
-                    Write-Host "Updating removeAttachmentsOnCompletion"
-                }
+                Write-Verbose "Updating removeAttachmentsOnCompletion"
                 $channelNode.properties.removeAttachmentsOnCompletion = $removeAttachmentsOnCompletion.ToString()
             }                          
             if ($PSBoundParameters.containsKey('storeAttachments')) {
-                if (-not $quiet) {
-                    Write-Host "Updating storeAttachments"
-                }
+                Write-Verbose "Updating storeAttachments"
                 $channelNode.properties.storeAttachments = $storeAttachments.ToString()
             }
             if (($PSBoundParameters.containsKey('enabled')) -or
@@ -4034,15 +3849,11 @@ function global:Set-MirthChannelProperties {
                 if ($null -ne $psNode) {
                     Write-Debug "pruningSettings node found..."
                     if ($PSBoundParameters.containsKey('enabled')) {
-                        if (-not $quiet) {
-                            Write-Host "Updating enabled"
-                        }
+                        Write-Verbose "Updating enabled"
                         $channelNode.exportData.metadata.enabled = $enabled.ToString()
                     }  
                     if ($PSBoundParameters.containsKey('pruneMetaDataDays')) {
-                        if (-not $quiet) {
-                            Write-Host "Updating pruneMetaDataDays"
-                        }
+                        Write-Verbose "Updating pruneMetaDataDays"
                         $pruneMetaDataDaysNode = $psNode.SelectSingleNode("pruneMetaDataDays")
 
                         if ($pruneMetaDataDays -lt 0) { 
@@ -4067,7 +3878,7 @@ function global:Set-MirthChannelProperties {
                                 }
                             }
                             if ($null -ne $pruneMetaDataDaysNode) { 
-                                Write-Host "Updating pruneMetaDataDays node"
+                                Write-Verbose "Updating pruneMetaDataDays node"
                                 $channelNode.exportData.metadata.pruningSettings.pruneMetaDataDays = $pruneMetaDataDays.ToString()
                             } else { 
                                 # add pruneMetaDataDays here
@@ -4079,9 +3890,7 @@ function global:Set-MirthChannelProperties {
                         }
                     }
                     if ($PSBoundParameters.containsKey('pruneContentDays')) {
-                        if (-not $quiet) {
-                            Write-Host "Updating pruneContentDays"
-                        }
+                        Write-Verbose "Updating pruneContentDays"
                         $pruneContentDaysNode = $psNode.SelectSingleNode("pruneContentDays")
                         if ($pruneContentDays -lt 0) { 
                             if ($null -ne $pruneContentDaysNode) { 
@@ -4114,9 +3923,7 @@ function global:Set-MirthChannelProperties {
                         }
                     }   
                     if ($PSBoundParameters.containsKey('allowArchiving')) {
-                        if (-not $quiet) {
-                            Write-Host "Updating archiveEnabled"
-                        }
+                        Write-Verbose "Updating archiveEnabled"
                         $channelNode.exportData.metadata.pruningSettings.archiveEnabled = $allowArchiving.ToString()
                     }  
                 } else { 
@@ -4177,11 +3984,7 @@ function global:Get-MirthChannelMsgById {
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string] $outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch] $quiet = $false
+        [string] $outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     )         
     BEGIN { 
         Write-Debug "Get-MirthChannelMsgById Beginning"
@@ -4209,9 +4012,7 @@ function global:Get-MirthChannelMsgById {
                 $r.save($o)     
                 Write-Debug "Done!" 
             }
-            if (-NOT $quiet) { 
-                Write-Host $r.innerXml
-            }
+            Write-Verbose $r.innerXml
             return $r
                 
         }
@@ -4262,11 +4063,7 @@ function global:Get-MirthChannelMaxMsgId {
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string] $outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch] $quiet = $false
+        [string] $outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     )         
     BEGIN { 
         Write-Debug "Get-MirthChannelMaxMsgId Beginning"
@@ -4294,9 +4091,7 @@ function global:Get-MirthChannelMaxMsgId {
                 $r.save($o)     
                 Write-Debug "Done!" 
             }
-            if (-NOT $quiet) { 
-                Write-Host $r.innerXml
-            }
+            Write-Verbose $r.innerXml
             return [long]$r.long
                 
         }
@@ -4372,11 +4167,7 @@ function global:Send-MirthDeployChannels {
 
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     ) 
     BEGIN { 
         Write-Debug "Send-MirthDeployChannels Beginning"
@@ -4419,9 +4210,7 @@ function global:Send-MirthDeployChannels {
                 #$r.save($o)  
                 Set-Content $o -Value $r.getType()   
             }
-            if (-NOT $quiet) { 
-                Write-Host $r.OuterXml
-            }
+            Write-Verbose $r.OuterXml
             return $true
         } catch {
             $_.response
@@ -4495,11 +4284,7 @@ function global:Send-MirthRedeployAllChannels {
 
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     ) 
     BEGIN { 
         Write-Debug "Send-MirthRedeployAllChannels Beginning"
@@ -4532,9 +4317,7 @@ function global:Send-MirthRedeployAllChannels {
                 $o = Join-Path $o $outFile 
                 Set-Content $o -Value $r.getType()   
             }
-            if (-NOT $quiet) { 
-                Write-Host $r.OuterXml
-            }
+            Write-Verbose $r.OuterXml
             return $true
         } catch {
             $_.response
@@ -4639,11 +4422,7 @@ function global:Send-MirthUndeployChannels {
 
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     )
     BEGIN { 
         Write-Debug "Send-MirthUndeployChannels Beginning"
@@ -4685,9 +4464,7 @@ function global:Send-MirthUndeployChannels {
                 Write-Debug "Saving Output to $o" 
                 Set-Content $o -Value $r.getType()   
             }
-            if (-NOT $quiet) { 
-                Write-Host $r.OuterXml
-            }
+            Write-Verbose $r.OuterXml
             return $true
         } catch {
             $_.response
@@ -4829,7 +4606,7 @@ function global:Get-MirthChannels {
         Refer to the Mirth API for more information.
 
     .EXAMPLE
-        Connect-Mirth | Get-MirthChannels -quiet
+        Connect-Mirth | Get-MirthChannels 
         
     .LINK
         Links to further documentation.
@@ -4859,11 +4636,7 @@ function global:Get-MirthChannels {
 
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     ) 
     BEGIN { 
         Write-Debug 'Get-MirthChannels Beginning'
@@ -4893,10 +4666,10 @@ function global:Get-MirthChannels {
             Write-Debug "...done."
             # we have some result, so get the channel metadata map
             Write-Debug "Fetching Server channel metadata map"
-            $channelMetaDataMap = Get-MirthServerChannelMetadata -connection $connection -asHashtable -quiet:$quiet -saveXML:$saveXML
+            $channelMetaDataMap = Get-MirthServerChannelMetadata -connection $connection -asHashtable -saveXML:$saveXML
             Write-Debug "Channel Metadata map contains $($channelMetaDataMap.Count) entries..."
 
-            $currentTagSet = Get-MirthChannelTags -connection $connection -quiet:$quiet -saveXML:$saveXML
+            $currentTagSet = Get-MirthChannelTags -connection $connection -saveXML:$saveXML
             $channelTagMap = @{}
             Write-Debug "Building channel to tag map..."
             foreach ($channelTag in $currentTagSet.set.channelTag) { 
@@ -4995,9 +4768,7 @@ function global:Get-MirthChannels {
                     Write-Debug "Done!" 
                 }
             }
-            if (-NOT $quiet) { 
-                Write-Host $r.OuterXml
-            }
+            Write-Verbose $r.OuterXml
             return $r
         }
         catch {
@@ -5049,11 +4820,7 @@ function global:Remove-MirthChannels {
 
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     )  
     BEGIN {
         Write-Debug "Remove-MirthChannels Beginning" 
@@ -5081,9 +4848,7 @@ function global:Remove-MirthChannels {
                 Set-Content -Path $o -Value "Deleted Channels: $targetId" 
                 Write-Debug "Done!" 
             }
-            if (-NOT $quiet) { 
-                Write-Host $r.OuterXml
-            }
+            Write-Verbose $r.OuterXml
             return $r
         }
         catch {
@@ -5137,11 +4902,7 @@ function global:Remove-MirthChannelByName {
 
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     )  
     BEGIN {
         Write-Debug "Remove-MirthChannelByName Beginning" 
@@ -5149,7 +4910,7 @@ function global:Remove-MirthChannelByName {
     PROCESS {    
           
         # First, get the channels
-        $channelSet = Get-MirthChannels -connection $connection -quiet 
+        $channelSet = Get-MirthChannels -connection $connection  
         [string[]]$targetIds = $()
         foreach ($targetName in $targetNames) {
             $xpath = '//channel[name = "' + $targetName + '"]'  
@@ -5168,16 +4929,14 @@ function global:Remove-MirthChannelByName {
             return $null
         }
 
-        $r = Remove-MirthChannels -connection $connection -targetId $targetIds -saveXML:$saveXML -quiet:$quiet
+        $r = Remove-MirthChannels -connection $connection -targetId $targetIds -saveXML:$saveXML
 
         if ($saveXML) { 
             [string]$o = Get-PSMirthOutputFolder
             $o = Join-Path $o $outFile 
             Write-Debug "Saving Output to $o"       
         }
-        if (-NOT $quiet) { 
-            Write-Host $r.OuterXml
-        }
+        Write-Verbose $r.OuterXml
         return $r
 
     }
@@ -5236,11 +4995,7 @@ function global:Import-MirthChannel {
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     )
     BEGIN { 
         Write-Debug "Import-MirthChannel Beginning"
@@ -5282,9 +5037,7 @@ function global:Import-MirthChannel {
                 $r.save($o)     
                 Write-Debug "Done!" 
             }
-            if (-NOT $quiet) { 
-                Write-Host $r.OuterXml
-            }
+            Write-Verbose $r.OuterXml
             return $r
 
         }
@@ -5372,11 +5125,7 @@ function global:Get-MirthCodeTemplateLibraries {
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     )    
     BEGIN { 
         Write-Debug "Get-MirthCodeTemplateLibraries Beginning"
@@ -5412,9 +5161,7 @@ function global:Get-MirthCodeTemplateLibraries {
                 $r.save($o)
                 Write-Debug "Done!" 
             }
-            if (-NOT $quiet) { 
-                Write-Host $r.OuterXml
-            }
+            Write-Verbose $r.OuterXml
             return $r;
         }
         catch {
@@ -5480,11 +5227,7 @@ function global:Set-MirthCodeTemplateLibraries {
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     )    
     BEGIN { 
         Write-Debug "Set-MirthCodeTemplateLibraries Beginning"
@@ -5525,10 +5268,7 @@ function global:Set-MirthCodeTemplateLibraries {
                 $r.save($o)
                 Write-Debug "Done!" 
             }
-            if (-NOT $quiet) { 
-                Write-Host $r.OuterXml
-            }
-
+            Write-Verbose $r.OuterXml
             return $r
         }
         catch {
@@ -5605,11 +5345,7 @@ function global:Set-MirthSSLManagerKeystores {
 
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [switch]$saveXML = $false
     )
     BEGIN { 
         Write-Debug "Set-MirthSSLManagerKeystores Beginning..."
@@ -5618,8 +5354,8 @@ function global:Set-MirthSSLManagerKeystores {
         if ($null -eq $connection) { 
             Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"    
         }  
-        $payLoad = New-MirthSSLMgrPropertiesPayload -keyStore $keyStore -keyStorePath $keyStorePath -keyStorePass $keyStorePass -trustStore $trustStore -trustStorePath $trustStorePath -quiet:$quiet -saveXML:$saveXML
-        return Set-MirthExtensionProperties -connection $connection -targetId "SSL Manager" -payLoad $payLoad -quiet:$quiet
+        $payLoad = New-MirthSSLMgrPropertiesPayload -keyStore $keyStore -keyStorePath $keyStorePath -keyStorePass $keyStorePass -trustStore $trustStore -trustStorePath $trustStorePath -saveXML:$saveXML
+        return Set-MirthExtensionProperties -connection $connection -targetId "SSL Manager" -payLoad $payLoad
 
     }
     END { 
@@ -5706,11 +5442,7 @@ function global:Get-MirthKeyStoreCertificates {
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     ) 
     BEGIN { 
         Write-Debug "Get-MirthKeyStoreCertificates Beginning..."
@@ -5735,9 +5467,7 @@ function global:Get-MirthKeyStoreCertificates {
                 $r.save($o)
                 Write-Debug "Done!" 
             }
-            if (-NOT $quiet) { 
-                Write-Host $r.OuterXml
-            }
+            Write-Verbose $r.OuterXml
             return $r
                 
         }
@@ -5787,11 +5517,7 @@ function global:Get-MirthKeyStoreBytes {
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     ) 
     BEGIN { 
         Write-Debug "Get-MirthKeyStoreBytes Beginning..."
@@ -5816,9 +5542,7 @@ function global:Get-MirthKeyStoreBytes {
                 $r.save($o)
                 Write-Debug "Done!" 
             }
-            if (-NOT $quiet) { 
-                Write-Host $r.OuterXml
-            }
+            Write-Verbose $r.OuterXml
             return $r
                 
         }
@@ -5967,11 +5691,7 @@ function global:Set-MirthUserPassword {
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     )
     BEGIN {
         Write-Debug "Set-MirthUserPassword Beginning" 
@@ -5983,7 +5703,7 @@ function global:Set-MirthUserPassword {
         [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
         $serverUrl = $connection.serverUrl
 
-        $ulist = Get-MirthUsers -connection $connection -targetId $targetId -saveXML:$saveXML -quiet:$quiet
+        $ulist = Get-MirthUsers -connection $connection -targetId $targetId -saveXML:$saveXML
         if ($null -ne $ulist) {
             $users = $ulist.SelectNodes("/list/user")
         }
@@ -6004,9 +5724,7 @@ function global:Set-MirthUserPassword {
                     Set-Content -Path $o -Value "$targetId : $newPassword" 
                     Write-Debug "Done!" 
                 }
-                if (-NOT $quiet) { 
-                    Write-Host $r
-                }
+                Write-Verbose $r
             }
             catch {
                 $msg = $MyInvocation.MyCommand + " Failed, Response: " + $_.Exception.Response.StatusCode.value__   + ' : ' + $_.Exception.Response.StatusDescription
@@ -6036,7 +5754,7 @@ function global:Test-MirthUserLogged {
         [bool], TRUE if the user identified by targetId is logged in, otherwise false.
 
     .EXAMPLE
-        Connect-Mirth | Test-MirthUserLogged -targetId 1 -quiet
+        Connect-Mirth | Test-MirthUserLogged -targetId 1 
 
     .NOTES
 
@@ -6060,11 +5778,7 @@ function global:Test-MirthUserLogged {
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     ) 
     BEGIN {
         Write-Debug "Test-MirthUserLogged Beginning" 
@@ -6089,9 +5803,7 @@ function global:Test-MirthUserLogged {
                 Set-Content -Path $o -Value $r.OuterXml
                 Write-Debug "Done!" 
             }
-            if (-NOT $quiet) { 
-                Write-Host $r.OuterXml
-            }
+            Write-Verbose $r.OuterXml
             $loggedIn = [System.Convert]::ToBoolean($r.boolean)
 
             return $loggedIn
@@ -6170,11 +5882,7 @@ function global:Get-MirthLoggedUsers {
 
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     ) 
     BEGIN {
         Write-Debug 'Get-MirthLoggedUsers Beginning'  
@@ -6189,7 +5897,7 @@ function global:Get-MirthLoggedUsers {
             $uTmp = $user.username
             Write-Debug "Checking user $uTmp" 
             if (Test-MirthUserLogged -connection $connection -targetId $user.id ) {
-                Write-Host "$uTmp is logged in!"
+                Write-Verbose "$uTmp is logged in!"
                 $loggedUsers.DocumentElement.AppendChild($loggedUsers.ImportNode($user,$true))
             }
         }
@@ -6200,9 +5908,7 @@ function global:Get-MirthLoggedUsers {
             $loggedUsers.save($o)     
             Write-Debug "Done!" 
         }
-        if (-NOT $quiet) { 
-            Write-Host $loggedUsers.OuterXml
-        }
+        Write-Verbose $loggedUsers.OuterXml
         return $loggedUsers
     }
     END { 
@@ -6245,7 +5951,7 @@ function global:Get-MirthUsers {
 
     .EXAMPLE
         Connect-Mirth | Get-MirthUser 
-        Connect-Mirth | Get-MirthUser -targetId 1 -quiet
+        Connect-Mirth | Get-MirthUser -targetId 1 
 
     .LINK
         Links to further documentation.
@@ -6270,11 +5976,7 @@ function global:Get-MirthUsers {
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     )
     BEGIN {
         Write-Debug "Get-MirthUsers Beginning" 
@@ -6318,9 +6020,7 @@ function global:Get-MirthUsers {
                 $r.save($o)     
                 Write-Debug "Output saved to $o"
             }
-            if (-NOT $quiet) { 
-                Write-Host $r.OuterXml
-            }
+            Write-Verbose $r.OuterXml
             return $r   
         }
         catch {
@@ -6392,11 +6092,7 @@ function global:Set-MirthUser {
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     )
     BEGIN { 
         Write-Debug "Set-MirthUser Beginning"
@@ -6417,7 +6113,7 @@ function global:Set-MirthUser {
             Write-Error "A user XML payLoad string is required!"
             return
         } else {
-            Write-Host "Creating payload from xml: " $payLoad
+            Write-Verbose "Creating payload from xml: $payLoad"
             $userXML = [xml]$payLoad
         }
 
@@ -6437,9 +6133,7 @@ function global:Set-MirthUser {
                 $r.save($o)     
                 Write-Debug "Done!" 
             }
-            if (-NOT $quiet) { 
-                Write-Host $r.OuterXml
-            }
+            Write-Verbose $r.OuterXml
             return $r
         }
         catch {
@@ -6527,11 +6221,7 @@ function global:Add-MirthUser {
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml',
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     )
     BEGIN {
         Write-Debug "Add-MirthUser Beginning..." 
@@ -6572,9 +6262,7 @@ function global:Add-MirthUser {
                 $r.save($o)     
                 Write-Debug "Done!" 
             }
-            if (-NOT $quiet) { 
-                Write-Host $r.OuterXml
-            }
+            Write-Verbose $r.OuterXml
             Set-MirthUserPassword -connection $connection -targetId $userXML.user.username -newPassword $newPassword
         }
         catch {
@@ -6622,11 +6310,7 @@ function global:Remove-MirthUser {
    
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
-
-        # Dumps the response from the server to the host console for visual inspection.
-        [Parameter()]
-        [switch]$quiet = $false
+        [switch]$saveXML = $false
     )    
     BEGIN { 
         Write-Debug "Remove-MirthUser Beginning"
@@ -6662,9 +6346,7 @@ function global:Remove-MirthUser {
                 #Set-Content -Path $o -Value "$targetId : $newPassword" 
                 Write-Debug "Done!" 
             }
-            if (-NOT $quiet) { 
-                Write-Host $r.OuterXml
-            }
+            Write-Verbose $r.OuterXml
             return $r
         }
         catch {
