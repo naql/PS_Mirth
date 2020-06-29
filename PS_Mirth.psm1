@@ -567,9 +567,8 @@ function global:New-MirthConfigMapEntry {
         [string]$entryValue,
         
         # comment describing the property
-        [Parameter(Mandatory=$True,
-                   ValueFromPipelineByPropertyName=$True)]
-        [string]$entryComment
+        [Parameter(ValueFromPipelineByPropertyName=$True)]
+        [string]$entryComment = ""
 
     ) 
     BEGIN {
@@ -662,8 +661,13 @@ function global:New-MirthConfigMapFromProperties {
     PROCESS {
     [xml]$mapXML = [xml]"<map></map>"
         if (($payLoad -ne $null) -and ($payLoad -is [hashtable]) -and ($payLoad.Count -gt 0)) {
-            $msg = "Properties hashtable provided in payLoad with " + $payLoad.Count + " entries"
-            Write-Debug $msg
+            Write-Debug "$msg = Properties hashtable provided in payLoad with $($payLoad.Count) entries"
+            # Note:  We are losing comments here, because they are not represented in a vanilla hashtable
+            foreach ($key in $payLoad.Keys) { 
+                $newValue = $payLoad[$key]
+                $entryXML = New-MirthConfigMapEntry -entryKey $key -entryValue $newValue -entryComment ""
+                $mapXML.DocumentElement.AppendChild($mapXML.ImportNode($entryXML.entry, $true)) | Out-Null
+            }
         } else { 
             # Verify the payLoadFilePath exists, load it
             if (Test-Path $payloadFilePath -PathType Leaf) {
@@ -686,15 +690,14 @@ function global:New-MirthConfigMapFromProperties {
                     $propLine = $line.Split('=')
                     $keyName  = $propLine[0].trim()
                     $value    = $propLine[1].trim()
-                    Write-Verbose "Key:     $keyName"
-                    Write-Verbose "Value:   $value"
-                    Write-Verbose "Comment: $commentBuffer"
+                    Write-Debug "Key:     $keyName"
+                    Write-Debug "Value:   $value"
+                    Write-Debug "Comment: $commentBuffer"
                     $entryXML = New-MirthConfigMapEntry -entryKey $keyName -entryValue $value -entryComment $commentBuffer
                     $mapXML.DocumentElement.AppendChild($mapXML.ImportNode($entryXML.entry, $true)) | Out-Null
 
                     $commentBuffer = ''
                   }
-
                 }
             } else { 
                 $msg = "The properties file path provided was invalid: " + $payloadFilePath
@@ -1121,7 +1124,7 @@ function global:Get-MirthServerAbout {
                 $o = Join-Path $o $outFile 
                 $r.save($o)
             }
-            Write-Verbose $r.OuterXml
+            Write-Verbose "$($r.OuterXml)"
             if ($asHashtable) { 
                 $returnMap = @{}
                 foreach ($entry in $r.map.entry) { 
@@ -1478,7 +1481,7 @@ function global:Get-MirthChannelGroups {
                 $o = Join-Path $o $outFile 
                 $r.save($o)
             }
-            Write-Verbose $r.OuterXml
+            Write-Verbose "$($r.OuterXml)"
             return $r;
         }
         catch {
@@ -1914,7 +1917,7 @@ function global:Get-MirthServerChannelMetadata {
                 $o = Join-Path $o $outFile 
                 $r.save($o)
             }
-            Write-Verbose $r.OuterXml
+            Write-Verbose "$($r.OuterXml)"
             if ($asHashtable) { 
                 # construct a hashtable, channel id to metadata for return
                 $returnMap = @{}
@@ -2130,7 +2133,7 @@ function global:Get-MirthChannelTags {
                 $o = Join-Path $o $outFile 
                 $r.save($o)
             }
-            Write-Verbose $r.OuterXml
+            Write-Verbose "$($r.OuterXml)"
             return $r
         }
         catch {
@@ -2614,7 +2617,7 @@ function global:Get-MirthConfigMap {
                 $o = Join-Path $o $outFile 
                 $r.save($o)
             }
-            Write-Verbose $r.OuterXml
+            Write-Verbose "$($r.OuterXml)"
             return $r;
         }
         catch {
@@ -2737,7 +2740,7 @@ function global:Set-MirthConfigMap {
                 $output = "Configuration Map Updated Successfully: $payLoad"
                 Set-Content -Path $o -Value $output   
             }
-            Write-Verbose $r.OuterXml
+            Write-Verbose "$($r.OuterXml)"
 
             return $r
         }
@@ -2849,7 +2852,7 @@ function global:Get-MirthExtensionProperties {
                 $o = Join-Path $o $outFile 
                 $r.save($o)
             }
-            Write-Verbose $r.OuterXml
+            Write-Verbose "$($r.OuterXml)"
 
             return $r
         }
@@ -2958,7 +2961,7 @@ function global:Set-MirthExtensionProperties {
                 $o = Join-Path $o $outFile 
                 $r.save($o)
             }
-            Write-Verbose $r.OuterXml
+            Write-Verbose "$($r.OuterXml)"
 
             return $r
         }
@@ -3060,7 +3063,7 @@ function global:Get-MirthGlobalScripts {
                 $o = Join-Path $o $outFile 
                 $r.save($o)
             }
-            Write-Verbose $r.OuterXml
+            Write-Verbose "$($r.OuterXml)"
             return $r
         }
         catch {
@@ -3190,7 +3193,7 @@ function global:Set-MirthGlobalScripts {
                 $output = "Global Scripts Updated Successfully: $payLoad"
                 Set-Content -Path $o -Value $output   
             }
-            Write-Verbose $r.OuterXml
+            Write-Verbose "$($r.OuterXml)"
 
             return $r
         }
@@ -3293,7 +3296,7 @@ function global:Get-MirthServerSettings {
                 $o = Join-Path $o $outFile 
                 $r.save($o)
             }
-            Write-Verbose $r.OuterXml
+            Write-Verbose "$($r.OuterXml)"
             return $r
         }
         catch {
@@ -3393,7 +3396,7 @@ function global:Set-MirthServerSettings {
                 $output = "Server Settings Updated Successfully: $payLoad"
                 Set-Content -Path $o -Value $output   
             }
-             Write-Verbose $r.OuterXml
+             Write-Verbose "$($r.OuterXml)"
 
             return $r
         }
@@ -3602,7 +3605,7 @@ function global:Test-MirthFileReadWrite {
                 $r = Invoke-RestMethod -Uri $uri -Headers $headers -ContentType 'application/xml' -Method POST -WebSession $session -Body $testReadXML.OuterXml
                 [String] $testResult = $r.'com.mirth.connect.util.ConnectionTestResponse'.type
                 Write-Verbose "READ Test:" 
-                Write-Verbose $r.OuterXml
+                Write-Verbose "$($r.OuterXml)"
                 $result = ($result -and ($testResult -eq "SUCCESS")) 
             }
             if ($mode.Contains('W')) {
@@ -3612,7 +3615,7 @@ function global:Test-MirthFileReadWrite {
                 $r = Invoke-RestMethod -Uri $uri -Headers $headers -ContentType 'application/xml' -Method POST -WebSession $session -Body $testWriteXML.OuterXml
                 [String] $testResult = $r.'com.mirth.connect.util.ConnectionTestResponse'.type
                 Write-Verbose "Write Test:" 
-                Write-Verbose $r.OuterXml
+                Write-Verbose "$($r.OuterXml)"
                 $result = ($result -and ($testResult -eq "SUCCESS"))                 
             }
             return $result
@@ -3727,7 +3730,7 @@ function global:Get-MirthChannelStatuses {
                     $r.save($o)
                 }
             }
-            Write-Verbose $r.OuterXml
+            Write-Verbose "$($r.OuterXml)"
             return $r
         }
         catch {
@@ -4795,7 +4798,7 @@ function global:Get-MirthChannels {
                     $r.save($o)
                 }
             }
-            Write-Verbose $r.OuterXml
+            Write-Verbose "$($r.OuterXml)"
             return $r
         }
         catch {
@@ -4958,7 +4961,7 @@ function global:Remove-MirthChannelByName {
             [string]$o = Get-PSMirthOutputFolder
             $o = Join-Path $o $outFile    
         }
-        Write-Verbose $r.OuterXml
+        Write-Verbose "$($r.OuterXml)"
         return $r
 
     }
@@ -5059,7 +5062,7 @@ function global:Import-MirthChannel {
                 $r.save($o)     
                 Write-Debug "Done!" 
             }
-            Write-Verbose $r.OuterXml
+            Write-Verbose "$($r.OuterXml)"
             return $r
 
         }
@@ -5180,7 +5183,7 @@ function global:Get-MirthCodeTemplateLibraries {
                 $o = Join-Path $o $outFile 
                 $r.save($o)
             }
-            Write-Verbose $r.OuterXml
+            Write-Verbose "$($r.OuterXml)"
             return $r;
         }
         catch {
@@ -5285,7 +5288,7 @@ function global:Set-MirthCodeTemplateLibraries {
                 $o = Join-Path $o $outFile 
                 $r.save($o)
             }
-            Write-Verbose $r.OuterXml
+            Write-Verbose "$($r.OuterXml)"
             return $r
         }
         catch {
@@ -5481,7 +5484,7 @@ function global:Get-MirthKeyStoreCertificates {
                 $o = Join-Path $o $outFile 
                 $r.save($o)
             }
-            Write-Verbose $r.OuterXml
+            Write-Verbose "$($r.OuterXml)"
             return $r
                 
         }
@@ -5553,7 +5556,7 @@ function global:Get-MirthKeyStoreBytes {
                 $o = Join-Path $o $outFile 
                 $r.save($o)
             }
-            Write-Verbose $r.OuterXml
+            Write-Verbose "$($r.OuterXml)"
             return $r
                 
         }
@@ -5809,7 +5812,7 @@ function global:Test-MirthUserLogged {
                 $o = Join-Path $o $outFile 
                 Set-Content -Path $o -Value $r.OuterXml
             }
-            Write-Verbose $r.OuterXml
+            Write-Verbose "$($r.OuterXml)"
             $loggedIn = [System.Convert]::ToBoolean($r.boolean)
 
             return $loggedIn
@@ -6026,7 +6029,7 @@ function global:Get-MirthUsers {
                 $r.save($o)     
                 Write-Debug "Output saved to $o"
             }
-            Write-Verbose $r.OuterXml
+            Write-Verbose "$($r.OuterXml)"
             return $r   
         }
         catch {
@@ -6139,7 +6142,7 @@ function global:Set-MirthUser {
                 $r.save($o)     
                 Write-Debug "Done!" 
             }
-            Write-Verbose $r.OuterXml
+            Write-Verbose "$($r.OuterXml)"
             return $r
         }
         catch {
@@ -6268,7 +6271,7 @@ function global:Add-MirthUser {
                 $r.save($o)     
                 Write-Debug "Done!" 
             }
-            Write-Verbose $r.OuterXml
+            Write-Verbose "$($r.OuterXml)"
             Set-MirthUserPassword -connection $connection -targetId $userXML.user.username -newPassword $newPassword
         }
         catch {
@@ -6352,7 +6355,7 @@ function global:Remove-MirthUser {
                 #Set-Content -Path $o -Value "$targetId : $newPassword" 
                 Write-Debug "Done!" 
             }
-            Write-Verbose $r.OuterXml
+            Write-Verbose "$($r.OuterXml)"
             return $r
         }
         catch {
