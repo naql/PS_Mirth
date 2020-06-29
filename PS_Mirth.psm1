@@ -1354,17 +1354,19 @@ function global:Get-MirthServerTime {
         $serverUrl = $connection.serverUrl
  
         $uri = $serverUrl + '/api/server/time'
+        $headers = @{}
+        $headers.Add("Accept","application/xml")
+
         Write-Debug "Invoking GET Mirth API server at: $uri "
         try { 
-            $r = Invoke-RestMethod -Uri $uri -Method GET -WebSession $session  -ContentType 'application/xml' 
-            Write-Debug "...done."
-
+            $r = Invoke-RestMethod -Uri $uri -Method GET -Headers $headers -WebSession $session  -ContentType 'application/xml' 
+            
             if ($saveXML) { 
                 [string]$o = Get-PSMirthOutputFolder
                 $o = Join-Path $o $outFile 
                 Set-Content -Path $o -Value $r.OuterXml      
             }
-            Write-Verbose $r
+            Write-Verbose "$($r.OuterXml)"
             return $r
         }
         catch {
@@ -5440,10 +5442,7 @@ function global:Get-MirthKeyStoreCertificates {
         </com.mirth.connect.plugins.ssl.model.KeyStoreCertificates>
 
     .EXAMPLE
-        Connect-Mirth | Get-MirthKeyStores 
-
-    .LINK
-        Links to further documentation.
+        Connect-Mirth | Get-MirthKeyStoreCertificates 
 
     .NOTES
 
@@ -5933,7 +5932,6 @@ function global:Get-MirthUsers {
 
     .DESCRIPTION
 
-
     .INPUTS
         A -session  WebRequestSession object is required. See Connect-Mirth.
 
@@ -5959,11 +5957,8 @@ function global:Get-MirthUsers {
             </list>
 
     .EXAMPLE
-        Connect-Mirth | Get-MirthUser 
-        Connect-Mirth | Get-MirthUser -targetId 1 
-
-    .LINK
-        Links to further documentation.
+        Connect-Mirth | Get-MirthUsers 
+        Connect-Mirth | Get-MirthUsers -targetId 1 
 
     .NOTES
 
@@ -6004,9 +5999,12 @@ function global:Get-MirthUsers {
             $singleUser = $True
             $uri = "$uri/$targetId"
         }
+        $headers = @{}
+        $headers.Add("Accept","application/xml")
+
         Write-Debug "Invoking GET Mirth  $uri "
         try { 
-            $r = Invoke-RestMethod -Uri $uri -Method GET -WebSession $session
+            $r = Invoke-RestMethod -Headers $headers -Uri $uri -Method GET -WebSession $session
             Write-Debug "...done."
 
             if ($singleUser) { 
