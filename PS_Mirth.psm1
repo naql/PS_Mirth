@@ -5105,6 +5105,109 @@ function global:Send-MirthMessage {
 <#        Code Template Functions                                                           #>
 <############################################################################################>
 
+function global:Set-MirthCodeTemplate {
+    <#
+    .SYNOPSIS
+        Updates a code template.
+
+    .DESCRIPTION
+
+    .INPUTS
+        A -session  WebRequestSession object is required. See Connect-Mirth.
+
+        $payLoad 
+        String containing the XML describing a codeTemplate object
+
+    .OUTPUTS
+
+    .EXAMPLE  
+
+    .NOTES
+
+    #> 
+    [CmdletBinding()] 
+    PARAM (
+
+         # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline=$True)]
+        [MirthConnection]$connection = $currentConnection,
+
+        # xml of the channel to be added
+        [Parameter(ParameterSetName="xmlProvided",
+                   Mandatory=$True,
+                   ValueFromPipelineByPropertyName=$True)]
+        [string]$payLoad,
+
+        # path to the file containing the channel xml to import
+        [Parameter(ParameterSetName="pathProvided",
+                   Mandatory=$True,
+                   ValueFromPipelineByPropertyName=$True)]
+        [string]$payloadFilePath,
+
+        # If true, the code template will be updated even if a different revision 
+        # exists on the server
+        [Parameter()]
+        [switch]$override = $false,
+   
+        # Saves the response from the server as a file in the current location.
+        [Parameter()]
+        [switch]$saveXML = $false,
+        
+        # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
+        [Parameter()]
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
+    )    
+    BEGIN { 
+        Write-Debug "Set-MirthCodeTemplate Beginning"
+    }
+    PROCESS {
+        [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
+        $serverUrl = $connection.serverUrl
+
+        [xml]$payLoadXML = $null 
+        if ([string]::IsNullOrEmpty($payLoad) -or [string]::IsNullOrWhiteSpace($payLoad)) {
+            if ([string]::IsNullOrEmpty($payloadFilePath) -or [string]::IsNullOrWhiteSpace($payloadFilePath)) {
+                Write-Error "A channel XML payLoad string is required!"
+                return $null
+            } else {
+                Write-Debug "Loading channel XML from path $payLoadFilePath"
+                [xml]$payLoadXML = Get-Content $payLoadFilePath  
+            }
+        } else {
+            Write-Debug "Creating XML payload from string: $payLoad"
+            $payLoadXML = [xml]$payLoad
+        }
+        $newCodeTemplateId = $payLoadXML.codeTemplate.id 
+        Write-Debug "The code template id to be set is [$newCodeTemplateId]"
+
+        $uri = $serverUrl + '/api/codeTemplates/' + $newCodeTemplateId
+        $parameters = [System.Web.HttpUtility]::ParseQueryString([String]::Empty)
+        $parameters.Add('override', $override)
+        $uri = $uri + '?' + $parameters.toString()
+        $headers = @{}
+        $headers.Add("Accept","application/xml")
+        Write-Debug "Invoking PUT Mirth API server at: $uri "
+        try { 
+            $r = Invoke-RestMethod -Uri $uri -Headers $headers -ContentType 'application/xml' -Method PUT -WebSession $session -Body $payLoadXML.OuterXml
+            Write-Debug "...done."
+            if ($saveXML) { 
+                [string]$o = Get-PSMirthOutputFolder
+                $o = Join-Path $o $outFile 
+                $r.save($o)
+            }
+            Write-Verbose "$($r.OuterXml)"
+            return $r
+        }
+        catch {
+            Write-Error $_
+        }  
+    }
+    END { 
+        Write-Debug "Set-MirthCodeTemplate Ending"
+    } 
+
+}  # Set-MirthCodeTemplate
+
 function global:Get-MirthCodeTemplateLibraries { 
      <#
     .SYNOPSIS
@@ -5157,6 +5260,44 @@ function global:Get-MirthCodeTemplateLibraries {
         Write-Debug "Get-MirthCodeTemplateLibraries Beginning"
     }
     PROCESS { 
+
+        # TBD:  if we always sorted the contextType when exporting channels, lbiraries, etc, 
+        # this would eliminate them always cluttering up the diff reports in Perforce
+
+        # try this logic to sort the delegate contextType elements:
+        #  /list/codeTemplateLibrary/codeTemplates/codeTemplate/contextSet/delegate/contextType
+
+        # [xml]$xml = @"
+        # <company>
+        #     <stuff>
+        #     </stuff>
+        #     <machines>
+        #         <machine>
+        #             <name>ca</name>
+        #             <b>123</b>
+        #             <c>123</c>
+        #         </machine>
+        #         <machine>
+        #             <name>ad</name>
+        #             <b>234</b>
+        #             <c>234</c>
+        #         </machine>
+        #         <machine>
+        #             <name>be</name>
+        #             <b>345</b>
+        #             <c>345</c>
+        #         </machine>
+        #     </machines>
+        #     <otherstuff>
+        #     </otherstuff>
+        # </company>
+        # "@
+        # [System.Xml.XmlNode]$orig = $xml.Company.Machines
+        # $orig.Machine | sort Name  -Descending |
+        #   foreach { [void]$xml.company.machines.PrependChild($_) }
+        # $xml.company.machines.machine
+
+
         if ($null -eq $connection) { 
             Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"    
         }  
@@ -5260,20 +5401,13 @@ function global:Set-MirthCodeTemplateLibraries {
         [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
         $serverUrl = $connection.serverUrl
 
-        $uri = $serverUrl + '/api/codeTemplateLibraries'
-        $parameters = [System.Web.HttpUtility]::ParseQueryString([String]::Empty)
-        $parameters.Add('override', $override)
-        $uri = $uri + '?' + $parameters.toString()
-        $headers = @{}
-        $headers.Add("Accept","application/xml")
-
         [xml]$payLoadXML = $null 
         if ([string]::IsNullOrEmpty($payLoad) -or [string]::IsNullOrWhiteSpace($payLoad)) {
             if ([string]::IsNullOrEmpty($payloadFilePath) -or [string]::IsNullOrWhiteSpace($payloadFilePath)) {
-                Write-Error "A channel XML payLoad string is required!"
+                Write-Error "A codetemplate library list XML payLoad string is required!"
                 return $null
             } else {
-                Write-Debug "Loading channel XML from path $payLoadFilePath"
+                Write-Debug "Loading codetemplate library XML from path $payLoadFilePath"
                 [xml]$payLoadXML = Get-Content $payLoadFilePath  
             }
         } else {
@@ -5281,6 +5415,21 @@ function global:Set-MirthCodeTemplateLibraries {
             $payLoadXML = [xml]$payLoad
         }
 
+        $codeTemplateNodes = $payLoadXML.SelectNodes(".//codeTemplates/codeTemplate")
+        if ($codeTemplateNodes.Count -gt 0) { 
+            Write-Debug "There are $($codeTemplateNodes.Count ) codeTemplate nodes to process..."
+            foreach ($codeTemplate in $codeTemplateNodes) { 
+                $r = Set-MirthCodeTemplate -connection $connection -payLoad $codeTemplate.OuterXml -override
+                Write-Debug "Set-MirthCodeTemplate $($codeTemplate.id) response: $r.OuterXml"
+            }
+        }
+
+        $uri = $serverUrl + '/api/codeTemplateLibraries'
+        $parameters = [System.Web.HttpUtility]::ParseQueryString([String]::Empty)
+        $parameters.Add('override', $override)
+        $uri = $uri + '?' + $parameters.toString()
+        $headers = @{}
+        $headers.Add("Accept","application/xml")
         Write-Debug "Invoking PUT Mirth API server at: $uri "
         try { 
             $r = Invoke-RestMethod -Uri $uri -Headers $headers -ContentType 'application/xml' -Method PUT -WebSession $session -Body $payLoadXML.OuterXml
