@@ -859,6 +859,10 @@ function global:Add-PSMirthStringNodes {
         Write-Debug "Add-PSMirthStringNodes Beginning"
     }
     Process { 
+        if ($null -eq $parentNode) { 
+            Throw 'parentNode must not be a null object'
+        }
+        Write-Debug "The parent node is of type: $($parentNode.getType())"
         $xmlDoc = $parentNode.OwnerDocument
 
         Write-Debug "Adding string nodes to parent $($parentNode.localName)..."
@@ -1698,7 +1702,7 @@ function global:Remove-MirthChannelGroups {
 function global:Add-MirthChannelGroups { 
     <#
     .SYNOPSIS
-        Merge (add/updates) chjannelGroups. 
+        Merge (add/updates) channelGroups. 
 
     .DESCRIPTION
         Merges a set of Mirth channelGroup objects into the currently existing set 
@@ -1757,8 +1761,12 @@ function global:Add-MirthChannelGroups {
                 Write-Error "A channelGroup XML payLoad string is required!"
                 return $null
             } else {
-                Write-Debug "Loading channelGroup XML from path $payLoadFilePath"
-                [xml]$payloadXML = Get-Content $payLoadFilePath  
+                if (Test-Path -Path $payLoadFilePath) {
+                    Write-Debug "Loading channelGroup XML from path $payLoadFilePath"
+                    [xml]$payloadXML = Get-Content $payLoadFilePath  
+                } else { 
+                    Throw "The payloadFilePath specified is invalid!"
+                }
             }
         } else {
             $payloadXML = [xml]$payLoad
@@ -1784,7 +1792,7 @@ function global:Add-MirthChannelGroups {
         foreach ($channelGroup in $currChannelGroups.list.channelGroup) { 
             $key    = $channelGroup.id
             Write-Debug "Processing current channelGroup $key, $($channelGroup.name)"
-            [Xml.XmlElement[]]$nodesToDelete = $()
+            [Xml.XmlElement[]]$nodesToDelete = @()
             foreach ($channel in $channelGroup.channels.channel) {
                 Write-Debug "examining channel id: $($channel.id)"
                 if ($refChannelIdList -contains $($channel.id)) {
@@ -2284,15 +2292,22 @@ function global:Set-MirthTaggedChannels {
         not exist.  If the -remove switch is specified, the channel Tag is deleted.
 
     .INPUTS
-        A -session  WebRequestSession object is required. See Connect-Mirth.
+        -connection  MirthConnection custom object is required. See Connect-Mirth.
 
-        -targetId   the guid id of the existing channel tag, which must exist.
+        -tagId       the guid id of a channel tag, which must exist.
 
         -tagName    If the id is not provided, then the name of the existing tag, or the title of the new tag.
 
         -remove     A flag which indicates removal of the channel tag.
 
+        -channelIds An optional array of strings for the channel ids tagged by this channel.
+                    No effect if remove is set.
+
+        -replaceChannels    if true, the existing channels assigned to the tag are replaced with the channelIds
+
     .OUTPUTS
+
+        string      Returns the channelTag ID (whether udpated or newly created)
 
     .EXAMPLE
         Set-MirthTaggedChannels -tagName 'HALO-RR08' -alpha 255 -red 200 -green 0 -blue 255 -channelIds 0e06727d-55f7-4c91-a363-80521dc834b3 -replaceChannels
@@ -2317,9 +2332,20 @@ function global:Set-MirthTaggedChannels {
         [Parameter(ValueFromPipelineByPropertyName=$True)]
         [string]$tagName,
 
-        # Remove the channel tag from the server
+        # If no channelIds are specified, the channelTag is entirely removed from the server.
         [Parameter()]
         [switch]$remove = $false,
+        
+        # an optional array of channelId guids
+        # the channelTag id guid strings that the tag applies to when creating or updating a tag
+        # if the remove switch is set, these channel ids will removed from the tags set of channelIds
+        [Parameter(ValueFromPipelineByPropertyName=$True)]
+        [string[]]$channelIds,
+
+        # If true, replaces the tag's existing channel assignments, 
+        # otherwise, adds to them, ignored when the remove switch is set.
+        [Parameter()]
+        [switch]$replaceChannels = $false,
 
         # the alpha value, 0-255
         # has no effect if the remove tag is specfiied
@@ -2348,17 +2374,6 @@ function global:Set-MirthTaggedChannels {
         [ValidateRange(0,255)]
         [int]$blue,
 
-        # an optional array of channelId guids
-        # the channelTag id guid strings that the tag applies to
-        # has no effect if the remove tag is specfiied
-        [Parameter(ValueFromPipelineByPropertyName=$True)]
-        [string[]]$channelIds,
-
-        # If true, replaces the tag's existing channel assignments, 
-        # otherwise, adds to them
-        [Parameter()]
-        [switch]$replaceChannels = $false,
-
         # Saves the response from the server as a file in the current location.
         [Parameter()]
         [switch]$saveXML = $false,
@@ -2377,15 +2392,18 @@ function global:Set-MirthTaggedChannels {
 
         # if the list of channels is empty, then go and fetch a complete list of 
         # channel ids
-        if (-not $remove) { 
-            if ($channelIds.count -gt 0) { 
-                # they provided some channel ids
-                Write-Debug "Assigning tag to $($channelIds.count) channels"
-            } else { 
-                # go and get them all
-                Write-Debug "Assigning tag to all existing channels"
-                $channelIds = $(Get-MirthChannels ).list.channel.id
+
+        if ($channelIds.count -gt 0) { 
+            # they provided some channel ids
+            if ($remove) {
+                Write-Debug "Removing $($channelIds.count) channels from this tag."
+            } else {
+                Write-Debug "Assigning $($channelIds.count) channels to this tag."
             }
+        } else { 
+            # go and get them all
+            Write-Debug "Assigning tag to all existing channels"
+            $channelIds = $(Get-MirthChannels ).list.channel.id
         }
 
         # First, fetch the current set of Mirth channel tags.
@@ -2428,7 +2446,7 @@ function global:Set-MirthTaggedChannels {
             Write-Debug "Searching for tag by name..."
             $foundTag = $tagNameMap["$tagName"]
             if ($null -ne $foundTag) { 
-                Write-Debug "Type of found target id $($foundTag.getType())"
+                Write-Debug "The channel tag was found by name."
                 $newTag = New-Object -TypeName xml
                 $newTag.AppendChild($newTag.ImportNode($foundTag, $true)) | Out-Null
                 $targetTag = $newTag
@@ -2436,7 +2454,7 @@ function global:Set-MirthTaggedChannels {
             
         } else { 
             # tag was found by id
-            Write-Debug "Existing channel tag found by id"
+            Write-Debug "Existing channel tag found by id."
             #check to see if we are updating the name?
         }
         # At this point, if we still don't have the current Tag
@@ -2471,7 +2489,7 @@ function global:Set-MirthTaggedChannels {
             Write-Debug "Comparing $($channelTag.id) to $($targetTag.channelTag.id)"
             if ($channelTag.id -eq $targetTag.channelTag.id) { 
                 Write-Debug "Match on tag id"
-                if (-not $remove) { 
+                if ((-not $remove) -or ($remove -and ($channelIds.Count -gt 0))) { 
                     $found = $true;
                     # add it to new set, possibly updating name and colors
                     Write-Debug "Updating channel Tag"
@@ -2481,26 +2499,42 @@ function global:Set-MirthTaggedChannels {
                     $targetTag.channelTag.backgroundColor.green = [string]$green 
                     $targetTag.channelTag.backgroundColor.blue  = [string]$blue 
                     #  update the channel ids here...
-                    [string[]]$mergedChannelIds = $()
+                    [string[]]$mergedChannelIds = @()
                     if ($replaceChannels) { 
                         Write-Debug "Replacing existing tag channel assignments"
                         Write-Debug "There will be $($channelIds.count) channels assigned to this tag."
                         $mergedChannelIds = $channelIds
                     } else { 
                         Write-Debug "Merging existing tag channel assignments"
-                        $currentChannels = $channeltag.channelIds.string
+                        [string[]] $currentChannels = $channeltag.channelIds.string
                         Write-Debug "There are $($currentChannels.count) channels currently assigned to this tag."
-                        Write-Debug "There are $($channelIds.count) channels to be merged to this tag."
-                        $mergedChannelIds = $currentChannels + $channelIds | Sort-Object -Unique
-                        Write-Debug "There are $($mergedChannelIds.count) merged channels assigned to this tag."
+                        if ($remove) {
+                            Write-Debug "Checking for removed channels..."
+                            $remainingChannelIds = @()
+                            foreach ($id in $currentChannels) {
+                                Write-Debug "Checking [$id] against list: [$channelIds]"
+                                if (-not ($channelIds -contains $id)) {
+                                    $remainingChannelIds = $remainingChannelIds += $id
+                                } else { 
+                                    Write-Debug "Omitting channel id $id from new list."
+                                }
+                            }
+                            Write-Debug "After removing channels, the tag is assigned to $($remainingChannelIds.Count) channels."
+                            $mergedChannelIds = $remainingChannelIds
+                        } else { 
+                            Write-Debug "There are $($channelIds.count) channels to be merged to this tag."
+                            $mergedChannelIds = $channelIds + $currentChannels | Sort-Object -Unique
+                            Write-Debug "There are $($mergedChannelIds.count) merged channels assigned to this tag."
+                        }
 
                     }
                     Write-Debug "Clearing all channel ids from tag..."
-                    $targetTag.channelTag.channelIds.RemoveAll()
-                    Write-Debug "Adding merged channel id nodes..."
-                    Add-PSMirthStringNodes -parentNode $($targetTag.SelectSingleNode("/channelTag/channelIds")) -values $mergedChannelIds | Out-Null
-                    Write-Debug "Tag update complete"
+                    $channelIdsNode = $targetTag.SelectSingleNode(".//channelIds")
+                    $channelIdsNode.RemoveAll() 
 
+                    Write-Debug "Adding merged channel id nodes..."
+                    Add-PSMirthStringNodes -parentNode $channelIdsNode -values $mergedChannelIds | Out-Null
+                    Write-Debug "Tag update complete"
 
                     Write-Debug "Appending tag to set"
                     $newTagSet.DocumentElement.AppendChild($newTagSet.ImportNode($targetTag.channelTag,$true)) | Out-Null
@@ -2508,7 +2542,7 @@ function global:Set-MirthTaggedChannels {
                     Write-Debug "Omitting tag from new set"
                 }
             } else {
-                Write-Debug "Existing tag not a match, keeping in set"
+                Write-Debug "Existing tag not a target, keeping in list."
                 # existing tag not a match, keep in new set
                 $newTagSet.DocumentElement.AppendChild($newTagSet.ImportNode($channelTag,$true)) | Out-Null
             }
@@ -2520,8 +2554,8 @@ function global:Set-MirthTaggedChannels {
             Write-Debug "Adding new channel tag to new tag set"
             $newTagSet.DocumentElement.AppendChild($newTagSet.ImportNode($targetTag.channelTag,$true)) | Out-Null
         } 
-        Set-MirthChannelTags -payLoad $newTagSet.OuterXml
-
+        Set-MirthChannelTags -payLoad $newTagSet.OuterXml | Out-Null
+        return $targetTag.channelTag.id
     }
     END { 
         Write-Debug "Set-MirthTaggedChannels Ending"
@@ -4939,7 +4973,7 @@ function global:Remove-MirthChannelByName {
           
         # First, get the channels
         $channelSet = Get-MirthChannels -connection $connection  
-        [string[]]$targetIds = $()
+        [string[]]$targetIds = @()
         foreach ($targetName in $targetNames) {
             $xpath = '//channel[name = "' + $targetName + '"]'  
             $channelFound = $channelSet.SelectSingleNode($xpath) 
@@ -5872,7 +5906,7 @@ function global:Set-MirthUserPassword {
         Write-Debug "There were $($users.Count) users retrieved for set password command"
 
         foreach ($u in $users) {
-            Write-Debug "Changing password user: $($u.id): $($u.username) assigned to $()  $($u.lastName)"
+            Write-Debug "Changing password user: $($u.id): $($u.username) assigned to $($u.lastName)"
                 
             $uri = $serverUrl + '/api/users/' + $u.id + '/password'
             Write-Debug "PUT to Mirth at $uri"
