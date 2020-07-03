@@ -4876,9 +4876,15 @@ function global:Remove-MirthChannels {
         [MirthConnection]$connection = $currentConnection,
 
         # The required id of the channelGroup to remove
-        [Parameter(Mandatory=$True,
+        [Parameter(ParameterSetName="selected",
+                   Mandatory=$True,
                    ValueFromPipelineByPropertyName=$True)]
         [string[]]$targetId,
+
+        # if true, all channels will be removed
+        [Parameter(ParameterSetName="all",
+                   Mandatory=$True)]
+        [switch]$removeAllChannels = $false,
    
         # Saves the response from the server as a file in the current location.
         [Parameter()]
@@ -4892,13 +4898,33 @@ function global:Remove-MirthChannels {
         Write-Debug "Remove-MirthChannels Beginning" 
     }
     PROCESS {
+        if ($null -eq $connection) { 
+            Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"    
+        }           
         [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
-        $serverUrl = $connection.serverUrl
         
-        $uri = $serverUrl + '/api/channels'
+        [string[]] $channelIdsToRemove = @()
+        if ($removeAllChannels) { 
+            Write-Debug "Removal of all channels is requested."
+            [xml] $allChannelXml = Get-MirthChannels -connection $connection 
+            $channelNodes = $allChannelXml.SelectNodes(".//channel")
+            Write-Debug "There are $($channelNodes.Count) channels to be removed."
+            if ($channelNodes.Count -gt 0) { 
+                foreach ($channelNode in $channelNodes) { 
+                    Write-Debug "Adding channel id [$($channelNode.id)] to removal list."
+                    $channelIdsToRemove += $channelNode.id
+                }
+                Write-Debug "There are now $($channelNodes.Count) channel ids in the removal list."
+            }
+        } else { 
+            Write-Debug "Removal of selected channels requested."
+            $channelIdsToRemove = $targetId
+        }
+
+        $uri = $connection.serverUrl + '/api/channels'
         $parameters = [System.Web.HttpUtility]::ParseQueryString([String]::Empty)
-        foreach ($target in $targetId) {
-            $parameters.Add('channelId', $target)
+        foreach ($id in $channelIdsToRemove) {
+            $parameters.Add('channelId', $id)
         }
         $uri = $uri + '?' + $parameters.toString()
 
@@ -4909,7 +4935,7 @@ function global:Remove-MirthChannels {
             if ($saveXML) { 
                 [string]$o = Get-PSMirthOutputFolder
                 $o = Join-Path $o $outFile      
-                Set-Content -Path $o -Value "Deleted Channels: $targetId" 
+                Set-Content -Path $o -Value "Deleted Channels: $id" 
             }
             Write-Verbose $r
             return $r
@@ -4935,7 +4961,6 @@ function global:Remove-MirthChannelByName {
         -targetName Required, the name of the channel to be deleted.
 
     .OUTPUTS
-
 
     .EXAMPLE
         Remove-MirthChannels -targetName "My Channel Reader"  -saveXML
