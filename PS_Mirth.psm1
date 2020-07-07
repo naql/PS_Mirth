@@ -2729,7 +2729,12 @@ function global:Set-MirthConfigMap {
                    Mandatory=$True,
                    ValueFromPipelineByPropertyName=$True)]
         [string]$payloadFilePath,
-   
+
+        # If true, does not replace the current config map, merges with
+        # the current settings, overwriting any that conflict
+        [Parameter()]
+        [switch]$merge = $false,
+
         # Saves the response from the server as a file in the current location.
         [Parameter()]
         [switch]$saveXML = $false,
@@ -2757,12 +2762,68 @@ function global:Set-MirthConfigMap {
                 return $null
             } else {
                 Write-Debug "Loading channel XML from path $payLoadFilePath"
-                [xml]$payLoadXML = Get-Content $payLoadFilePath  
+                try {
+                    [xml]$payLoadXML = Get-Content $payLoadFilePath  
+                } catch {
+                    throw $_
+                }
             }
         } else {
             Write-Debug "Creating XML payload from string: $payLoad"
             $payLoadXML = [xml]$payLoad
         }
+
+        $currentConfigMap = $null
+        if ($merge) {
+            Write-Debug "Merge flag set, fetching current config map..."
+            $currentConfigMap = Get-MirthConfigMap -connection $connection
+            $currentConfigMapNode = $currentConfigMap.SelectSingleNode("/map")
+            $currentEntries = $currentConfigMap.SelectNodes(".//entry")
+            $currCount = $currentEntries.Count
+            Write-Debug "Current config map contains $currCount entries."
+            $mergeEntries = $payLoadXML.SelectNodes(".//entry")
+            $mergeCount = $mergeEntries.Count
+            Write-Debug "There are $mergeCount entries to be merged."
+            foreach ($newEntry in $mergeEntries) { 
+                Write-Debug "Merging property $($newEntry.string)"
+                $currentNode = $currentConfigMap.SelectSingleNode(".//entry[./string = '$($newEntry.string)']")
+                if ($null -ne $currentNode) {
+                    Write-Debug "Updating existing property..."
+                    $oldValue = $null
+                    $currValueNode = $currentNode.SelectSingleNode(".//com.mirth.connect.util.ConfigurationProperty/value")
+                    if ($null -ne $currValueNode) { 
+                        $oldValue = $currValueNode.InnerText
+                    } else { 
+                        Write-Warning "Expected value node was not found!"
+                    }
+                    $oldComment = $null
+                    $currCommentNode = $currentNode.SelectSingleNode(".//com.mirth.connect.util.ConfigurationProperty/comment")
+                    if ($null -ne $currCommentNode) { 
+                        $oldComment = $currCommentNode.InnerText
+                    } else { 
+                        # we need to add a comment node
+                        $configPropertyNode = $currentNode.SelectSingleNode(".//com.mirth.connect.util.ConfigurationProperty")
+                        $currCommentNode = $currentConfigMap.CreateElement('comment')
+                        $currCommentNode = $configPropertyNode.AppendChild($currCommentNode)
+                    }                    
+
+                    $newValue = $newEntry.'com.mirth.connect.util.ConfigurationProperty'.value
+                    $newComment = $newEntry.'com.mirth.connect.util.ConfigurationProperty'.comment
+
+                    Write-Debug "Updating old value [$oldValue] property to new value [$newValue]"
+                    $currValueNode.set_InnerText($newValue)
+                    
+                    Write-Debug "Updating old comment [$oldComment] property to new value [$newComment]"
+                    $currCommentNode.set_InnerText($newComment)
+                } else { 
+                    Write-Debug "Adding new merged property..."
+                    $currentConfigMapNode.AppendChild($currentConfigMap.ImportNode($newEntry, $True)) | Out-Null
+                }
+            }  # for all new merged properties
+            Write-Debug "Merge complete, replacing payload with merged map"
+            $payLoadXML = $currentConfigMap
+        }  # if merging
+
         $headers = @{}
         $headers.Add("Accept","application/xml")
 
@@ -5266,6 +5327,90 @@ function global:Set-MirthCodeTemplate {
     } 
 
 }  # Set-MirthCodeTemplate
+
+function global:Remove-MirthCodeTemplates  { 
+    <#
+    .SYNOPSIS
+        Removes all Mirth code templates, or a list of them specified by id.
+
+    .DESCRIPTION
+
+    .INPUTS
+        A -session  WebRequestSession object is required. See Connect-Mirth.
+
+        $targetId   The id of the user to delete.
+                    Note, the default admin user, id = 1,  cannot be deleted.
+
+    .OUTPUTS
+
+    .EXAMPLE
+
+    .NOTES
+
+    #> 
+    [CmdletBinding()] 
+    PARAM (
+
+         # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline=$True)]
+        [MirthConnection]$connection = $currentConnection,
+
+        # The user id to be deleted, this must be the numeric id.
+        [Parameter(Mandatory=$True,
+                   ValueFromPipelineByPropertyName=$True)]
+        [string]$targetId,
+   
+        # Saves the response from the server as a file in the current location.
+        [Parameter()]
+        [switch]$saveXML = $false
+    )    
+    BEGIN { 
+        Write-Debug "Remove-MirthCodeTemplates Beginning"
+    }
+    PROCESS {
+        if ($null -eq $connection) { 
+            Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"  
+        }          
+        [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
+        $serverUrl = $connection.serverUrl
+             
+        if (-NOT [string]::IsNullOrEmpty($targetId)) { 
+            Write-Debug "Removal of list of code template ids is requested."
+            
+        } else { 
+            Throw "Removel of all code templates ids is requested."
+        }
+
+
+        $uri = "$uri/$targetId"
+        $msg = "Deleting user: " + $targetId
+        Write-Debug $msg
+
+        $uri = $serverUrl + '/api/codeTemplates/' + $targetId
+        Write-Debug "DELETE to Mirth $uri "
+        try { 
+            $r = Invoke-RestMethod -Uri $uri -WebSession $session -Method DELETE -ContentType 'application/xml' -Body $userXML.OuterXml
+            Write-Debug "...done."
+
+            if ($saveXML) { 
+                [string]$o = Get-PSMirthOutputFolder
+                $o = Join-Path $o $outFile 
+                Write-Debug "Saving Output to $o"
+                $r.save($o)     
+                #Set-Content -Path $o -Value "$targetId : $newPassword" 
+                Write-Debug "Done!" 
+            }
+            Write-Verbose "$($r.OuterXml)"
+            return $r
+        }
+        catch {
+            Write-Error $_
+        }
+    }
+    END { 
+        Write-Debug "Remove-MirthCodeTemplates Ending"
+    }
+}  # Remove-MirthCodeTemplates
 
 function global:Get-MirthCodeTemplateLibraries { 
      <#
