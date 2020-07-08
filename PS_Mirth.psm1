@@ -792,7 +792,7 @@ function global:Save-MirthPropertiesFile {
         $outPath = Join-Path $outPath $outFile 
         if (($null -ne $payLoad ) -and ($payLoad -is [xml]) ) {
             if (Test-Path -Path $outPath) {
-                Clear-Content -path   
+                Clear-Content -Path $outPath 
             } else { 
                 New-Item -Name $outPath -ItemType File
             }
