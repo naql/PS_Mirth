@@ -5225,6 +5225,90 @@ function global:Send-MirthMessage {
 <#        Code Template Functions                                                           #>
 <############################################################################################>
 
+function global:Get-MirthCodeTemplates { 
+    <#
+   .SYNOPSIS
+       Gets Mirth Code Templates, either the targetIds specified, or all.
+
+   .DESCRIPTION
+       Returns a list of one or more code template objects:
+
+   .INPUTS
+       A -session  WebRequestSession object is required. See Connect-Mirth.
+       -targetIds if omitted, then all libraries are returned.  Otherwise, only the libraries with the 
+       id values specified are returned.
+
+   .OUTPUTS
+
+   .EXAMPLE
+
+   .NOTES
+
+   #> 
+   [CmdletBinding()] 
+   PARAM (
+
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+       [Parameter(ValueFromPipeline=$True)]
+       [MirthConnection]$connection = $currentConnection,
+
+       # The ids of the code templates to retrieve, empty for all
+       [Parameter(ValueFromPipelineByPropertyName=$True)]
+       [string[]]$targetIds,
+  
+       # Saves the response from the server as a file in the current location.
+       [Parameter()]
+       [switch]$saveXML = $false,
+       
+       # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
+       [Parameter()]
+       [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
+   )    
+   BEGIN { 
+       Write-Debug "Get-MirthCodeTemplates Beginning"
+   }
+   PROCESS { 
+
+       if ($null -eq $connection) { 
+           Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"    
+       }  
+       [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
+       $serverUrl = $connection.serverUrl
+       
+       $uri = $serverUrl + '/api/codeTemplates'
+       $parameters = [System.Web.HttpUtility]::ParseQueryString([String]::Empty)
+    #    $parameters.Add('includeCodeTemplates', $includeCodeTemplates)
+
+       if ([string]::IsNullOrEmpty($targetId) -or [string]::IsNullOrWhiteSpace($targetId)) {
+           Write-Debug "Fetching all code templates"
+       } else {
+           foreach ($target in $targetIds) {
+               $parameters.Add('codeTemplateId', $target)
+           }
+       }
+       $uri = $uri + '?' + $parameters.toString()
+       Write-Debug "Invoking GET Mirth $uri "
+       try { 
+           $r = Invoke-RestMethod -Uri $uri -Method GET -WebSession $session 
+           Write-Debug "...done."
+
+           if ($saveXML) { 
+               [string]$o = Get-PSMirthOutputFolder
+               $o = Join-Path $o $outFile 
+               $r.save($o)
+           }
+           Write-Verbose "$($r.OuterXml)"
+           return $r;
+       }
+       catch {
+           Write-Error $_
+       }
+   }
+   END { 
+       Write-Debug "Get-MirthCodeTemplates Ending"
+   }
+}  # Get-MirthCodeTemplates
+
 function global:Set-MirthCodeTemplate {
     <#
     .SYNOPSIS
@@ -5355,57 +5439,66 @@ function global:Remove-MirthCodeTemplates  {
         [Parameter(ValueFromPipeline=$True)]
         [MirthConnection]$connection = $currentConnection,
 
-        # The user id to be deleted, this must be the numeric id.
-        [Parameter(Mandatory=$True,
-                   ValueFromPipelineByPropertyName=$True)]
-        [string]$targetId,
+        # Array of code template ids to be removed
+        [Parameter(ValueFromPipelineByPropertyName=$True)]
+        [string[]]$targetIds,
    
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false
+        [switch]$saveXML = $false,
+                
+        # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
+        [Parameter()]
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     )    
     BEGIN { 
         Write-Debug "Remove-MirthCodeTemplates Beginning"
     }
     PROCESS {
         if ($null -eq $connection) { 
-            Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"  
+            Throw "You must first obtain a MirthConnection by invoking Connect-Mirth!"  
         }          
         [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
         $serverUrl = $connection.serverUrl
              
-        if (-NOT [string]::IsNullOrEmpty($targetId)) { 
-            Write-Debug "Removal of list of code template ids is requested."
+        if (-NOT [string]::IsNullOrEmpty($targetIds)) { 
+            Write-Debug "Removal of list of $($targetIds.Count) code template ids is requested."
             
         } else { 
-            Throw "Removel of all code templates ids is requested."
-        }
-
-
-        $uri = "$uri/$targetId"
-        $msg = "Deleting user: " + $targetId
-        Write-Debug $msg
-
-        $uri = $serverUrl + '/api/codeTemplates/' + $targetId
-        Write-Debug "DELETE to Mirth $uri "
-        try { 
-            $r = Invoke-RestMethod -Uri $uri -WebSession $session -Method DELETE -ContentType 'application/xml' -Body $userXML.OuterXml
-            Write-Debug "...done."
-
-            if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder
-                $o = Join-Path $o $outFile 
-                Write-Debug "Saving Output to $o"
-                $r.save($o)     
-                #Set-Content -Path $o -Value "$targetId : $newPassword" 
-                Write-Debug "Done!" 
+            $allCodeTemplates = Get-MirthCodeTemplates -connection $connection 
+            if ($null -ne $allCodeTemplates) { 
+                $targetIds = $allCodeTemplates.list.codeTemplate.id
+                Write-Debug "There are $($targetIds.Count) code templates to be removed."
+            } else { 
+                Write-Warning "Unable to fetch list of code templates."
+                $targetIds = @()
             }
-            Write-Verbose "$($r.OuterXml)"
-            return $r
         }
-        catch {
-            Write-Error $_
+
+        foreach ($targetId in $targetIds) {
+            
+            $uri = $serverUrl + '/api/codeTemplates/' + $targetId
+            $msg = "Deleting code template: " + $targetId
+            Write-Debug $msg
+
+            Write-Debug "DELETE to Mirth $uri "
+            try { 
+                $r = Invoke-RestMethod -Uri $uri -WebSession $session -Method DELETE -ContentType 'application/xml' -Body $userXML.OuterXml
+
+                if ($saveXML) { 
+                    [string]$o = Get-PSMirthOutputFolder
+                    $o = Join-Path $o $outFile 
+                    Write-Debug "Saving Output to $o"
+                    Set-Content $o -Value $r
+                    #$r.save($o)     
+                }
+                Write-Verbose "$($r.OuterXml)"
+            }
+            catch {
+                Write-Error $_
+            }
         }
+        return 
     }
     END { 
         Write-Debug "Remove-MirthCodeTemplates Ending"
