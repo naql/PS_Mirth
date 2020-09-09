@@ -97,6 +97,7 @@ function Set-PSMirthOutputFolder( $path ) {
     .NOTES
 
     #> 
+    $path = $path.Trim()
     if ([string]::IsNullOrEmpty($path)) {
         $savePath = Join-Path -Path $pwd -ChildPath "/PS_Mirth_Output/"
     }
