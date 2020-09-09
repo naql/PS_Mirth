@@ -954,37 +954,62 @@ function global:Invoke-PSMirthTool {
         $result = Send-MirthDeployChannels -targetIds $toolId 
         Write-Debug "Deploy Result: $result"
 
-        $maxMsgId = Get-MirthChannelMaxMsgId -targetId $toolId 
-        Write-Debug "Probe Channel Max Msg Id: $maxMsgId"
-        if (-not $maxMsgId -gt 0) { 
-            Write-Verbose "No probe telemetry available, pausing for 3 seconds to reattempt..."
-            Start-Sleep -Seconds 3
-            Write-Verbose "Looking for probe telemetry..."       
+        $maxMsgId = $null
+        $attempts = 0
+        while (($null -eq $maxMsgId) -and ($attempts -lt 3)) { 
+            Write-Verbose "Looking for probe telemetry..." 
+            $attempts++  
             $maxMsgId = Get-MirthChannelMaxMsgId -targetId $toolId 
+            Write-Debug "Probe Channel Max Msg Id: $maxMsgId"
+            if (-not $maxMsgId -gt 0) { 
+                $maxMsgId = $null
+                Write-Verbose "No probe telemetry available, pausing for 3 seconds to reattempt..."
+                Start-Sleep -Seconds 3
+            }
         }
+
+        [xml]$channelMsg = $null
         if (-not $maxMsgId -gt 0) { 
             Write-Warning "No tool telemetry could be obtained"
         } else { 
-            Write-Debug "Fetching Probe Results..."
-            [xml]$channelMsg = Get-MirthChannelMsgById -connection $connection -channelId $toolId -messageId $maxMsgId  
-
-            # Now, find our payload, look for destination 'PS_OUTPUT"
-            $xpath = '/message/connectorMessages/entry/connectorMessage[connectorName = "PS_OUTPUT"]'
-            $connectorMessageNode = $channelMsg.SelectSingleNode($xpath)
-            if ($null -eq $connectorMessageNode) { 
-                Write-Error "Could not locate PS_OUTPUT destination of PSMirthTool channel: $toolName"
-                # return $null
-            }     
-            $dataType = $connectorMessageNode.encoded.dataType 
-            Write-Debug "The tool output is of dataType: $dataType"
-            if ($dataType -eq "XML") { 
-                [xml]$decoded = [System.Web.HttpUtility]::HtmlDecode($connectorMessageNode.encoded.content)
-                Set-Variable returnValue -Value ($decoded -as [Xml])
-            } else { 
-                Write-Warning "Unimplemented PSMirthTool datatype"
-                $toolMessage = [System.Web.HttpUtility]::HtmlDecode($connectorMessageNode.encoded.content)
-                Set-Variable returnValue -Value ($toolMessage -as [String])                
+            $attempts = 0
+            while (($null -eq $channelMsg) -and ($attempts -lt 3)) { 
+                Write-Verbose "Getting telemetry result..." 
+                $attempts++  
+                [xml]$channelMsg = Get-MirthChannelMsgById -connection $connection -channelId $toolId -messageId $maxMsgId 
+                if ($null -ne $channelMsg) {
+                    $processedNode = $channelMsg.SelectSingleNode("/message/processed")
+                    $result = $processedNode.InnerText.Trim()
+                    if ($result -ne "true") { 
+                        Write-Verbose "telemetry messages is not processed yet, pausing for 3 seconds to reattempt..."
+                        $channelMsg = $null
+                        Start-Sleep -Seconds 3
+                    }
+                }
             }
+            if ($null -ne $channelMsg) {
+                # We should now have a processed message, find our payload, look for destination 'PS_OUTPUT"
+                $xpath = '/message/connectorMessages/entry/connectorMessage[connectorName = "PS_OUTPUT"]'
+                $connectorMessageNode = $channelMsg.SelectSingleNode($xpath)
+                if ($null -eq $connectorMessageNode) { 
+                    Write-Error "Could not locate PS_OUTPUT destination of PSMirthTool channel: $toolName"
+                    # return $null
+                }     
+                $dataType = $connectorMessageNode.encoded.dataType 
+                Write-Debug "The tool output is of dataType: $dataType"
+                if ($dataType -eq "XML") { 
+                    [xml]$decoded = [System.Web.HttpUtility]::HtmlDecode($connectorMessageNode.encoded.content)
+                    Set-Variable returnValue -Value ($decoded -as [Xml])
+                } else { 
+                    Write-Warning "Unimplemented PSMirthTool datatype"
+                    $toolMessage = [System.Web.HttpUtility]::HtmlDecode($connectorMessageNode.encoded.content)
+                    Set-Variable returnValue -Value ($toolMessage -as [String])                
+                }
+            } else { 
+                # probe failed to process
+                Write-Error "Tool probe channel $toolName failed to return telemetry."
+            }
+            
         }
 
         $result = Send-MirthUndeployChannels -connection $connection -targetIds $toolId 
@@ -997,7 +1022,7 @@ function global:Invoke-PSMirthTool {
     END { 
         Write-Debug "Invoke-PSMirthTool Ending"
     }
-}  # Invoke-PSMirthTool [UNDER CONSTRUCTION]
+}  # Invoke-PSMirthTool
 
 
 <############################################################################################>
