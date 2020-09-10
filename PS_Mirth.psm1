@@ -786,7 +786,7 @@ function global:Save-MirthPropertiesFile {
     ) 
 
     BEGIN { 
-        Write-Debug "Save-MirthPropertiesFile Beginning"A:
+        Write-Debug "Save-MirthPropertiesFile Beginning"
     }
     PROCESS {
         [string]$outPath = Get-PSMirthOutputFolder
@@ -1373,7 +1373,7 @@ function global:Get-MirthServerTime {
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.txt'
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     )     
     BEGIN { 
         Write-Debug "Get-MirthServerTime Beginning"
