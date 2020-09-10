@@ -786,16 +786,16 @@ function global:Save-MirthPropertiesFile {
     ) 
 
     BEGIN { 
-        Write-Debug "Save-MirthPropertiesFile Beginning"
+        Write-Debug "Save-MirthPropertiesFile Beginning"A:
     }
     PROCESS {
         [string]$outPath = Get-PSMirthOutputFolder
-        $outPath = Join-Path $outPath $outFile 
+        $targetPath = Join-Path $outPath $outFile 
         if (($null -ne $payLoad ) -and ($payLoad -is [xml]) ) {
-            if (Test-Path -Path $outPath) {
-                Clear-Content -Path $outPath 
+            if (Test-Path -Path $targetPath) {
+                Clear-Content -Path $targetPath 
             } else { 
-                New-Item -Name $outPath -ItemType File
+                New-Item -Name $outFile -ItemType File -Path $outPath  | Out-Null
             }
             $entries = $payLoad.map.entry;
             if ($unsorted) { 
@@ -805,13 +805,13 @@ function global:Save-MirthPropertiesFile {
             }
             foreach ($entry in $outputEntries) {
                 $line = "#`t" + $entry.'com.mirth.connect.util.ConfigurationProperty'.comment
-                Add-Content -Path $outPath -value $line
+                Add-Content -Path $targetPath -value $line
                 $line = “{0,-40} {1,1} {2}” -f $entry.string, "=", $entry.'com.mirth.connect.util.ConfigurationProperty'.value
-                Add-Content -Path $outPath -value $line
+                Add-Content -Path $targetPath -value $line
             }
-            Get-Content -path $outPath | Write-Verbose  
+            Get-Content -path $targetPath | Write-Verbose  
             # Return the properties as a hashtable
-            [hashtable]$returnMap = ConvertFrom-StringData (Get-Content $outPath | Out-String)
+            [hashtable]$returnMap = ConvertFrom-StringData (Get-Content $targetPath | Out-String)
             return $returnMap
 
         } else { 
@@ -2596,52 +2596,52 @@ function global:Get-MirthConfigMap {
         Gets the Mirth configuration map. Returns an xml object to the Pipeline.
 
     .DESCRIPTION
-        Fetches the Mirth configuration map as a map of propery names and values.
-
-        <map>
-          <entry>
-            <string>file-inbound-folder</string>
-            <com.mirth.connect.util.ConfigurationProperty>
-              <value>C:\FileReaderInput</value>
-              <comment>This is a comment describing the file-inbouind-reader property.</comment>
-            </com.mirth.connect.util.ConfigurationProperty>
-          </entry>
-          <entry>
-            <string>db.url</string>
-            <com.mirth.connect.util.ConfigurationProperty>
-              <value>jdbc:thin:@localhost:1521\dbname</value>
-              <comment>This is a fake db url property.</comment>
-            </com.mirth.connect.util.ConfigurationProperty>
-          </entry>
-        </map>
-        <map>
-          <entry>
-            <string>file-inbound-folder</string>
-            <com.mirth.connect.util.ConfigurationProperty>
-              <value>C:\FileReaderInput</value>
-              <comment>This is a comment describing the file-inbouind-reader property.</comment>
-            </com.mirth.connect.util.ConfigurationProperty>
-          </entry>
-          <entry>
-            <string>db.url</string>
-            <com.mirth.connect.util.ConfigurationProperty>
-              <value>jdbc:thin:@localhost:1521\dbname</value>
-              <comment>This is a fake db url property.</comment>
-            </com.mirth.connect.util.ConfigurationProperty>
-          </entry>
-        </map>
+        Fetches the Mirth configuration map.
 
     .INPUTS
-        A -session  WebRequestSession object is required. See Connect-Mirth.
+        A -connection  MirthConnection object is required. See Connect-Mirth.
 
     .OUTPUTS
         A map of entries with string key names and com.mirth.connect.util.ConfigurationProperty objects.
 
+        <map>
+          <entry>
+            <string>file-inbound-folder</string>
+            <com.mirth.connect.util.ConfigurationProperty>
+              <value>C:\FileReaderInput</value>
+              <comment>This is a comment describing the file-inbouind-reader property.</comment>
+            </com.mirth.connect.util.ConfigurationProperty>
+          </entry>
+          <entry>
+            <string>db.url</string>
+            <com.mirth.connect.util.ConfigurationProperty>
+              <value>jdbc:thin:@localhost:1521\dbname</value>
+              <comment>This is a fake db url property.</comment>
+            </com.mirth.connect.util.ConfigurationProperty>
+          </entry>
+        </map>
+        <map>
+          <entry>
+            <string>file-inbound-folder</string>
+            <com.mirth.connect.util.ConfigurationProperty>
+              <value>C:\FileReaderInput</value>
+              <comment>This is a comment describing the file-inbouind-reader property.</comment>
+            </com.mirth.connect.util.ConfigurationProperty>
+          </entry>
+          <entry>
+            <string>db.url</string>
+            <com.mirth.connect.util.ConfigurationProperty>
+              <value>jdbc:thin:@localhost:1521\dbname</value>
+              <comment>This is a fake db url property.</comment>
+            </com.mirth.connect.util.ConfigurationProperty>
+          </entry>
+        </map>
+
+        If the -asHashtable switch is specified, the response is a PowerShell hashtable.
+
     .EXAMPLE
         Connect-Mirth | Get-MirthConfigMap 
-
-    .LINK
-        Links to further documentation.
+        Get-MIrthConfigMap -asHashtable 
 
     .NOTES
 
@@ -2653,9 +2653,13 @@ function global:Get-MirthConfigMap {
         [Parameter(ValueFromPipeline=$True)]
         [MirthConnection]$connection = $currentConnection,
 
+        # Switch, if true, returns hashtable response, otherwise XML
+        [Parameter()]
+        [switch]$asHashtable,
+
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -2674,17 +2678,30 @@ function global:Get-MirthConfigMap {
         Write-Debug "Invoking GET Mirth at $uri"
         try { 
             $r = Invoke-RestMethod -Uri $uri -Method GET -WebSession $session
-            Write-Debug "...done."
 
+            [string]$o = Get-PSMirthOutputFolder
+            $o = Join-Path $o $outFile 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder
-                $o = Join-Path $o $outFile 
                 $r.save($o)
             }
             Write-Verbose "$($r.OuterXml)"
-            return $r;
-        }
-        catch {
+
+            if (-not $asHashtable) { 
+                return $r;
+            } else { 
+                Write-Debug "Converting XML response to hashtable"
+                $returnMap = @{};
+                $entries = $r.map.entry | Sort-Object { [string]$_.string }
+                Write-Debug "There are $($entries.count) sorted entries to be placed into the hashtable..."
+                foreach ($entry in $entries) { 
+                    $key = $entry.'string'
+                    $value = $entry.'com.mirth.connect.util.ConfigurationProperty'.'value'
+                    Write-Debug ("Adding Key: $key with value: $value")
+                    $returnMap[$key] = $value
+                }         
+                return $returnMap
+            }
+        } catch {
             Write-Error $_
         }
     }
