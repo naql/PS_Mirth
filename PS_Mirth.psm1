@@ -379,7 +379,7 @@ function global:New-MirthSSLMgrPropertiesPayload {
         if ([string]::IsNullOrEmpty($trustStore)) {
             if (Test-Path $trustStorePath -PathType Leaf) { 
                 Write-Debug "Loading TrustStore from path $trustStorePath"
-                $trustStore = [Convert]::ToBase64String([IO.File]::ReadAllBytes("$pwd/$trustStorePath"))
+                $trustStore = [Convert]::ToBase64String([IO.File]::ReadAllBytes($trustStorePath))
                 #$trustStore = Get-Content $trustStorePath -Raw
             } else { 
               Write-Error "No TrustStore JKS provided and path " $trustStorePath " does not exist!"
@@ -389,7 +389,7 @@ function global:New-MirthSSLMgrPropertiesPayload {
         if ([string]::IsNullOrEmpty($keyStore)) {
             if (Test-Path $keyStorePath -PathType Leaf) { 
                 Write-Debug "Loading KeyStore from path $keyStorePath"
-                $keyStore = [Convert]::ToBase64String([IO.File]::ReadAllBytes("$pwd/$keyStorePath"))
+                $keyStore = [Convert]::ToBase64String([IO.File]::ReadAllBytes($keyStorePath))
             } else { 
               Write-Error "No KeyStore JKS provided and path " $keyStorePath " does not exist!"
               return;
