@@ -1,0 +1,21 @@
+TOPIC
+    about_PS_Mirth
+
+SHORT DESCRIPTION
+    PowerShell wrapper fro the Mirth RESTful API.
+
+LONG DESCRIPTION
+    This module provides PowerShell functions to connect to and perform various functions exposed
+    through the Mirth RESTful API. 
+
+    First you must connect to the Mirth server using the Connect-Mirth cmdlet.
+    If no other parameters are provided, by default it will connect to https://localhost:8080 as admin/admin.
+    Once a mirth connection object has been obtained, the current connection is kept in the session and is 
+    automatically supplied on the pipeline to subsequent PS_Mirth commands.
+
+EXAMPLES
+
+KEYWORDS
+    mirth
+
+SEE ALSO

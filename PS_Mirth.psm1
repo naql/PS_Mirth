@@ -105,10 +105,6 @@ function Set-PSMirthOutputFolder( $path ) {
         Write-Error "The path specified is not valid!"
         return $null
     }
-    If (!(Test-Path -Path $path -PathType Container)) {
-        Write-Debug "Folder does not exist, creating..."
-        New-Item -ItemType Directory -Force -Path $savePath  | Out-Null
-    }
     
     $script:savePath = PathAddBackslash($path)
     Write-Debug "Current PS_Mirth output folder is: $savePath"
@@ -131,7 +127,10 @@ function PathAddBackslash($path) {
 }
 
 function Get-PSMirthOutputFolder () { 
-    if (!(Test-Path $savePath -PathType Container)) {
+    param(
+        [switch] $create
+    )
+    if ($create -and !(Test-Path $savePath -PathType Container)) {
         New-Item -ItemType Directory -Force -Path $savePath
     }
     return $script:savePath
@@ -302,7 +301,7 @@ function global:New-MirthKeyStoreCertificatesPayLoad {
 
 
         if ($saveXML) { 
-            [string]$o = Get-PSMirthOutputFolder
+            [string]$o = Get-PSMirthOutputFolder -create
             $o = Join-Path $o $outFile     
             $templateXML.save($o)
         }
@@ -410,7 +409,7 @@ function global:New-MirthSSLMgrPropertiesPayload {
 "@
 
         if ($saveXML) { 
-            [string]$o = Get-PSMirthOutputFolder
+            [string]$o = Get-PSMirthOutputFolder -create
             $o = Join-Path $o $outFile    
             $templateXML.save($o)
         }
@@ -707,7 +706,7 @@ function global:New-MirthConfigMapFromProperties {
             }
         }
         if ($saveXML) { 
-            [string]$o = Get-PSMirthOutputFolder
+            [string]$o = Get-PSMirthOutputFolder -create
             $o = Join-Path $o $outFile 
             $mapXML.save($o)
         }
@@ -789,7 +788,7 @@ function global:Save-MirthPropertiesFile {
         Write-Debug "Save-MirthPropertiesFile Beginning"
     }
     PROCESS {
-        [string]$outPath = Get-PSMirthOutputFolder
+        [string]$outPath = Get-PSMirthOutputFolder -create
         $targetPath = Join-Path $outPath $outFile 
         if (($null -ne $payLoad ) -and ($payLoad -is [xml]) ) {
             if (Test-Path -Path $targetPath) {
@@ -1152,7 +1151,7 @@ function global:Get-MirthServerAbout {
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder
+                [string]$o = Get-PSMirthOutputFolder -create
                 $o = Join-Path $o $outFile 
                 $r.save($o)
             }
@@ -1243,7 +1242,7 @@ function global:Get-MirthServerConfig {
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder
+                [string]$o = Get-PSMirthOutputFolder -create
                 $o = Join-Path $o $outFile 
                 $r.save($o)
             }
@@ -1315,7 +1314,7 @@ function global:Get-MirthServerVersion {
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder
+                [string]$o = Get-PSMirthOutputFolder -create
                 $o = Join-Path $o $outFile 
                 Write-Debug "Saving Output to $o" 
                 Set-Content -Path $o -Value $r      
@@ -1394,7 +1393,7 @@ function global:Get-MirthServerTime {
             $r = Invoke-RestMethod -Uri $uri -Method GET -Headers $headers -WebSession $session  -ContentType 'application/xml' 
             
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder
+                [string]$o = Get-PSMirthOutputFolder -create
                 $o = Join-Path $o $outFile 
                 Set-Content -Path $o -Value $r.OuterXml      
             }
@@ -1511,7 +1510,7 @@ function global:Get-MirthChannelGroups {
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder
+                [string]$o = Get-PSMirthOutputFolder -create
                 $o = Join-Path $o $outFile 
                 $r.save($o)
             }
@@ -1862,7 +1861,7 @@ function global:Add-MirthChannelGroups {
         # Update the channelGroups with the new list
         $r = Set-MirthChannelGroups -connection $connection -payLoad $newGroupSet.OuterXml -override
         if ($saveXML) { 
-            [string]$o = Get-PSMirthOutputFolder
+            [string]$o = Get-PSMirthOutputFolder -create
             $o = Join-Path $o $outFile 
             Write-Verbose "Saving merged channelGroups to $o"
             Set-Content $o $newGroupSet.OuterXml
@@ -1951,7 +1950,7 @@ function global:Get-MirthServerChannelMetadata {
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder
+                [string]$o = Get-PSMirthOutputFolder -create
                 $o = Join-Path $o $outFile 
                 $r.save($o)
             }
@@ -2167,7 +2166,7 @@ function global:Get-MirthChannelTags {
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder
+                [string]$o = Get-PSMirthOutputFolder -create
                 $o = Join-Path $o $outFile 
                 $r.save($o)
             }
@@ -2679,7 +2678,7 @@ function global:Get-MirthConfigMap {
         try { 
             $r = Invoke-RestMethod -Uri $uri -Method GET -WebSession $session
 
-            [string]$o = Get-PSMirthOutputFolder
+            [string]$o = Get-PSMirthOutputFolder -create
             $o = Join-Path $o $outFile 
             if ($saveXML) { 
                 $r.save($o)
@@ -2877,7 +2876,7 @@ function global:Set-MirthConfigMap {
             $r = Invoke-RestMethod -Uri $uri -Headers $headers -ContentType 'application/xml' -Method PUT -WebSession $session -Body $payLoadXML.OuterXml
             Write-Debug "...done."
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder
+                [string]$o = Get-PSMirthOutputFolder -create
                 $o = Join-Path $o $outFile 
                 $output = "Configuration Map Updated Successfully: $payLoad"
                 Set-Content -Path $o -Value $output   
@@ -2990,7 +2989,7 @@ function global:Get-MirthExtensionProperties {
             }
 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder
+                [string]$o = Get-PSMirthOutputFolder -create
                 $o = Join-Path $o $outFile 
                 $r.save($o)
             }
@@ -3099,7 +3098,7 @@ function global:Set-MirthExtensionProperties {
                 $r = [xml]$decoded
             }
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder
+                [string]$o = Get-PSMirthOutputFolder -create
                 $o = Join-Path $o $outFile 
                 $r.save($o)
             }
@@ -3201,7 +3200,7 @@ function global:Get-MirthGlobalScripts {
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder
+                [string]$o = Get-PSMirthOutputFolder -create
                 $o = Join-Path $o $outFile 
                 $r.save($o)
             }
@@ -3330,7 +3329,7 @@ function global:Set-MirthGlobalScripts {
             $r = Invoke-RestMethod -Uri $uri -Headers $headers -ContentType 'application/xml' -Method PUT -WebSession $session -Body $payLoadXML.OuterXml
             Write-Debug "...done."
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder
+                [string]$o = Get-PSMirthOutputFolder -create
                 $o = Join-Path $o $outFile  
                 $output = "Global Scripts Updated Successfully: $payLoad"
                 Set-Content -Path $o -Value $output   
@@ -3434,7 +3433,7 @@ function global:Get-MirthServerSettings {
 
             
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder
+                [string]$o = Get-PSMirthOutputFolder -create
                 $o = Join-Path $o $outFile 
                 $r.save($o)
             }
@@ -3533,7 +3532,7 @@ function global:Set-MirthServerSettings {
             $r = Invoke-RestMethod -Uri $uri -Headers $headers -ContentType 'application/xml' -Method PUT -WebSession $session -Body $payLoadXML.OuterXml
             Write-Debug "...done."
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder
+                [string]$o = Get-PSMirthOutputFolder -create
                 $o = Join-Path $o $outFile 
                 $output = "Server Settings Updated Successfully: $payLoad"
                 Set-Content -Path $o -Value $output   
@@ -3607,7 +3606,7 @@ function global:Get-MirthSystemProperties {
         Write-Debug "Get-MirthSystemProperties Beginning"
     }
     PROCESS { 
-        [string]$outPath = Get-PSMirthOutputFolder
+        [string]$outPath = Get-PSMirthOutputFolder -create
         $outPath = Join-Path $outPath $outFile 
         # import the tool channel and deploy it
         Write-Debug "Invoking tool channel Probe_Java_System_Properties.xml"
@@ -3717,7 +3716,7 @@ function global:Get-MirthServerProperties {
         Write-Debug "Get-MirthServerProperties Beginning"
     }
     PROCESS { 
-        [string]$outPath = Get-PSMirthOutputFolder
+        [string]$outPath = Get-PSMirthOutputFolder -create
         $outPath = Join-Path $outPath $outFile 
         # import the tool channel and deploy it
         Write-Debug "Invoking tool channel Probe_Mirth_Properties.xml"
@@ -3886,6 +3885,79 @@ New-Alias -Name tmfrw -Value Test-MirthFileReadWrite
 <#        Channel Functions                                                                 #>
 <############################################################################################>
 
+function global:Get-MirthChannelIds {
+    <#
+    .SYNOPSIS
+        Gets an array of all channelIds in the target server.
+
+    .DESCRIPTION
+        Return array of string objects representing the list of channel ids in the target server.
+
+    .INPUTS
+        A -session  WebRequestSession object is required. See Connect-Mirth.
+
+    .OUTPUTS
+
+    .EXAMPLE
+        
+    .LINK
+        Links to further documentation.
+
+    .NOTES
+
+    #> 
+    [CmdletBinding()] 
+    PARAM (
+
+         # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline=$True)]
+        [MirthConnection]$connection = $currentConnection,
+   
+        # Saves the response from the server as a file in the current location.
+        [Parameter()]
+        [switch]$saveXML = $false,
+
+        # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
+        [Parameter()]
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
+    ) 
+    BEGIN { 
+        Write-Debug 'Get-MirthChannelIds Beginning'
+    }
+    PROCESS {
+        if ($null -eq $connection) { 
+            Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"    
+        }           
+
+        [string[]] $channelIds = @()
+
+        [xml] $allChannelXml = Get-MirthChannels -connection $connection 
+        $channelNodes = $allChannelXml.SelectNodes(".//channel")
+        Write-Debug "There are $($channelNodes.Count) channels to considered."
+        if ($channelNodes.Count -gt 0) { 
+            foreach ($channelNode in $channelNodes) { 
+                # TBD: add some filtering logic here?
+                Write-Debug "Adding channel id [$($channelNode.id)] to list."
+                $channelIds += $channelNode.id
+            }
+            Write-Debug "There are now $($channelNodes.Count) channel ids in the list."
+        }
+        if ($saveXML) { 
+            [string]$outPath = Get-PSMirthOutputFolder -create
+            $outPath = Join-Path $outPath $outFile 
+            Write-Debug "Saving channel id list at: $outPath"
+            Clear-Content -path $outPath -ErrorAction SilentlyContinue | Out-Null
+            foreach ($id in $channelIds) {
+                Add-Content -Path $outPath -value $id
+            }
+        }
+        return $channelIds
+    }
+    END {
+        Write-Debug 'Get-MirthChannelIds Ending' 
+    }
+}  # Get-MirthChannelIds
+        
 function global:Get-MirthChannelStatuses {
     <#
     .SYNOPSIS
@@ -3969,14 +4041,14 @@ function global:Get-MirthChannelStatuses {
                 if ($exportChannels) {
                     # iterate through list, saving each channel using the name
                     foreach ($channel in $r.list.channel) {
-                        $exportFileName = Get-PSMirthOutputFolder
+                        $exportFileName = Get-PSMirthOutputFolder -create
                         $exportFileName = $exportFileName + $channel.name + '.xml' 
                         $msg = "Exporting channel '$exportFileName'"
                         Write-Debug $msg
                         Set-Content $exportFileName $channel.OuterXml
                     }
                 } else {
-                    [string]$o = Get-PSMirthOutputFolder
+                    [string]$o = Get-PSMirthOutputFolder -create
                     $o = Join-Path $o $outFile   
                     $r.save($o)
                 }
@@ -4322,7 +4394,7 @@ function global:Get-MirthChannelMsgById {
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder
+                [string]$o = Get-PSMirthOutputFolder -create
                 #$o = $o + $outFile
                 $o = Join-Path $o $outFile 
                 Write-Debug "Saving Output to $o"
@@ -4401,7 +4473,7 @@ function global:Get-MirthChannelMaxMsgId {
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder
+                [string]$o = Get-PSMirthOutputFolder -create
                 #$o = $o + $outFile
                 $o = Join-Path $o $outFile 
                 Write-Debug "Saving Output to $o"
@@ -4434,10 +4506,466 @@ function global:Get-MirthChannelMaxMsgId {
     }
 }  # Get-MirthChannelMaxMsgId
 
+function global:Send-MirthStartChannels { 
+    <#
+    .SYNOPSIS
+        Starts a list of channels.
+
+    .DESCRIPTION
+        Sends a START signal to one or more channels, optionally requesting error information.
+
+    .INPUTS
+        A -session  WebRequestSession object is required. See Connect-Mirth.
+        -returnErrors  switch, if true error response code and exception will be returned.  
+        
+    .OUTPUTS
+        If -saveXML writes the list XML to Save-Send-MirthStartChannels-Output.xml
+
+    .EXAMPLE
+        Send-MirthStartChannels -connection $connection -returnErrors -targetIds fa2cdec1-3abc-4186-95e3-9576d53b20e1
+        Send-MirthStartChannels -targetIds 014d299a-d972-4ae6-aa48-a2741f78390c,fa2cdec1-3abc-4186-95e3-9576d53b20e1   
+        
+    .LINK
+        Links to further documentation.
+
+    .NOTES
+        When the returnErrors switch is set, if any of the channels fail to start, an exception is thrown.  
+
+    #> 
+    [CmdletBinding()] 
+    PARAM (
+
+         # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline=$True)]
+        [MirthConnection]$connection = $currentConnection,
+
+        # The array of the channel ids to undeploy, empty for all
+        [Parameter(ValueFromPipelineByPropertyName=$True)]
+        [string[]]$targetIds,
+
+        # If true, an error response code and the exception will be returned.
+        [Parameter()]
+        [switch]$returnErrors = $false,        
+   
+        # Saves the response from the server as a file in the current location.
+        [Parameter()]
+        [switch]$saveXML = $false,
+
+        # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
+        [Parameter()]
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
+
+    )
+    BEGIN { 
+        Write-Debug "Send-MirthStartChannels Beginning"
+    }
+    PROCESS { 
+
+        return Send-MirthChannelCommand -connection $connection -targetIds $targetIds -command 'start' -returnErrors:$returnErrors -saveXML:$saveXML -outFile $outFile
+
+    }
+    END { 
+        Write-Debug "Send-MirthStartChannels Ending"
+    }          
+}  # Send-MirthStartChannels
+
+function global:Send-MirthStopChannels { 
+    <#
+    .SYNOPSIS
+        Stops a list of channels.
+
+    .DESCRIPTION
+        Sends a STOP signal to one or more channels, optionally requesting error information.
+
+    .INPUTS
+        A -session  WebRequestSession object is required. See Connect-Mirth.
+        -returnErrors  switch, if true error response code and exception will be returned.  
+        
+    .OUTPUTS
+        If -saveXML writes the list XML to Save-Send-MirthStopChannels-Output.xml
+
+    .EXAMPLE
+        Send-MirthStopChannels -connection $connection -returnErrors -targetIds fa2cdec1-3abc-4186-95e3-9576d53b20e1
+        Send-MirthStopChannels -targetIds 014d299a-d972-4ae6-aa48-a2741f78390c,fa2cdec1-3abc-4186-95e3-9576d53b20e1  
+        
+    .LINK
+        Links to further documentation.
+
+    .NOTES
+        When the returnErrors switch is set, if any of the channels fail to stop an 
+        exception is thrown.  
+
+    #> 
+    [CmdletBinding()] 
+    PARAM (
+
+         # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline=$True)]
+        [MirthConnection]$connection = $currentConnection,
+
+        # The array of the channel ids to undeploy, empty for all
+        [Parameter(ValueFromPipelineByPropertyName=$True)]
+        [string[]]$targetIds,
+
+        # If true, an error response code and the exception will be returned.
+        [Parameter()]
+        [switch]$returnErrors = $false,        
+   
+        # Saves the response from the server as a file in the current location.
+        [Parameter()]
+        [switch]$saveXML = $false,
+
+        # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
+        [Parameter()]
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
+    )
+    BEGIN { 
+        Write-Debug "Send-MirthStopChannels Beginning"
+    }
+    PROCESS { 
+
+        return Send-MirthChannelCommand -connection $connection -targetIds $targetIds -command 'stop' -returnErrors:$returnErrors -saveXML:$saveXML -outFile $outFile
+
+    }
+    END { 
+        Write-Debug "Send-MirthStopChannels Ending"
+    }          
+}  # Send-MirthStopChannels
+function global:Send-MirthHaltChannels { 
+    <#
+    .SYNOPSIS
+        Halts a list of channels.
+
+    .DESCRIPTION
+        Sends a HALT signal to one or more channels, optionally requesting error information.
+
+    .INPUTS
+        A -session  WebRequestSession object is required. See Connect-Mirth.
+        -returnErrors  switch, if true error response code and exception will be returned.  
+        
+    .OUTPUTS
+        If -saveXML writes the list XML to Save-Send-MirthHaltChannels-Output.xml
+
+    .EXAMPLE
+        Send-MirthHaltChannels -connection $connection -returnErrors -targetIds fa2cdec1-3abc-4186-95e3-9576d53b20e1
+        Send-MirthHaltChannels -targetIds 014d299a-d972-4ae6-aa48-a2741f78390c,fa2cdec1-3abc-4186-95e3-9576d53b20e1  
+        
+    .LINK
+        Links to further documentation.
+
+    .NOTES
+        When the returnErrors switch is set, if any of the channels fail to halt an 
+        exception is thrown.  
+
+    #> 
+    [CmdletBinding()] 
+    PARAM (
+
+         # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline=$True)]
+        [MirthConnection]$connection = $currentConnection,
+
+        # The array of the channel ids to undeploy, empty for all
+        [Parameter(ValueFromPipelineByPropertyName=$True)]
+        [string[]]$targetIds,
+
+        # If true, an error response code and the exception will be returned.
+        [Parameter()]
+        [switch]$returnErrors = $false,        
+   
+        # Saves the response from the server as a file in the current location.
+        [Parameter()]
+        [switch]$saveXML = $false,
+
+        # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
+        [Parameter()]
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
+    )
+    BEGIN { 
+        Write-Debug "Send-MirthHaltChannels Beginning"
+    }
+    PROCESS { 
+
+        return Send-MirthChannelCommand -connection $connection -targetIds $targetIds -command 'halt' -returnErrors:$returnErrors -saveXML:$saveXML -outFile $outFile
+
+    }
+    END { 
+        Write-Debug "Send-MirthHaltChannels Ending"
+    }          
+}  # Send-MirthHaltChannels
+
+function global:Send-MirthPauseChannels { 
+    <#
+    .SYNOPSIS
+        Pauses a list of channels.
+
+    .DESCRIPTION
+        Sends a PAUSE signal to one or more channels, optionally requesting error information.
+
+    .INPUTS
+        A -session  WebRequestSession object is required. See Connect-Mirth.
+        -returnErrors  switch, if true error response code and exception will be returned.  
+        
+    .OUTPUTS
+        If -saveXML writes the list XML to Save-Send-MirthHaltChannels-Output.xml
+
+    .EXAMPLE
+        Send-MirthPauseChannels -connection $connection -returnErrors -targetIds fa2cdec1-3abc-4186-95e3-9576d53b20e1
+        Send-MirthPauseChannels -targetIds 014d299a-d972-4ae6-aa48-a2741f78390c,fa2cdec1-3abc-4186-95e3-9576d53b20e1  
+        
+    .LINK
+        Links to further documentation.
+
+    .NOTES
+        When the returnErrors switch is set, if any of the channels fail to halt an 
+        exception is thrown.  
+
+    #> 
+    [CmdletBinding()] 
+    PARAM (
+
+         # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline=$True)]
+        [MirthConnection]$connection = $currentConnection,
+
+        # The array of the channel ids to undeploy, empty for all
+        [Parameter(ValueFromPipelineByPropertyName=$True)]
+        [string[]]$targetIds,
+
+        # If true, an error response code and the exception will be returned.
+        [Parameter()]
+        [switch]$returnErrors = $false,        
+   
+        # Saves the response from the server as a file in the current location.
+        [Parameter()]
+        [switch]$saveXML = $false,
+
+        # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
+        [Parameter()]
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
+    )
+    BEGIN { 
+        Write-Debug "Send-MirthPauseChannels Beginning"
+    }
+    PROCESS { 
+
+        return Send-MirthChannelCommand -connection $connection -targetIds $targetIds -command 'pause' -returnErrors:$returnErrors -saveXML:$saveXML -outFile $outFile
+
+    }
+    END { 
+        Write-Debug "Send-MirthPauseChannels Ending"
+    }          
+}  # Send-MirthPauseChannels
+
+function global:Send-MirthResumeChannels { 
+    <#
+    .SYNOPSIS
+        Resumes a list of channels.
+
+    .DESCRIPTION
+        Sends a RESUME signal to one or more channels, optionally requesting error information.
+
+    .INPUTS
+        A -session  WebRequestSession object is required. See Connect-Mirth.
+        -returnErrors  switch, if true error response code and exception will be returned.  
+        
+    .OUTPUTS
+        If -saveXML writes the list XML to Save-Send-MirthHaltChannels-Output.xml
+
+    .EXAMPLE
+        Send-MirthResumeChannels -connection $connection -returnErrors -targetIds fa2cdec1-3abc-4186-95e3-9576d53b20e1
+        Send-MirthResumeChannels -targetIds 014d299a-d972-4ae6-aa48-a2741f78390c,fa2cdec1-3abc-4186-95e3-9576d53b20e1  
+        
+    .LINK
+        Links to further documentation.
+
+    .NOTES
+        When the returnErrors switch is set, if any of the channels fail to halt an 
+        exception is thrown.  
+
+    #> 
+    [CmdletBinding()] 
+    PARAM (
+
+         # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline=$True)]
+        [MirthConnection]$connection = $currentConnection,
+
+        # The array of the channel ids to undeploy, empty for all
+        [Parameter(ValueFromPipelineByPropertyName=$True)]
+        [string[]]$targetIds,
+
+        # If true, an error response code and the exception will be returned.
+        [Parameter()]
+        [switch]$returnErrors = $false,        
+   
+        # Saves the response from the server as a file in the current location.
+        [Parameter()]
+        [switch]$saveXML = $false,
+
+        # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
+        [Parameter()]
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
+    )
+    BEGIN { 
+        Write-Debug "Send-MirthResumeChannels Beginning"
+    }
+    PROCESS { 
+
+        return Send-MirthChannelCommand -connection $connection -targetIds $targetIds -command 'resume' -returnErrors:$returnErrors -saveXML:$saveXML -outFile $outFile
+
+    }
+    END { 
+        Write-Debug "Send-MirthResumeChannels Ending"
+    }          
+}  # Send-MirthResumeChannels
+
+function global:Send-MirthChannelCommand { 
+    <#
+    .SYNOPSIS
+        Sends a command to one or more channels, optionally requesting error information.
+
+    .DESCRIPTION
+        This function accepts a string from a valid set of commands:
+        * start
+        * stop
+        * halt
+        * pause
+        * resume
+        It then calls the appropriate endpoint on the target server to execute that 
+        command against the list of channels specified by the list of targetId strings, 
+        each representing a mirth channel id uniquely identifying a channel on the server.
+
+    .INPUTS
+        A -session  WebRequestSession object is required. See Connect-Mirth.
+        -returnErrors  switch, if true error response code and exception will be returned.  
+        
+    .OUTPUTS
+        If -saveXML writes the list XML to Save-Send-MirthChannelCommand-Output.xml
+
+    .EXAMPLE
+        Send-MirthChannelCommand -connection $connection -command stop -targetIds fa2cdec1-3abc-4186-95e3-9576d53b20e1 -returnErrors 
+        Send-MirthChannelCommand -command start -targetIds 014d299a-d972-4ae6-aa48-a2741f78390c,fa2cdec1-3abc-4186-95e3-9576d53b20e1 
+        Send-MirthChannelCommand -command pause 
+        Send-MirthChannelCommand -command resume -saveXML 
+        
+    .LINK
+        Links to further documentation.
+
+    .NOTES
+        When the returnErrors switch is set, if any of the channels fail to halt an 
+        exception is thrown.  
+
+    #> 
+    [CmdletBinding()] 
+    PARAM (
+
+         # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline=$True)]
+        [MirthConnection]$connection = $currentConnection,
+
+        # The array of the channel ids to undeploy, empty for all
+        [Parameter(ValueFromPipelineByPropertyName=$True)]
+        [string[]]$targetIds,
+
+        # The command to send to the target channels
+        [Parameter(Mandatory=$True)]
+        [ValidateSet('pause','resume','start','stop','halt')]  
+        [string]$command,
+
+        # If true, an error response code and the exception will be returned.
+        [Parameter()]
+        [switch]$returnErrors = $false,        
+   
+        # Saves the response from the server as a file in the current location.
+        [Parameter()]
+        [switch]$saveXML = $false,
+
+        # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
+        [Parameter()]
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
+    )
+    BEGIN { 
+        Write-Debug "Send-MirthChannelCommand -command $command Beginning"
+    }
+    PROCESS { 
+        if ($null -eq $connection) { 
+            Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"    
+        }          
+        [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
+        $serverUrl = $connection.serverUrl
+
+        $headers = @{}
+        $headers.Add("Content-Type","application/x-www-form-urlencoded");
+        $headers.Add("Accept","application/xml")
+
+        $uri = $serverUrl + "/api/channels/_$command"
+        $parameters = [System.Web.HttpUtility]::ParseQueryString([String]::Empty)
+        $parameters.Add('returnErrors', $returnErrors)
+        $uri = $uri + '?' + $parameters.toString()
+
+        $payloadBody = "";
+        if ($targetIds.count -eq 0){ 
+            Write-Debug "No target channel ids specified..."
+            # get all channel IDs here
+            # later we will add ways to filter
+            Write-Debug "Fetching ALL channel ids in target server..."
+            $targetIds = Get-MirthChannelIds -connection $connection
+            Write-Debug "There are $($targetIds.Count) channels as target of $command command."
+        }
+        if ($targetIds.count -gt 0) { 
+            Write-Debug "Attempting to $command $($targetIds.count) channels"
+            for($i=0; $i -lt $targetIds.count; $i++) {
+                $channelId = $targetIds[$i]
+                if ($i -gt 0) {
+                    $payloadBody += '&'
+                }
+                $payloadBody += "channelId=$channelId"
+            }
+            Write-Debug "Payload generated: $payloadBody"
+        }
+
+        Write-Debug "POST to Mirth $uri "
+        try { 
+            $r = Invoke-RestMethod -UseBasicParsing -Uri $uri -WebSession $session -Headers $headers -Method POST -Body $payloadBody
+            if ($saveXML) { 
+                [string]$o = Get-PSMirthOutputFolder -create
+                $o = Join-Path $o $outFile 
+                $line = "Channel command: $command successful for targets: "
+                Set-Content $o -Value $line 
+                Add-Content $o $payloadBody
+            }
+            Write-Verbose "Channel Command [$command]: SUCCESS"
+            return $true
+        } catch {
+            $_.response
+        $errorMessage = $_.Exception.Message
+            if (Get-Member -InputObject $_.Exception -Name 'Response') {
+                try {
+                    $result = $_.Exception.Response.GetResponseStream()
+                    $reader = New-Object System.IO.StreamReader($result)
+                    $reader.BaseStream.Position = 0
+                    $reader.DiscardBufferedData()
+                    $responseBody = $reader.ReadToEnd();
+                } catch {
+                    Throw "An error occurred while calling REST method at: $uri. Error: $errorMessage. Cannot get more information."
+                }
+            }
+            Throw "An error occurred while calling REST method at: $uri. Error: $errorMessage  Response body: $responseBody"
+        }
+
+    }
+    END { 
+        Write-Debug "Send-MirthChannelCommand Ending"
+    }          
+}  # Send-MirthChannelCommand
+
+
+
 function global:Send-MirthDeployChannels {      
     <#
     .SYNOPSIS
-        Sends mirth a signal to deployi selected channels.
+        Sends mirth a signal to deploy selected channels.
         (note "Deploy" is approved in v6)
 
     .DESCRIPTION
@@ -4517,7 +5045,7 @@ function global:Send-MirthDeployChannels {
             $r = Invoke-RestMethod -UseBasicParsing -Uri $uri -WebSession $session -Headers $headers -Method POST -ContentType 'application/xml' -Body $payloadXML.OuterXml
 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder
+                [string]$o = Get-PSMirthOutputFolder -create
                 $o = Join-Path $o $outFile 
                 Write-Debug "Saving Output to $o"
                 Set-Content $o -Value $r  
@@ -4631,7 +5159,7 @@ function global:Send-MirthRedeployAllChannels {
             # Write-Debug $r.StatusDescription
             # Write-Debug $r.RawContent
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder
+                [string]$o = Get-PSMirthOutputFolder -create
                 $o = Join-Path $o $outFile 
                 Set-Content $o -Value $r.getType()   
             }
@@ -4743,7 +5271,7 @@ function global:Send-MirthUndeployChannels {
             $r = Invoke-RestMethod -UseBasicParsing -Uri $uri -WebSession $session -Headers $headers -Method POST -ContentType 'application/xml' -Body $payLoadXML.OuterXml
 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder
+                [string]$o = Get-PSMirthOutputFolder -create
                 $o = Join-Path $o $outFile 
                 Set-Content $o -Value $r 
             }
@@ -5037,14 +5565,14 @@ function global:Get-MirthChannels {
                 if ($exportChannels) {
                     # iterate through list, saving each channel using the name
                     foreach ($channel in $r.list.channel) {
-                        $exportFileName = Get-PSMirthOutputFolder
+                        $exportFileName = Get-PSMirthOutputFolder -create
                         $exportFileName = $exportFileName + $channel.name + '.xml' 
                         $msg = "Exporting channel '$exportFileName'"
                         Write-Debug $msg
                         Set-Content $exportFileName $channel.OuterXml
                     }
                 } else {
-                    [string]$o = Get-PSMirthOutputFolder
+                    [string]$o = Get-PSMirthOutputFolder -create
                     $o = Join-Path $o $outFile   
                     $r.save($o)
                 }
@@ -5148,7 +5676,7 @@ function global:Remove-MirthChannels {
             $r = Invoke-RestMethod -Uri $uri -Method DELETE -WebSession $session
 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder
+                [string]$o = Get-PSMirthOutputFolder -create
                 $o = Join-Path $o $outFile      
                 Set-Content -Path $o -Value "Deleted Channels: $id" 
             }
@@ -5234,7 +5762,7 @@ function global:Remove-MirthChannelByName {
         $r = Remove-MirthChannels -connection $connection -targetId $targetIds -saveXML:$saveXML
 
         if ($saveXML) { 
-            [string]$o = Get-PSMirthOutputFolder
+            [string]$o = Get-PSMirthOutputFolder -create
             $o = Join-Path $o $outFile    
         }
         Write-Verbose "$($r.OuterXml)"
@@ -5332,7 +5860,7 @@ function global:Import-MirthChannel {
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder
+                [string]$o = Get-PSMirthOutputFolder -create
                 $o = Join-Path $o $outFile 
                 Write-Debug "Saving Output to $o"
                 $r.save($o)     
@@ -5447,7 +5975,7 @@ function global:Get-MirthCodeTemplates {
            Write-Debug "...done."
 
            if ($saveXML) { 
-               [string]$o = Get-PSMirthOutputFolder
+               [string]$o = Get-PSMirthOutputFolder -create
                $o = Join-Path $o $outFile 
                $r.save($o)
            }
@@ -5549,7 +6077,7 @@ function global:Set-MirthCodeTemplate {
             $r = Invoke-RestMethod -Uri $uri -Headers $headers -ContentType 'application/xml' -Method PUT -WebSession $session -Body $payLoadXML.OuterXml
             Write-Debug "...done."
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder
+                [string]$o = Get-PSMirthOutputFolder -create
                 $o = Join-Path $o $outFile 
                 $r.save($o)
             }
@@ -5640,7 +6168,7 @@ function global:Remove-MirthCodeTemplates  {
                 $r = Invoke-RestMethod -Uri $uri -WebSession $session -Method DELETE -ContentType 'application/xml' -Body $userXML.OuterXml
 
                 if ($saveXML) { 
-                    [string]$o = Get-PSMirthOutputFolder
+                    [string]$o = Get-PSMirthOutputFolder -create
                     $o = Join-Path $o $outFile 
                     Write-Debug "Saving Output to $o"
                     Set-Content $o -Value $r
@@ -5773,7 +6301,7 @@ function global:Get-MirthCodeTemplateLibraries {
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder
+                [string]$o = Get-PSMirthOutputFolder -create
                 $o = Join-Path $o $outFile 
                 $r.save($o)
             }
@@ -5886,7 +6414,7 @@ function global:Set-MirthCodeTemplateLibraries {
             $r = Invoke-RestMethod -Uri $uri -Headers $headers -ContentType 'application/xml' -Method PUT -WebSession $session -Body $payLoadXML.OuterXml
             Write-Debug "...done."
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder
+                [string]$o = Get-PSMirthOutputFolder -create
                 $o = Join-Path $o $outFile 
                 $r.save($o)
             }
@@ -6079,7 +6607,7 @@ function global:Get-MirthKeyStoreCertificates {
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder
+                [string]$o = Get-PSMirthOutputFolder -create
                 $o = Join-Path $o $outFile 
                 $r.save($o)
             }
@@ -6151,7 +6679,7 @@ function global:Get-MirthKeyStoreBytes {
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder
+                [string]$o = Get-PSMirthOutputFolder -create
                 $o = Join-Path $o $outFile 
                 $r.save($o)
             }
@@ -6331,7 +6859,7 @@ function global:Set-MirthUserPassword {
                 $r = Invoke-RestMethod -Uri $uri -WebSession $session -Method PUT -ContentType 'text/plain' -Body $newPassword
                 Write-Debug "...Password set"
                 if ($saveXML) { 
-                    [string]$o = Get-PSMirthOutputFolder
+                    [string]$o = Get-PSMirthOutputFolder -create
                     $o = Join-Path $o $outFile 
                     Set-Content -Path $o -Value "$targetId : $newPassword" 
                 }
@@ -6407,7 +6935,7 @@ function global:Test-MirthUserLogged {
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder
+                [string]$o = Get-PSMirthOutputFolder -create
                 $o = Join-Path $o $outFile 
                 Set-Content -Path $o -Value $r.OuterXml
             }
@@ -6510,7 +7038,7 @@ function global:Get-MirthLoggedUsers {
             }
         }
         if ($saveXML) { 
-            [string]$o = Get-PSMirthOutputFolder
+            [string]$o = Get-PSMirthOutputFolder -create
             $o = Join-Path $o $outFile 
             Write-Debug "Saving Output to $o"
             $loggedUsers.save($o)     
@@ -6621,7 +7149,7 @@ function global:Get-MirthUsers {
             }
 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder
+                [string]$o = Get-PSMirthOutputFolder -create
                 #$o = $o + $outFile
                 $o = Join-Path $o $outFile 
                 $r.save($o)     
@@ -6734,7 +7262,7 @@ function global:Set-MirthUser {
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder
+                [string]$o = Get-PSMirthOutputFolder -create
                 $o = Join-Path $o $outFile 
                 Write-Debug "Saving Output to $o"
                 $r.save($o)     
@@ -6863,7 +7391,7 @@ function global:Add-MirthUser {
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder
+                [string]$o = Get-PSMirthOutputFolder -create
                 $o = Join-Path $o $outFile 
                 Write-Debug "Saving Output to $o"
                 $r.save($o)     
@@ -6946,7 +7474,7 @@ function global:Remove-MirthUser {
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder
+                [string]$o = Get-PSMirthOutputFolder -create
                 $o = Join-Path $o $outFile 
                 Write-Debug "Saving Output to $o"
                 $r.save($o)     
