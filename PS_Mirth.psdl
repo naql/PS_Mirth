@@ -1,6 +1,6 @@
 @{
   RootModule = 'PS_Mirth.psm1'
-  ModuleVersion = '1.0'
+  ModuleVersion = '1.1.1'
   CompatiblePSEditions = @('5.1')
   GUID = '6b42c995-67da-4139-be79-597a328056cc'
   Author = 'Andrew Hart'
