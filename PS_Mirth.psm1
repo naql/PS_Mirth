@@ -1,4 +1,14 @@
-﻿Add-Type -AssemblyName System.Web
+﻿<############################################################################################>
+# PS-Mirth v.1.1.0
+<############################################################################################>
+Add-Type -AssemblyName System.Web
+
+$VERSION = @{
+    MAJOR = 1
+    MINOR = 1
+    PATCH = 0
+}
+
 
 enum MirthMsgStorageMode {
     DISABLED = 1
@@ -62,6 +72,10 @@ Write-Verbose "Current PS_Mirth output folder is: $savePath"
 <############################################################################################>
 <#       PS-Mirth Functions                                                                 #>
 <############################################################################################>
+
+function Get-PSMirthVersion { 
+    return $VERSION
+}
 
 function Set-PSMirthDebug( [bool]$debug ) {
     <#
