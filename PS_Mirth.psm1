@@ -1,12 +1,12 @@
 ﻿<############################################################################################>
-# PS-Mirth v.1.1.1
+# PS-Mirth v.1.1.2
 <############################################################################################>
 Add-Type -AssemblyName System.Web
 
 $VERSION = @{
     MAJOR = 1
     MINOR = 1
-    PATCH = 1
+    PATCH = 2
 }
 
 
@@ -97,13 +97,16 @@ function Set-PSMirthOutputFolder( $path ) {
         -saveXML switch.  If called with no value, resets back to the default.
 
     .DESCRIPTION
+        Set the output folder to be used by the PS_Mirth module when a CmdLet is requested
+        to save an asset.  The default is the sub-folder /PS_Mirth_Output in the working folder.
 
     .INPUTS
+        The path to set the PS_Mirth module output folder to.  Does not need to exist, 
+        but must be a valid path.
 
     .OUTPUTS
-        Creates the folder, if necessary, and returns a string of the output folder path.
-
-    .EXAMPLE
+        Returns the path, normalized with a backslash at the end.
+        The folder is NOT created and will be lazily created on first output by the module.
 
     .LINK
         Links to further documentation.
@@ -779,7 +782,7 @@ function global:Save-MirthPropertiesFile {
         Links to further documentation.
 
     .NOTES
-
+        TODO: Modify this to return text file stream and save to output folder only on -saveXML flag.
     #> 
     [CmdletBinding()] 
     PARAM (
@@ -2692,9 +2695,9 @@ function global:Get-MirthConfigMap {
         try { 
             $r = Invoke-RestMethod -Uri $uri -Method GET -WebSession $session
 
-            [string]$o = Get-PSMirthOutputFolder -create
-            $o = Join-Path $o $outFile 
             if ($saveXML) { 
+                [string]$o = Get-PSMirthOutputFolder -create
+                $o = Join-Path $o $outFile 
                 $r.save($o)
             }
             Write-Verbose "$($r.OuterXml)"
@@ -3444,8 +3447,6 @@ function global:Get-MirthServerSettings {
         try { 
             $r = Invoke-RestMethod -Uri $uri -Method GET -WebSession $session 
             Write-Debug "...done."
-
-            
             if ($saveXML) { 
                 [string]$o = Get-PSMirthOutputFolder -create
                 $o = Join-Path $o $outFile 
@@ -3620,8 +3621,7 @@ function global:Get-MirthSystemProperties {
         Write-Debug "Get-MirthSystemProperties Beginning"
     }
     PROCESS { 
-        [string]$outPath = Get-PSMirthOutputFolder -create
-        $outPath = Join-Path $outPath $outFile 
+
         # import the tool channel and deploy it
         Write-Debug "Invoking tool channel Probe_Java_System_Properties.xml"
         $toolPath = "$PSSCriptRoot/tools/Probe_Java_System_Properties.xml"
@@ -3630,6 +3630,8 @@ function global:Get-MirthSystemProperties {
             Write-Verbose $toolPayLoad.OuterXml
             if (-not $asHashtable) { 
                 if ($saveXML) { 
+                    [string]$outPath = Get-PSMirthOutputFolder -create
+                    $outPath = Join-Path $outPath $outFile 
                     Write-Debug "Saving to $outPath"    
                     $toolPayLoad.save($outPath)
                 }
@@ -3638,6 +3640,8 @@ function global:Get-MirthSystemProperties {
                 Write-Debug "Converting XML response to hashtable"
                 $returnMap = @{};
                 if ($saveXML) {
+                    [string]$outPath = Get-PSMirthOutputFolder -create
+                    $outPath = Join-Path $outPath $outFile 
                     if (Test-Path -Path $outPath) {
                         Clear-Content -path $outPath 
                         $line = "#  PS_Mirth fetched from $($connection.serverUrl) on $(Get-Date)"
@@ -3653,6 +3657,8 @@ function global:Get-MirthSystemProperties {
                 Write-Debug "Sorting by key for output..."
                 $sorted = $returnMap.GetEnumerator() | Sort-Object -Property name 
                 if ($saveXML) {
+                    [string]$outPath = Get-PSMirthOutputFolder -create
+                    $outPath = Join-Path $outPath $outFile 
                     Write-Debug "Saving hash map to $outPath"
                     foreach ($property in $sorted) { 
                         $key    = $property.Name
@@ -3730,8 +3736,6 @@ function global:Get-MirthServerProperties {
         Write-Debug "Get-MirthServerProperties Beginning"
     }
     PROCESS { 
-        [string]$outPath = Get-PSMirthOutputFolder -create
-        $outPath = Join-Path $outPath $outFile 
         # import the tool channel and deploy it
         Write-Debug "Invoking tool channel Probe_Mirth_Properties.xml"
         $toolPath = "$PSSCriptRoot/tools/Probe_Mirth_Properties.xml"
@@ -3740,6 +3744,8 @@ function global:Get-MirthServerProperties {
             Write-Verbose $toolPayLoad.OuterXml
             if (-not $asHashtable) { 
                 if ($saveXML) { 
+                    [string]$outPath = Get-PSMirthOutputFolder -create
+                    $outPath = Join-Path $outPath $outFile 
                     Write-Debug "Saving to $outPath"    
                     $toolPayLoad.save($outPath)
                 }
@@ -3748,6 +3754,8 @@ function global:Get-MirthServerProperties {
                 Write-Debug "Converting XML response to hashtable"
                 $returnMap = @{};
                 if ($saveXML) {
+                    [string]$outPath = Get-PSMirthOutputFolder -create
+                    $outPath = Join-Path $outPath $outFile 
                     if (Test-Path -Path $outPath) {
                         Clear-Content -path $outPath 
                         $line = "#  PS_Mirth fetched from $($connection.serverUrl) on $(Get-Date)"
@@ -3763,6 +3771,8 @@ function global:Get-MirthServerProperties {
                 Write-Debug "Sorting by key for output..."
                 $sorted = $returnMap.GetEnumerator() | Sort-Object -Property name 
                 if ($saveXML) {
+                    [string]$outPath = Get-PSMirthOutputFolder -create
+                    $outPath = Join-Path $outPath $outFile 
                     Write-Debug "Saving hash map to $outPath"
                     foreach ($property in $sorted) { 
                         $key    = $property.Name

@@ -5,7 +5,7 @@ using namespace System.Management.Automation
 param (
     [string]    $deployPath = "$pwd/deploy",  
     [string]    $server   = 'localhost',  
-    [string]    $port     = '8448',
+    [string]    $port     = '8443',
     [string]    $username = 'admin', 
     [string]    $password = 'admin',
     [switch]    $saveTranscript,
@@ -40,11 +40,23 @@ Function Write-InformationColored {
 Write-InformationColored -MessageData "Beginning PS_Mirth Test" -ForegroundColor Black -BackgroundColor DarkGreen 
 Write-Verbose "Importing Module"
 Import-Module PS_Mirth -force
+$Version_PS_Mirth = Get-PSMirthVersion
+Write-InformationColored -MessageData "PS_Mirth Version: " -NoNewline
+Write-InformationColored -MessageData "$($Version_PS_Mirth.MAJOR).$($Version_PS_Mirth.MINOR).$($Version_PS_Mirth.PATCH)"  -ForegroundColor Green   -BackgroundColor Black
+$Output_Folder = Get-PSMirthOutputFolder 
+Write-InformationColored -MessageData "PS_Mirth Output folder: " -NoNewline
+Write-InformationColored -MessageData "$Output_Folder"  -ForegroundColor Green   -BackgroundColor Black
 
 $serverUrl = "https://" + $server + ":" + $port
 Write-InformationColored -MessageData "Establishing Mirth connection to  " -ForegroundColor White -BackgroundColor Black -NoNewline
 Write-InformationColored -MessageData $serverUrl  -ForegroundColor Green   -BackgroundColor Black 
 $connection = Connect-Mirth -serverUrl $serverUrl -userName $username -userPass $password 
+if ($null -eq $connection) { 
+    Write-InformationColored -MessageData "A connection to a running Mirth Server is required!"  -ForegroundColor Red   -BackgroundColor Black
+    Write-InformationColored -MessageData "Unable to connect to server at $serverUrl" -ForegroundColor Red   -BackgroundColor Black
+    Write-InformationColored -MessageData "Start or install a Mirth Connect service, or run the test script with -server -port -user -password options set correctly.`r`n"
+    Exit
+}
 
 Write-InformationColored ""
 Write-InformationColored -MessageData "Get-MirthChannelGroups " -ForegroundColor White -BackgroundColor Black -NoNewline
@@ -61,11 +73,29 @@ try {
     Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black
 }
 
+
+Write-InformationColored ""
+Write-InformationColored -MessageData "Get-MirthServerChannelMetadata " -ForegroundColor White -BackgroundColor Black -NoNewline
+try {
+    $channelMetadata = Get-MirthServerChannelMetadata -connection $connection
+    if ($null -ne $channelMetadata) { 
+        Write-InformationColored -MessageData "OK" -ForegroundColor Green -BackgroundColor Black
+        Write-Verbose "$($channelMetadata.OuterXml)"
+    } else { 
+        Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black
+    }
+} catch { 
+    Write-Error $_
+    Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black
+}
+
+
 Write-InformationColored -MessageData "Get-MirthChannels " -ForegroundColor White -BackgroundColor Black -NoNewline
 try {
     $channels = Get-MirthChannels -connection $connection
     if ($null -ne $channels) { 
         Write-InformationColored -MessageData "OK" -ForegroundColor Green -BackgroundColor Black
+        Write-Verbose "$($channels.OuterXml)"
     } else { 
         Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black
     }
