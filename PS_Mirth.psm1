@@ -19,7 +19,7 @@ class MirthConnection {
     [ValidateNotNullOrEmpty()][Microsoft.PowerShell.Commands.WebRequestSession]$session
     [ValidateNotNullOrEmpty()][string]$serverUrl
     [ValidateNotNullOrEmpty()][string]$userName
-    [ValidateNotNullOrEmpty()][string]$userPass
+    [ValidateNotNullOrEmpty()][securestring]$userPass
 
     MirthConnection($session, $serverUrl, $userName, $userPass) {
        $this.session   = $session
@@ -6768,7 +6768,7 @@ function global:Connect-Mirth {
         [Parameter()]
         [string]$userName = "admin",
         [Parameter()]
-        [string]$userPass = "admin"
+        [securestring]$userPass = (ConvertTo-SecureString -String "admin" -AsPlainText)
     )
     BEGIN {
         Write-Debug "Connect-Mirth Beginning..." 
@@ -6799,7 +6799,7 @@ function global:Connect-Mirth {
         $headers = $DEFAULT_HEADERS.Clone()
         $headers.Add("Accept","application/xml")
         $uri = $serverUrl + '/api/users/_login'
-        $body = "username=$userName&password=$userPass"
+        $body = ("username={0}&password={1}" -f $userName, (ConvertFrom-SecureString $userPass -AsPlainText))
         try { 
             $r = Invoke-RestMethod -uri $uri -Headers $headers -Body $body -Method POST -SessionVariable session
             $msg = "Response: " + $r.'com.mirth.connect.model.LoginStatus'.status

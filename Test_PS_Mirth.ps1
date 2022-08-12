@@ -7,7 +7,7 @@ param (
     [string]    $server   = 'localhost',  
     [string]    $port     = '8443',
     [string]    $username = 'admin', 
-    [string]    $password = 'admin',
+    [securestring]    $password = (ConvertTo-SecureString -String 'admin' -AsPlainText),
     [switch]    $saveTranscript,
     [switch]    $verbose
 )
@@ -50,7 +50,7 @@ Write-InformationColored -MessageData "$Output_Folder"  -ForegroundColor Green  
 $serverUrl = "https://" + $server + ":" + $port
 Write-InformationColored -MessageData "Establishing Mirth connection to  " -ForegroundColor White -BackgroundColor Black -NoNewline
 Write-InformationColored -MessageData $serverUrl  -ForegroundColor Green   -BackgroundColor Black 
-$connection = Connect-Mirth -serverUrl $serverUrl -userName $username -userPass $password 
+$connection = Connect-Mirth -serverUrl $serverUrl -userName $username -userPass $password
 if ($null -eq $connection) { 
     Write-InformationColored -MessageData "A connection to a running Mirth Server is required!"  -ForegroundColor Red   -BackgroundColor Black
     Write-InformationColored -MessageData "Unable to connect to server at $serverUrl" -ForegroundColor Red   -BackgroundColor Black
