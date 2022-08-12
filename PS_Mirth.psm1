@@ -1,14 +1,4 @@
-﻿<############################################################################################>
-# PS-Mirth v.1.1.2
-<############################################################################################>
-Add-Type -AssemblyName System.Web
-
-$VERSION = @{
-    MAJOR = 1
-    MINOR = 2
-    PATCH = 0
-}
-
+﻿# classes and enums #
 
 enum MirthMsgStorageMode {
     DISABLED = 1
@@ -90,10 +80,6 @@ function Set-SkipCertificateCheck([bool]$skip) {
     $script:PSDefaultParameterValues=@{"Invoke-RestMethod:SkipCertificateCheck"=$skip}
 }
 
-function Get-PSMirthVersion { 
-    return $VERSION
-}
-
 function Set-PSMirthDebug( [bool]$debug ) {
     <#
     .SYNOPSIS
@@ -107,6 +93,7 @@ function Set-PSMirthDebug( [bool]$debug ) {
         Write-Debug ("Debug Off") # won't be seen
     }
 }
+
 function Set-PSMirthOutputFolder( $path ) {
     <#
     .SYNOPSIS
@@ -335,9 +322,7 @@ function global:New-MirthKeyStoreCertificatesPayLoad {
 
 
         if ($saveXML) { 
-            [string]$o = Get-PSMirthOutputFolder -create
-            $o = Join-Path $o $outFile     
-            $templateXML.save($o)
+            Save-Content -Content $templateXML -OutFile $outFile
         }
         Write-Verbose $templateXML.OuterXml
 
@@ -443,9 +428,7 @@ function global:New-MirthSSLMgrPropertiesPayload {
 "@
 
         if ($saveXML) { 
-            [string]$o = Get-PSMirthOutputFolder -create
-            $o = Join-Path $o $outFile    
-            $templateXML.save($o)
+            Save-Content -Content $templateXML -OutFile $outFile
         }
         Write-Verbose $templateXML.OuterXml
         return $templateXML
@@ -740,9 +723,7 @@ function global:New-MirthConfigMapFromProperties {
             }
         }
         if ($saveXML) {
-            [string]$o = Get-PSMirthOutputFolder -create
-            $o = Join-Path $o $outFile 
-            $mapXML.save($o)
+            Save-Content -Content $mapXML -OutFile $outFile
         }
         Write-Verbose $mapXML.OuterXml
         return $mapXML
@@ -1186,9 +1167,7 @@ function global:Get-MirthServerAbout {
             Write-Debug "...done."
 
             if ($saveXML) {
-                [string]$o = Get-PSMirthOutputFolder -create
-                $o = Join-Path $o $outFile 
-                $r.save($o)
+                Save-Content -Content $r -OutFile $outFile
             }
             Write-Verbose "$($r.OuterXml)"
             #TODO 'plugins' and such should retain their maps, not become strings
@@ -1278,9 +1257,7 @@ function global:Get-MirthServerConfig {
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder -create
-                $o = Join-Path $o $outFile 
-                $r.save($o)
+                Save-Content -Content $r -OutFile $outFile
             }
             Write-Verbose $r.innerXml
             return $r
@@ -1352,11 +1329,7 @@ function global:Get-MirthServerVersion {
             Write-Debug "...done."
 
             if ($saveXML) {
-                [string]$o = Get-PSMirthOutputFolder -create
-                $o = Join-Path $o $outFile 
-                Write-Debug "Saving Output to $o" 
-                Set-Content -Path $o -Value $r      
-                Write-Debug "Done!" 
+                Save-Content -Content $r -OutFile $outFile
             }
             Write-Verbose $r
             return $r
@@ -4972,7 +4945,7 @@ function global:Send-MirthChannelCommand {
 
         Write-Debug "POST to Mirth $uri "
         try { 
-            $r = Invoke-RestMethod -UseBasicParsing -Uri $uri -WebSession $session -Headers $headers -Method POST -Body $payloadBody
+            Invoke-RestMethod -UseBasicParsing -Uri $uri -WebSession $session -Headers $headers -Method POST -Body $payloadBody
             if ($saveXML) { 
                 [string]$o = Get-PSMirthOutputFolder -create
                 $o = Join-Path $o $outFile 
@@ -6884,7 +6857,7 @@ function global:Set-MirthUserPassword {
 
         # The new password when performing the add-user or change-password commands, default is "changeit"
         [Parameter(ValueFromPipelineByPropertyName=$True)]
-        [string]$newPassword = "changeit",
+        [securestring]$newPassword = (ConvertTo-SecureString -String "changeit" -AsPlainText),
    
         # Saves the response from the server as a file in the current location.
         [Parameter()]
@@ -6916,12 +6889,12 @@ function global:Set-MirthUserPassword {
             $uri = $serverUrl + '/api/users/' + $u.id + '/password'
             Write-Debug "PUT to Mirth at $uri"
             try { 
-                $r = Invoke-RestMethod -Uri $uri -WebSession $session -Method PUT -ContentType 'text/plain' -Body $newPassword
+                $r = Invoke-RestMethod -Uri $uri -WebSession $session -Method PUT -ContentType 'text/plain' -Body (ConvertFrom-SecureString $newPassword -AsPlainText)
                 Write-Debug "...Password set"
                 if ($saveXML) { 
                     [string]$o = Get-PSMirthOutputFolder -create
                     $o = Join-Path $o $outFile 
-                    Set-Content -Path $o -Value "$targetId : $newPassword" 
+                    Set-Content -Path $o -Value "$targetId : $(ConvertFrom-SecureString $newPassword -AsPlainText)" 
                 }
                 Write-Verbose $r
             }
@@ -7408,7 +7381,7 @@ function global:Add-MirthUser {
 
         # The new password when performing the add-user or change-password commands, default is "changeit"
         [Parameter()]
-        [string]$newPassword = "changeit",
+        [securestring]$newPassword = (ConvertTo-SecureString -String "changeit" -AsPlainText),
    
         # Saves the response from the server as a file in the current location.
         [Parameter()]
@@ -7553,3 +7526,29 @@ function global:Remove-MirthUser {
     }
 
 }  # Remove-MirthUser
+
+function Save-Content {
+    [CmdletBinding()] 
+    PARAM (
+
+        # the data to save
+        [Parameter(Position=0)]
+        $Content,
+        # the output file, will be appended to standard output folder
+        [Parameter(Position=1)]
+        [string]$OutFile        
+    )    
+    BEGIN { 
+        Write-Debug "Save-Content Beginning"
+    }
+    PROCESS {
+        [string]$BaseFolder = Get-PSMirthOutputFolder -create
+        $destFile = Join-Path $BaseFolder $OutFile
+        Write-Debug "Saving Output to $destFile"
+        Set-Content -Path $destFile -Value $Content
+        Write-Debug "Done!"
+    }
+    END {
+        Write-Debug "Save-Content Ending"
+    }
+}
