@@ -1,4 +1,7 @@
-﻿# classes and enums #
+﻿# needed for WebRequestSession
+Add-Type -AssemblyName System.Web
+
+# classes and enums #
 
 enum MirthMsgStorageMode {
     DISABLED = 1
@@ -44,7 +47,7 @@ class MirthServerSummary {
 
 }
 
-#use these default parameters
+#default function parameters
 $PSDefaultParameterValues=@{
     "Invoke-RestMethod:SkipCertificateCheck"=$true
 }
@@ -58,12 +61,13 @@ $DEFAULT_HEADERS = @{
 
 # Set this to 'Continue' to display output from Write-Debug statements, 
 # or to 'SilentylyContinue' to suppress them.
-$DebugPreference = 'SilentlyContinue'
+#$DebugPreference = 'SilentlyContinue'
 
 # This is where the -saveXML flag will cause files to be saved.  It 
-# defaults to a subfolder in the current location.  Call Set-Mirth
-[string]$savePath = Join-Path -Path $pwd -ChildPath "/PS_Mirth_Output/" 
-Write-Verbose "Current PS_Mirth output folder is: $savePath"
+# defaults to a subfolder in the current location.
+[string]$DEFAULT_OUTPUT_FOLDER = Join-Path -Path $pwd -ChildPath "/PS_Mirth_Output/" 
+[string]$SavePath = $DEFAULT_OUTPUT_FOLDER
+Write-Verbose "Current PS_Mirth output folder is: $SavePath"
 
 [MirthConnection]$currentConnection = $null;
 
@@ -72,29 +76,50 @@ Write-Verbose "Current PS_Mirth output folder is: $savePath"
 <#       PS-Mirth Functions                                                                 #>
 <############################################################################################>
 
-function Get-SkipCertificateCheck {
-    return $script:PSDefaultParameterValues["Invoke-RestMethod:SkipCertificateCheck"]
-}
-
-function Set-SkipCertificateCheck([bool]$skip) {
-    $script:PSDefaultParameterValues=@{"Invoke-RestMethod:SkipCertificateCheck"=$skip}
-}
-
-function Set-PSMirthDebug( [bool]$debug ) {
-    <#
-    .SYNOPSIS
-        Call to set the module $DebugPreference 
-    #> 
-    if ($debug) { 
-        $Script:DebugPreference = 'Continue'
-        Write-Debug ("Debug On")
-    } else { 
-        $Script:DebugPreference = 'SilentlyContinue'
-        Write-Debug ("Debug Off") # won't be seen
+function Get-PSConfig {
+    @{
+        "SkipCertificateCheck" = $script:PSDefaultParameterValues["Invoke-RestMethod:SkipCertificateCheck"]
+        "DefaultHeaders" = $script:DEFAULT_HEADERS.Clone()
+        "OutputFolder" = $script:SavePath
+        "MirthConnection" = $script:currentConnection
     }
 }
 
-function Set-PSMirthOutputFolder( $path ) {
+function Set-PSConfig([hashtable]$Config) {
+    foreach ($Key in $Config.Keys) {
+        switch ($Key) {
+            "DefaultHeaders" {
+                $script:DEFAULT_HEADERS = $Config[$Key].Clone();
+            }
+            "MirthConnection" {
+                $script:currentConnection = $Config[$Key]
+            }
+            "OutputFolder" {
+                Set-OutputFolder $Config[$Key]
+            }
+            "SkipCertificateCheck" {
+                $script:PSDefaultParameterValues=@{"Invoke-RestMethod:SkipCertificateCheck" = $Config[$Key]}
+            }
+            Default {Write-Warning ("Unknown option '{0}', ignoring" -f $Key)}
+        }
+    }
+}
+
+# function Set-PSMirthDebug( [bool]$debug ) {
+#     <#
+#     .SYNOPSIS
+#         Call to set the module $DebugPreference 
+#     #> 
+#     if ($debug) { 
+#         $Script:DebugPreference = 'Continue'
+#         Write-Debug ("Debug On")
+#     } else { 
+#         $Script:DebugPreference = 'SilentlyContinue'
+#         Write-Debug ("Debug Off") # won't be seen
+#     }
+# }
+
+function Set-OutputFolder( $path ) {
     <#
     .SYNOPSIS
         Call to explicitly set the output folder for the PS_Mirth scripts when using the 
@@ -120,51 +145,39 @@ function Set-PSMirthOutputFolder( $path ) {
     #> 
     $path = $path.Trim()
     if ([string]::IsNullOrEmpty($path)) {
-        $savePath = Join-Path -Path $pwd -ChildPath "/PS_Mirth_Output/"
+        $script:SavePath = $DEFAULT_OUTPUT_FOLDER
     }
-    if (!(Test-Path -Path $path -IsValid)) {
-        Write-Error "The path specified is not valid!"
-        return $null
+    elseif (!(Test-Path -Path $path -IsValid)) {
+        Write-Error ("The path specified is not valid: {0}" -f $path)
     }
-    
-    $script:savePath = PathAddBackslash($path)
-    Write-Debug "Current PS_Mirth output folder is: $savePath"
-    return $script:savePath
-    
+    else {
+        $script:SavePath = PathAddBackslash($path)
+        Write-Debug "Current PS_Mirth output folder is: $script:SavePath"
+    }
 }
 
 function PathAddBackslash($path) {
-    $separator1 = [IO.Path]::DirectorySeparatorChar
-    $separator2 = [System.IO.Path]::AltDirectorySeparatorChar 
+    $DirSep = [IO.Path]::DirectorySeparatorChar
+    $AltDirSep = [System.IO.Path]::AltDirectorySeparatorChar 
 
     $path = $path.TrimEnd()
-    if ($path.EndsWith($separator1) -or $path.EndsWith($separator2)) {
+    if ($path.EndsWith($DirSep) -or $path.EndsWith($AltDirSep)) {
         return $path;
     }
-    if ($path.Contains($separator2)) {
-        return $path + $separator2;
+    if ($path.Contains($AltDirSep)) {
+        return $path + $AltDirSep;
     }
-    return $path + $separator1;
+    return $path + $DirSep;
 }
 
-function Get-PSMirthOutputFolder () { 
+function Get-OutputFolder () { 
     param(
         [switch] $create
     )
-    if ($create -and !(Test-Path $savePath -PathType Container)) {
-        New-Item -ItemType Directory -Force -Path $savePath
+    if ($create -and !(Test-Path $script:SavePath -PathType Container)) {
+        New-Item -ItemType Directory -Force -Path $script:SavePath
     }
-    return $script:savePath
-}
-
-function Get-PSMirthConnection { 
-    Write-Debug "Get-PSMirthConnection"
-    return $script:currentConnection
-}
-
-function Set-PSMirthConnection( $connection ) { 
-    Write-Debug "Set-PSMirthConnection"
-    $script:currentConnection = $connection
+    return $script:SavePath
 }
 
 <############################################################################################>
@@ -174,7 +187,7 @@ function Set-PSMirthConnection( $connection ) {
 <#                                                                                          #>
 <############################################################################################>
 
-function global:Convert-XmlElementToDoc { 
+function Convert-XmlElementToDoc { 
    <#
     .SYNOPSIS
         Convert an Xml.XmlElement to an XmlDocument, with the element as the root
@@ -196,7 +209,7 @@ function global:Convert-XmlElementToDoc {
     return $xml
 }  # Convert-XmlElementToDoc
 
-function global:New-MirthKeyStoreCertificatesPayLoad { 
+function New-MirthKeyStoreCertificatesPayLoad { 
     <#
     .SYNOPSIS
         Given public and private PEM certificates from the pipeline, or from a file location, 
@@ -334,7 +347,7 @@ function global:New-MirthKeyStoreCertificatesPayLoad {
 
 }  # New-MirthKeyStoreCertificatesPayLoad
 
-function global:New-MirthSSLMgrPropertiesPayload { 
+function New-MirthSSLMgrPropertiesPayload { 
     <#
     .SYNOPSIS
         Given public and private PEM certificates from the pipeline, or from a file location, 
@@ -439,7 +452,7 @@ function global:New-MirthSSLMgrPropertiesPayload {
 
 }  # New-MirthSSLMgrPropertiesPayload
 
-function global:New-MirthChannelTagObject {
+function New-MirthChannelTagObject {
        <#
     .SYNOPSIS
         Creates an XML object representing a Mirth channel tag.
@@ -547,7 +560,7 @@ function global:New-MirthChannelTagObject {
 
 }  # New-MirthChannelTagObject
 
-function global:New-MirthConfigMapEntry {
+function New-MirthConfigMapEntry {
     <#
     .SYNOPSIS
         Creates an XML object representing a Mirth configuration map entry.
@@ -607,7 +620,7 @@ function global:New-MirthConfigMapEntry {
 
 }  # New-MirthConfigMapEntry
 
-function global:New-MirthConfigMapFromProperties { 
+function New-MirthConfigMapFromProperties { 
     <#
     .SYNOPSIS
         Create a new Mirth configurationMap XML object from either a hashtable passed in, or from a standard properties file
@@ -738,7 +751,7 @@ function global:New-MirthConfigMapFromProperties {
 
 }  # New-MirthConfigMapFromProperties
 
-function global:Save-MirthPropertiesFile { 
+function Save-MirthPropertiesFile { 
     <#
     .SYNOPSIS
         Saves a property file containing the data from the Mirth XML Configuration Map
@@ -803,7 +816,7 @@ function global:Save-MirthPropertiesFile {
         Write-Debug "Save-MirthPropertiesFile Beginning"
     }
     PROCESS {
-        [string]$outPath = Get-PSMirthOutputFolder -create
+        [string]$outPath = Get-OutputFolder -create
         $targetPath = Join-Path $outPath $outFile 
         if (($null -ne $payLoad ) -and ($payLoad -is [xml]) ) {
             if (Test-Path -Path $targetPath) {
@@ -838,7 +851,7 @@ function global:Save-MirthPropertiesFile {
     }
 }  # Save-MirthPropertiesFile
 
-function global:Add-PSMirthStringNodes { 
+function Add-PSMirthStringNodes { 
     <#
     .SYNOPSIS
         Given an XMLElement parent node and an array of strings, will add all 
@@ -897,7 +910,7 @@ function global:Add-PSMirthStringNodes {
     }
 }  # Add-PSMirthStringNodes
 
-function global:Invoke-PSMirthTool { 
+function Invoke-PSMirthTool { 
     <#
     .SYNOPSIS
         Deploys, invokes and fetches payloads from PS_Mirth "tool" channels.
@@ -1045,7 +1058,7 @@ function global:Invoke-PSMirthTool {
 <#       Server Functions                                                                    #>
 <############################################################################################>
 
-function global:Get-MirthServerAbout { 
+function Get-MirthServerAbout { 
 
     <#
     .SYNOPSIS
@@ -1200,7 +1213,7 @@ function global:Get-MirthServerAbout {
     }
 }  # Get-MirthServerAbout
 
-function global:Get-MirthServerConfig {
+function Get-MirthServerConfig {
     <#
     .SYNOPSIS
         Gets all the complete server configuration backup XML file for the specified server. 
@@ -1272,7 +1285,7 @@ function global:Get-MirthServerConfig {
     } 
 }  # Get-MirthServerConfig
 
-function global:Get-MirthServerVersion { 
+function Get-MirthServerVersion { 
 
     <#
     .SYNOPSIS
@@ -1343,7 +1356,7 @@ function global:Get-MirthServerVersion {
     }
 }  # Get-MirthServerVersion
 
-function global:Get-MirthServerTime { 
+function Get-MirthServerTime { 
     <#
     .SYNOPSIS
         Gets the Mirth server time.
@@ -1398,13 +1411,14 @@ function global:Get-MirthServerTime {
         $uri = $serverUrl + '/api/server/time'
         $headers = $DEFAULT_HEADERS.Clone();
         $headers.Add("Accept","application/xml")
+        $headers.Add("Content-Type","application/xml")
 
         Write-Debug "Invoking GET Mirth API server at: $uri "
         try { 
-            $r = Invoke-RestMethod -Uri $uri -Method GET -Headers $headers -WebSession $session  -ContentType 'application/xml' 
+            $r = Invoke-RestMethod -Uri $uri -Method GET -Headers $headers -WebSession $session
             
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder -create
+                [string]$o = Get-OutputFolder -create
                 $o = Join-Path $o $outFile 
                 Set-Content -Path $o -Value $r.OuterXml      
             }
@@ -1420,7 +1434,7 @@ function global:Get-MirthServerTime {
     }
 }  #  Get-MirthServerTime
 
-function global:Get-MirthChannelGroups { 
+function Get-MirthChannelGroups { 
     <#
     .SYNOPSIS
         Gets the Mirth Channel Groups 
@@ -1521,7 +1535,7 @@ function global:Get-MirthChannelGroups {
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder -create
+                [string]$o = Get-OutputFolder -create
                 $o = Join-Path $o $outFile 
                 $r.save($o)
             }
@@ -1538,7 +1552,7 @@ function global:Get-MirthChannelGroups {
 
 }  # Get-MirthChannelGroups
 
-function global:Set-MirthChannelGroups { 
+function Set-MirthChannelGroups { 
     <#
     .SYNOPSIS
         Adds or updates Mirth channel groups in bulk. 
@@ -1633,6 +1647,7 @@ function global:Set-MirthChannelGroups {
         $uri = $uri + '?' + $parameters.toString()
         $headers = $DEFAULT_HEADERS.Clone()
         $headers.Add("Accept","application/xml")  
+        $headers.Add("Content-Type","multipart/form-data; boundary=`"$boundary`"")
 
         Write-Debug "POST to Mirth $uri "
 
@@ -1651,9 +1666,9 @@ function global:Set-MirthChannelGroups {
             ) -join $LF
         Write-Debug $bodyLines
         try {
-            # Returns the response gotten from the server (we pass it on).
+            # Returns the response received from the server (we pass it on).
             #
-            Invoke-RestMethod -WebSession $session -Uri $uri -Method Post -ContentType "multipart/form-data; boundary=`"$boundary`"" -TimeoutSec 20 -Body $bodyLines
+            Invoke-RestMethod -WebSession $session -Uri $uri -Method Post -Headers $headers -TimeoutSec 20 -Body $bodyLines
         }
         catch [System.Net.WebException] {
             throw $_
@@ -1664,7 +1679,7 @@ function global:Set-MirthChannelGroups {
     }
 }  #  Set-MirthChannelGroups
 
-function global:Remove-MirthChannelGroups { 
+function Remove-MirthChannelGroups { 
     <#
     .SYNOPSIS
         Removes channels with the ids specified by $targetId
@@ -1737,7 +1752,7 @@ function global:Remove-MirthChannelGroups {
     }
 }  #  Remove-MirthChannelGroups
 
-function global:Add-MirthChannelGroups { 
+function Add-MirthChannelGroups { 
     <#
     .SYNOPSIS
         Merge (add/updates) channelGroups. 
@@ -1872,7 +1887,7 @@ function global:Add-MirthChannelGroups {
         # Update the channelGroups with the new list
         $r = Set-MirthChannelGroups -connection $connection -payLoad $newGroupSet.OuterXml -override
         if ($saveXML) { 
-            [string]$o = Get-PSMirthOutputFolder -create
+            [string]$o = Get-OutputFolder -create
             $o = Join-Path $o $outFile 
             Write-Verbose "Saving merged channelGroups to $o"
             Set-Content $o $newGroupSet.OuterXml
@@ -1885,7 +1900,7 @@ function global:Add-MirthChannelGroups {
     } 
 }  # Add-MirthChannelGroups
 
-function global:Get-MirthServerChannelMetadata { 
+function Get-MirthServerChannelMetadata { 
     <#
     .SYNOPSIS
         Gets all Mirth server channel metadata.
@@ -1961,7 +1976,7 @@ function global:Get-MirthServerChannelMetadata {
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder -create
+                [string]$o = Get-OutputFolder -create
                 $o = Join-Path $o $outFile 
                 $r.save($o)
             }
@@ -1988,7 +2003,7 @@ function global:Get-MirthServerChannelMetadata {
     }
 }  # Get-MirthServerChannelMetadata 
 
-function global:Set-MirthServerChannelMetadata { 
+function Set-MirthServerChannelMetadata { 
     <#
     .SYNOPSIS
         Sets all server channel metadata from an XML payload string or file path.
@@ -2059,14 +2074,15 @@ function global:Set-MirthServerChannelMetadata {
 
         $uri = $serverUrl + '/api/server/channelMetadata'
         $headers = $DEFAULT_HEADERS.Clone()
-        $headers.Add("Accept","application/xml")  
+        $headers.Add("Accept","application/xml")
+        $headers.Add("Content-Type","application/xml")
 
         Write-Debug "PUT to Mirth $uri "
 
         try {
-            # Returns the response gotten from the server (we pass it on).
+            # Returns the response received from the server (we pass it on).
             #
-            Invoke-RestMethod -WebSession $session -Uri $uri -Method PUT  -ContentType 'application/xml'  -TimeoutSec 20 -Body $payloadXML.OuterXml
+            Invoke-RestMethod -WebSession $session -Uri $uri -Method PUT -Headers $headers -TimeoutSec 20 -Body $payloadXML.OuterXml
         }
         catch [System.Net.WebException] {
             throw $_
@@ -2077,7 +2093,7 @@ function global:Set-MirthServerChannelMetadata {
     }    
 }  # Set-MirthServerChannelMetadata 
 
-function global:Get-MirthChannelTags {
+function Get-MirthChannelTags {
     <#
     .SYNOPSIS
         Gets the Mirth Channel Tags
@@ -2177,7 +2193,7 @@ function global:Get-MirthChannelTags {
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder -create
+                [string]$o = Get-OutputFolder -create
                 $o = Join-Path $o $outFile 
                 $r.save($o)
             }
@@ -2193,7 +2209,7 @@ function global:Get-MirthChannelTags {
     } 
 }  #  Get-MirthChannelTags
 
-function global:Set-MirthChannelTags { 
+function Set-MirthChannelTags { 
     <#
     .SYNOPSIS
         Adds or updates Mirth channel tags in bulk. 
@@ -2298,14 +2314,15 @@ function global:Set-MirthChannelTags {
         
         $uri = $serverUrl + '/api/server/channelTags'
         $headers = $DEFAULT_HEADERS.Clone()
-        $headers.Add("Accept","application/xml")  
+        $headers.Add("Accept","application/xml")
+        $headers.Add("Content-Type","application/xml")
 
         Write-Debug "PUT to Mirth $uri "
 
         try {
-            # Returns the response gotten from the server (we pass it on).
+            # Returns the response received from the server (we pass it on).
             #
-            Invoke-RestMethod -WebSession $session -Uri $uri -Method PUT  -ContentType 'application/xml'  -TimeoutSec 20 -Body $payloadXML.OuterXml
+            Invoke-RestMethod -WebSession $session -Uri $uri -Method PUT -Headers $headers -TimeoutSec 20 -Body $payloadXML.OuterXml
         }
         catch [System.Net.WebException] {
             throw $_
@@ -2316,7 +2333,7 @@ function global:Set-MirthChannelTags {
     }  
 }  #  Set-MirthChannelTags
 
-function global:Set-MirthTaggedChannels {
+function Set-MirthTaggedChannels {
     <#
     .SYNOPSIS
         Deletes, creates, or assigns an existing tag to a selected list of, or all, channels. 
@@ -2600,7 +2617,7 @@ function global:Set-MirthTaggedChannels {
     } 
 }  #  Set-MirthTaggedChannels
 
-function global:Get-MirthConfigMap {
+function Get-MirthConfigMap {
     <#
     .SYNOPSIS
         Gets the Mirth configuration map. Returns an xml object to the Pipeline.
@@ -2690,7 +2707,7 @@ function global:Get-MirthConfigMap {
             $r = Invoke-RestMethod -Uri $uri -Method GET -WebSession $session
 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder -create
+                [string]$o = Get-OutputFolder -create
                 $o = Join-Path $o $outFile 
                 $r.save($o)
             }
@@ -2719,7 +2736,7 @@ function global:Get-MirthConfigMap {
     }
 }  # Get-MirthConfigMap
 
-function global:Set-MirthConfigMap {
+function Set-MirthConfigMap {
     <#
     .SYNOPSIS
         Replaces the Mirth configuration map. 
@@ -2881,13 +2898,14 @@ function global:Set-MirthConfigMap {
 
         $headers = $DEFAULT_HEADERS.Clone()
         $headers.Add("Accept","application/xml")
+        $headers.Add("Content-Type","application/xml")
 
         Write-Debug "Invoking PUT Mirth API server at: $uri "
         try { 
-            $r = Invoke-RestMethod -Uri $uri -Headers $headers -ContentType 'application/xml' -Method PUT -WebSession $session -Body $payLoadXML.OuterXml
+            $r = Invoke-RestMethod -Uri $uri -Headers $headers -Method PUT -WebSession $session -Body $payLoadXML.OuterXml
             Write-Debug "...done."
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder -create
+                [string]$o = Get-OutputFolder -create
                 $o = Join-Path $o $outFile 
                 $output = "Configuration Map Updated Successfully: $payLoad"
                 Set-Content -Path $o -Value $output   
@@ -2905,7 +2923,7 @@ function global:Set-MirthConfigMap {
     } 
 }  #  Set-MirthConfigMap
 
-function global:Get-MirthExtensionProperties { 
+function Get-MirthExtensionProperties { 
     <#
     .SYNOPSIS
         Get the properties for a Mirth Extension, identified by name.
@@ -2989,9 +3007,11 @@ function global:Get-MirthExtensionProperties {
         
         $targetId = [uri]::EscapeDataString($targetId)
         $uri = $serverUrl + '/api/extensions/' + $targetId + "/properties"
+        $headers = $DEFAULT_HEADERS.Clone()
+        $headers.Add("Content-Type","application/xml")
         Write-Debug "Invoking GET Mirth API server at: $uri "
         try { 
-            $r = Invoke-RestMethod -Uri $uri -Method GET -WebSession $session  -ContentType 'application/xml'
+            $r = Invoke-RestMethod -Uri $uri -Method GET -WebSession $session -Headers $headers
             Write-Debug "...done."
             if ($decode) {
                 Write-Debug "Decoding XML escaped data..." 
@@ -3000,7 +3020,7 @@ function global:Get-MirthExtensionProperties {
             }
 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder -create
+                [string]$o = Get-OutputFolder -create
                 $o = Join-Path $o $outFile 
                 $r.save($o)
             }
@@ -3017,7 +3037,7 @@ function global:Get-MirthExtensionProperties {
     }
 }  #  Get-MirthExtensionProperties
 
-function global:Set-MirthExtensionProperties { 
+function Set-MirthExtensionProperties { 
     <#
     .SYNOPSIS
         Set the properties for a Mirth Extension, identified by name.
@@ -3098,18 +3118,19 @@ function global:Set-MirthExtensionProperties {
          
         $headers = $DEFAULT_HEADERS.Clone()
         $headers.Add("Accept","application/xml")
+        $headers.Add("Content-Type","application/xml")
         $targetId = [uri]::EscapeDataString($targetId)
         $uri = $serverUrl + '/api/extensions/' + $targetId + "/properties"
         Write-Debug "Invoking PUT Mirth API server at: $uri "
         try { 
-            $r = Invoke-RestMethod -Uri $uri -Headers $headers -ContentType 'application/xml' -Method PUT -WebSession $session -Body $payLoad.OuterXml
+            $r = Invoke-RestMethod -Uri $uri -Headers $headers -Method PUT -WebSession $session -Body $payLoad.OuterXml
             Write-Debug "...done."
             if ($decode) { 
                 $decoded = [System.Web.HttpUtility]::HtmlDecode($r.OuterXml)
                 $r = [xml]$decoded
             }
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder -create
+                [string]$o = Get-OutputFolder -create
                 $o = Join-Path $o $outFile 
                 $r.save($o)
             }
@@ -3126,7 +3147,7 @@ function global:Set-MirthExtensionProperties {
     }
 }  #  Set-MirthExtensionProperties
 
-function global:Get-MirthGlobalScripts { 
+function Get-MirthGlobalScripts { 
     <#
     .SYNOPSIS
         Gets the Mirth server global scripts.
@@ -3206,12 +3227,14 @@ function global:Get-MirthGlobalScripts {
 
         $uri = $serverUrl + '/api/server/globalScripts'
         Write-Debug "Invoking GET Mirth at $uri"
+        $headers = $DEFAULT_HEADERS.Clone()
+        $headers.Add("Content-Type","application/xml")
         try { 
-            $r = Invoke-RestMethod -Uri $uri -Method GET -WebSession $session -ContentType 'application/xml' 
+            $r = Invoke-RestMethod -Uri $uri -Method GET -WebSession $session -Headers $headers
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder -create
+                [string]$o = Get-OutputFolder -create
                 $o = Join-Path $o $outFile 
                 $r.save($o)
             }
@@ -3228,7 +3251,7 @@ function global:Get-MirthGlobalScripts {
 
 }  #  Get-MirthGlobalScripts
 
-function global:Set-MirthGlobalScripts { 
+function Set-MirthGlobalScripts { 
     <#
     .SYNOPSIS
         Replaces the Mirth global scripts. 
@@ -3334,13 +3357,14 @@ function global:Set-MirthGlobalScripts {
         }
         $headers = $DEFAULT_HEADERS.Clone()
         $headers.Add("Accept","application/xml")
+        $headers.Add("Content-Type","application/xml")
 
         Write-Debug "Invoking PUT Mirth API server at: $uri "
         try { 
-            $r = Invoke-RestMethod -Uri $uri -Headers $headers -ContentType 'application/xml' -Method PUT -WebSession $session -Body $payLoadXML.OuterXml
+            $r = Invoke-RestMethod -Uri $uri -Headers $headers -Method PUT -WebSession $session -Body $payLoadXML.OuterXml
             Write-Debug "...done."
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder -create
+                [string]$o = Get-OutputFolder -create
                 $o = Join-Path $o $outFile  
                 $output = "Global Scripts Updated Successfully: $payLoad"
                 Set-Content -Path $o -Value $output   
@@ -3359,7 +3383,7 @@ function global:Set-MirthGlobalScripts {
 
 }  #  Set-MirthGlobalScripts
 
-function global:Get-MirthServerSettings { 
+function Get-MirthServerSettings { 
     <#
     .SYNOPSIS
         Gets the Mirth server settings.
@@ -3442,7 +3466,7 @@ function global:Get-MirthServerSettings {
             $r = Invoke-RestMethod -Uri $uri -Method GET -WebSession $session 
             Write-Debug "...done."
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder -create
+                [string]$o = Get-OutputFolder -create
                 $o = Join-Path $o $outFile 
                 $r.save($o)
             }
@@ -3459,7 +3483,7 @@ function global:Get-MirthServerSettings {
 
 }  #  Get-MirthServerSettings
 
-function global:Set-MirthServerSettings { 
+function Set-MirthServerSettings { 
     <#
     .SYNOPSIS
         Sets the Mirth server settings.
@@ -3535,13 +3559,14 @@ function global:Set-MirthServerSettings {
         }
         $headers = $DEFAULT_HEADERS.Clone()
         $headers.Add("Accept","application/xml")
+        $headers.Add("Content-Type","application/xml")
 
         Write-Debug "Invoking PUT Mirth API server at: $uri "
         try { 
-            $r = Invoke-RestMethod -Uri $uri -Headers $headers -ContentType 'application/xml' -Method PUT -WebSession $session -Body $payLoadXML.OuterXml
+            $r = Invoke-RestMethod -Uri $uri -Headers $headers -Method PUT -WebSession $session -Body $payLoadXML.OuterXml
             Write-Debug "...done."
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder -create
+                [string]$o = Get-OutputFolder -create
                 $o = Join-Path $o $outFile 
                 $output = "Server Settings Updated Successfully: $payLoad"
                 Set-Content -Path $o -Value $output   
@@ -3559,7 +3584,7 @@ function global:Set-MirthServerSettings {
 
 }  #  Set-MirthServerSettings
 
-function global:Get-MirthSystemProperties { 
+function Get-MirthSystemProperties { 
     <#
     .SYNOPSIS
         Gets the Mirth server java system properties, 
@@ -3624,7 +3649,7 @@ function global:Get-MirthSystemProperties {
             Write-Verbose $toolPayLoad.OuterXml
             if (-not $asHashtable) { 
                 if ($saveXML) { 
-                    [string]$outPath = Get-PSMirthOutputFolder -create
+                    [string]$outPath = Get-OutputFolder -create
                     $outPath = Join-Path $outPath $outFile 
                     Write-Debug "Saving to $outPath"    
                     $toolPayLoad.save($outPath)
@@ -3634,7 +3659,7 @@ function global:Get-MirthSystemProperties {
                 Write-Debug "Converting XML response to hashtable"
                 $returnMap = @{};
                 if ($saveXML) {
-                    [string]$outPath = Get-PSMirthOutputFolder -create
+                    [string]$outPath = Get-OutputFolder -create
                     $outPath = Join-Path $outPath $outFile 
                     if (Test-Path -Path $outPath) {
                         Clear-Content -path $outPath 
@@ -3651,7 +3676,7 @@ function global:Get-MirthSystemProperties {
                 Write-Debug "Sorting by key for output..."
                 $sorted = $returnMap.GetEnumerator() | Sort-Object -Property name 
                 if ($saveXML) {
-                    [string]$outPath = Get-PSMirthOutputFolder -create
+                    [string]$outPath = Get-OutputFolder -create
                     $outPath = Join-Path $outPath $outFile 
                     Write-Debug "Saving hash map to $outPath"
                     foreach ($property in $sorted) { 
@@ -3673,7 +3698,7 @@ function global:Get-MirthSystemProperties {
 } #  Get-MirthSystemProperties 
 
 
-function global:Get-MirthServerProperties { 
+function Get-MirthServerProperties { 
     <#
     .SYNOPSIS
         Gets the Mirth server configuration property file, 
@@ -3738,7 +3763,7 @@ function global:Get-MirthServerProperties {
             Write-Verbose $toolPayLoad.OuterXml
             if (-not $asHashtable) { 
                 if ($saveXML) { 
-                    [string]$outPath = Get-PSMirthOutputFolder -create
+                    [string]$outPath = Get-OutputFolder -create
                     $outPath = Join-Path $outPath $outFile 
                     Write-Debug "Saving to $outPath"    
                     $toolPayLoad.save($outPath)
@@ -3748,7 +3773,7 @@ function global:Get-MirthServerProperties {
                 Write-Debug "Converting XML response to hashtable"
                 $returnMap = @{};
                 if ($saveXML) {
-                    [string]$outPath = Get-PSMirthOutputFolder -create
+                    [string]$outPath = Get-OutputFolder -create
                     $outPath = Join-Path $outPath $outFile 
                     if (Test-Path -Path $outPath) {
                         Clear-Content -path $outPath 
@@ -3765,7 +3790,7 @@ function global:Get-MirthServerProperties {
                 Write-Debug "Sorting by key for output..."
                 $sorted = $returnMap.GetEnumerator() | Sort-Object -Property name 
                 if ($saveXML) {
-                    [string]$outPath = Get-PSMirthOutputFolder -create
+                    [string]$outPath = Get-OutputFolder -create
                     $outPath = Join-Path $outPath $outFile 
                     Write-Debug "Saving hash map to $outPath"
                     foreach ($property in $sorted) { 
@@ -3786,7 +3811,7 @@ function global:Get-MirthServerProperties {
     }
 } #  Get-MirthServerProperties 
 
-function global:Test-MirthFileReadWrite { 
+function Test-MirthFileReadWrite { 
    <#
     .SYNOPSIS
         Tests whether or not Mirth can read and/or write from a file folder path.
@@ -3863,6 +3888,7 @@ function global:Test-MirthFileReadWrite {
 
         $headers = $DEFAULT_HEADERS.Clone()
         $headers.Add("Accept","application/xml")
+        $headers.Add("Content-Type","application/xml")
       
         $result = $True
         try { 
@@ -3870,7 +3896,7 @@ function global:Test-MirthFileReadWrite {
                 $uri = $serverUrl + '/api/connectors/file/_testRead'
                 $uri = $uri + '?' + $parameters.toString()
                 Write-Debug "Invoking POST Mirth API server at: $uri "
-                $r = Invoke-RestMethod -Uri $uri -Headers $headers -ContentType 'application/xml' -Method POST -WebSession $session -Body $testReadXML.OuterXml
+                $r = Invoke-RestMethod -Uri $uri -Headers $headers -Method POST -WebSession $session -Body $testReadXML.OuterXml
                 [String] $testResult = $r.'com.mirth.connect.util.ConnectionTestResponse'.type
                 Write-Verbose "READ Test:" 
                 Write-Verbose "$($r.OuterXml)"
@@ -3880,7 +3906,7 @@ function global:Test-MirthFileReadWrite {
                 $uri = $serverUrl + '/api/connectors/file/_testWrite'
                 $uri = $uri + '?' + $parameters.toString()
                 Write-Debug "Invoking POST Mirth API server at: $uri "
-                $r = Invoke-RestMethod -Uri $uri -Headers $headers -ContentType 'application/xml' -Method POST -WebSession $session -Body $testWriteXML.OuterXml
+                $r = Invoke-RestMethod -Uri $uri -Headers $headers -Method POST -WebSession $session -Body $testWriteXML.OuterXml
                 [String] $testResult = $r.'com.mirth.connect.util.ConnectionTestResponse'.type
                 Write-Verbose "Write Test:" 
                 Write-Verbose "$($r.OuterXml)"
@@ -3903,7 +3929,7 @@ New-Alias -Name tmfrw -Value Test-MirthFileReadWrite
 <#        Channel Functions                                                                 #>
 <############################################################################################>
 
-function global:Get-MirthChannelIds {
+function Get-MirthChannelIds {
     <#
     .SYNOPSIS
         Gets an array of all channelIds in the target server.
@@ -3961,7 +3987,7 @@ function global:Get-MirthChannelIds {
             Write-Debug "There are now $($channelNodes.Count) channel ids in the list."
         }
         if ($saveXML) { 
-            [string]$outPath = Get-PSMirthOutputFolder -create
+            [string]$outPath = Get-OutputFolder -create
             $outPath = Join-Path $outPath $outFile 
             Write-Debug "Saving channel id list at: $outPath"
             Clear-Content -path $outPath -ErrorAction SilentlyContinue | Out-Null
@@ -3976,7 +4002,7 @@ function global:Get-MirthChannelIds {
     }
 }  # Get-MirthChannelIds
         
-function global:Get-MirthChannelStatuses {
+function Get-MirthChannelStatuses {
     <#
     .SYNOPSIS
         Gets the dashboard status of selected channels, or all channels
@@ -4059,14 +4085,14 @@ function global:Get-MirthChannelStatuses {
                 if ($exportChannels) {
                     # iterate through list, saving each channel using the name
                     foreach ($channel in $r.list.channel) {
-                        $exportFileName = Get-PSMirthOutputFolder -create
+                        $exportFileName = Get-OutputFolder -create
                         $exportFileName = $exportFileName + $channel.name + '.xml' 
                         $msg = "Exporting channel '$exportFileName'"
                         Write-Debug $msg
                         Set-Content $exportFileName $channel.OuterXml
                     }
                 } else {
-                    [string]$o = Get-PSMirthOutputFolder -create
+                    [string]$o = Get-OutputFolder -create
                     $o = Join-Path $o $outFile   
                     $r.save($o)
                 }
@@ -4082,7 +4108,7 @@ function global:Get-MirthChannelStatuses {
         Write-Debug 'Get-MirthChannelStatuses Ending' 
     }
 }  # Get-MirthChannelStatuses
-function global:Set-MirthChannelProperties { 
+function Set-MirthChannelProperties { 
     <#
     .SYNOPSIS
         Sets channel properties for a list of channels, or all channels, deployed on the target server.
@@ -4347,7 +4373,7 @@ function global:Set-MirthChannelProperties {
     }
 }  # Set-MirthChannelProperties
 
-function global:Get-MirthChannelMsgById { 
+function Get-MirthChannelMsgById { 
     <#
     .SYNOPSIS
         Gets a message id from a channel, specified by id.
@@ -4412,7 +4438,7 @@ function global:Get-MirthChannelMsgById {
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder -create
+                [string]$o = Get-OutputFolder -create
                 #$o = $o + $outFile
                 $o = Join-Path $o $outFile 
                 Write-Debug "Saving Output to $o"
@@ -4432,7 +4458,7 @@ function global:Get-MirthChannelMsgById {
     }
 }  # Get-MirthChannelMsgById
 
-function global:Get-MirthChannelMaxMsgId { 
+function Get-MirthChannelMaxMsgId { 
     <#
     .SYNOPSIS
         Gets the maximum message id for the channel, specified by id.
@@ -4491,7 +4517,7 @@ function global:Get-MirthChannelMaxMsgId {
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder -create
+                [string]$o = Get-OutputFolder -create
                 #$o = $o + $outFile
                 $o = Join-Path $o $outFile 
                 Write-Debug "Saving Output to $o"
@@ -4524,7 +4550,7 @@ function global:Get-MirthChannelMaxMsgId {
     }
 }  # Get-MirthChannelMaxMsgId
 
-function global:Send-MirthStartChannels { 
+function Send-MirthStartChannels { 
     <#
     .SYNOPSIS
         Starts a list of channels.
@@ -4587,7 +4613,7 @@ function global:Send-MirthStartChannels {
     }          
 }  # Send-MirthStartChannels
 
-function global:Send-MirthStopChannels { 
+function Send-MirthStopChannels { 
     <#
     .SYNOPSIS
         Stops a list of channels.
@@ -4649,7 +4675,7 @@ function global:Send-MirthStopChannels {
         Write-Debug "Send-MirthStopChannels Ending"
     }          
 }  # Send-MirthStopChannels
-function global:Send-MirthHaltChannels { 
+function Send-MirthHaltChannels { 
     <#
     .SYNOPSIS
         Halts a list of channels.
@@ -4712,7 +4738,7 @@ function global:Send-MirthHaltChannels {
     }          
 }  # Send-MirthHaltChannels
 
-function global:Send-MirthPauseChannels { 
+function Send-MirthPauseChannels { 
     <#
     .SYNOPSIS
         Pauses a list of channels.
@@ -4775,7 +4801,7 @@ function global:Send-MirthPauseChannels {
     }          
 }  # Send-MirthPauseChannels
 
-function global:Send-MirthResumeChannels { 
+function Send-MirthResumeChannels { 
     <#
     .SYNOPSIS
         Resumes a list of channels.
@@ -4838,7 +4864,7 @@ function global:Send-MirthResumeChannels {
     }          
 }  # Send-MirthResumeChannels
 
-function global:Send-MirthChannelCommand { 
+function Send-MirthChannelCommand { 
     <#
     .SYNOPSIS
         Sends a command to one or more channels, optionally requesting error information.
@@ -4947,7 +4973,7 @@ function global:Send-MirthChannelCommand {
         try { 
             Invoke-RestMethod -UseBasicParsing -Uri $uri -WebSession $session -Headers $headers -Method POST -Body $payloadBody
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder -create
+                [string]$o = Get-OutputFolder -create
                 $o = Join-Path $o $outFile 
                 $line = "Channel command: $command successful for targets: "
                 Set-Content $o -Value $line 
@@ -4980,7 +5006,7 @@ function global:Send-MirthChannelCommand {
 
 
 
-function global:Send-MirthDeployChannels {      
+function Send-MirthDeployChannels {      
     <#
     .SYNOPSIS
         Sends mirth a signal to deploy selected channels.
@@ -5052,6 +5078,7 @@ function global:Send-MirthDeployChannels {
 
         $headers = $DEFAULT_HEADERS.Clone()
         $headers.Add("Accept","application/xml")
+        $headers.Add("Content-Type","application/xml")
 
         $uri = $serverUrl + '/api/channels/_deploy'
         $parameters = [System.Web.HttpUtility]::ParseQueryString([String]::Empty)
@@ -5060,10 +5087,10 @@ function global:Send-MirthDeployChannels {
 
         Write-Debug "POST to Mirth $uri "
         try { 
-            $r = Invoke-RestMethod -UseBasicParsing -Uri $uri -WebSession $session -Headers $headers -Method POST -ContentType 'application/xml' -Body $payloadXML.OuterXml
+            $r = Invoke-RestMethod -UseBasicParsing -Uri $uri -WebSession $session -Headers $headers -Method POST -Body $payloadXML.OuterXml
 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder -create
+                [string]$o = Get-OutputFolder -create
                 $o = Join-Path $o $outFile 
                 Write-Debug "Saving Output to $o"
                 Set-Content $o -Value $r  
@@ -5094,7 +5121,7 @@ function global:Send-MirthDeployChannels {
     }
 }  # Send-MirthDeployChannels
 
-function global:Send-MirthRedeployAllChannels { 
+function Send-MirthRedeployAllChannels { 
     
     <#
     .SYNOPSIS
@@ -5158,7 +5185,6 @@ function global:Send-MirthRedeployAllChannels {
         $headers.Add("Accept","application/xml")
         $headers.Add("Content-Type","application/xml")
 
-
         $uri = $serverUrl + '/api/channels/_redeployAll'
         $parameters = [System.Web.HttpUtility]::ParseQueryString([String]::Empty)
         $parameters.Add('returnErrors', $returnErrors)
@@ -5169,8 +5195,8 @@ function global:Send-MirthRedeployAllChannels {
             # using the returnErrors parameter set to true should cause channel deployment errors
             # to be returned, but I have been unable to access this.  That's why the attempt to use 
             # Invoke-WebRequest instead of Invoke-RestMethod and the weird error handling...  To be continued.
-            #$r = Invoke-RestMethod -UseBasicParsing -Uri $uri -WebSession $session -Headers $headers -Method POST -ContentType 'application/xml' 
-            $r = Invoke-WebRequest -UseBasicParsing -Uri $uri -WebSession $session -Headers $headers -Method POST 
+            #$r = Invoke-RestMethod -UseBasicParsing -Uri $uri -WebSession $session -Headers $headers -Method POST
+            $r = Invoke-WebRequest -UseBasicParsing -Uri $uri -WebSession $session -Headers $headers -Method POST
             #Type of response object:Microsoft.PowerShell.Commands.WebResponseObject
             # Write-Debug "...done."
             # Write-Debug "Type of response object: $($r.getType())"
@@ -5179,7 +5205,7 @@ function global:Send-MirthRedeployAllChannels {
             # Write-Debug $r.StatusDescription
             # Write-Debug $r.RawContent
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder -create
+                [string]$o = Get-OutputFolder -create
                 $o = Join-Path $o $outFile 
                 Set-Content $o -Value $r.getType()   
             }
@@ -5208,7 +5234,7 @@ function global:Send-MirthRedeployAllChannels {
 
 }  # Send-MirthRedployAllChannels
 
-function global:Send-MirthUndeployChannels { 
+function Send-MirthUndeployChannels { 
     <#
     .SYNOPSIS
         Undeploys all channels, or a list of channels.
@@ -5272,6 +5298,7 @@ function global:Send-MirthUndeployChannels {
 
         $headers = $DEFAULT_HEADERS.Clone()
         $headers.Add("Accept","application/xml")
+        $headers.Add("Content-Type","application/xml")
 
         $uri = $serverUrl + '/api/channels/_undeploy'
         $parameters = [System.Web.HttpUtility]::ParseQueryString([String]::Empty)
@@ -5288,10 +5315,10 @@ function global:Send-MirthUndeployChannels {
 
         Write-Debug "POST to Mirth $uri "
         try { 
-            $r = Invoke-RestMethod -UseBasicParsing -Uri $uri -WebSession $session -Headers $headers -Method POST -ContentType 'application/xml' -Body $payLoadXML.OuterXml
+            $r = Invoke-RestMethod -UseBasicParsing -Uri $uri -WebSession $session -Headers $headers -Method POST -Body $payLoadXML.OuterXml
 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder -create
+                [string]$o = Get-OutputFolder -create
                 $o = Join-Path $o $outFile 
                 Set-Content $o -Value $r 
             }
@@ -5320,7 +5347,7 @@ function global:Send-MirthUndeployChannels {
     }          
 }  # Send-MirthUndeployChannels
 
-function global:Get-MirthChannels { 
+function Get-MirthChannels { 
     <#
     .SYNOPSIS
         Gets a list of all channels, or multiple channels by ID
@@ -5591,14 +5618,14 @@ function global:Get-MirthChannels {
                 if ($exportChannels) {
                     # iterate through list, saving each channel using the name
                     foreach ($channel in $r.list.channel) {
-                        $exportFileName = Get-PSMirthOutputFolder -create
+                        $exportFileName = Get-OutputFolder -create
                         $exportFileName = $exportFileName + $channel.name + '.xml' 
                         $msg = "Exporting channel '$exportFileName'"
                         Write-Debug $msg
                         Set-Content $exportFileName $channel.OuterXml
                     }
                 } else {
-                    [string]$o = Get-PSMirthOutputFolder -create
+                    [string]$o = Get-OutputFolder -create
                     $o = Join-Path $o $outFile   
                     $r.save($o)
                 }
@@ -5615,7 +5642,7 @@ function global:Get-MirthChannels {
     }
 }  # Get-MirthChannels
 
-function global:Remove-MirthChannels {
+function Remove-MirthChannels {
     <#
     .SYNOPSIS
         Removes channels with the ids specified by $targetId
@@ -5702,7 +5729,7 @@ function global:Remove-MirthChannels {
             $r = Invoke-RestMethod -Uri $uri -Method DELETE -WebSession $session
 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder -create
+                [string]$o = Get-OutputFolder -create
                 $o = Join-Path $o $outFile      
                 Set-Content -Path $o -Value "Deleted Channels: $id" 
             }
@@ -5718,7 +5745,7 @@ function global:Remove-MirthChannels {
     }
 }  # Remove-MirthChannels
 
-function global:Remove-MirthChannelByName { 
+function Remove-MirthChannelByName { 
    <#
     .SYNOPSIS
         Removes one ore more channels with the name(s) specified by targetNames parameter
@@ -5788,7 +5815,7 @@ function global:Remove-MirthChannelByName {
         $r = Remove-MirthChannels -connection $connection -targetId $targetIds -saveXML:$saveXML
 
         if ($saveXML) { 
-            [string]$o = Get-PSMirthOutputFolder -create
+            [string]$o = Get-OutputFolder -create
             $o = Join-Path $o $outFile    
         }
         Write-Verbose "$($r.OuterXml)"
@@ -5800,7 +5827,7 @@ function global:Remove-MirthChannelByName {
     }
 }  # Remove-MirthChannelByName
 
-function global:Import-MirthChannel { 
+function Import-MirthChannel { 
     <#
     .SYNOPSIS
         Imports a Mirth channel.
@@ -5888,7 +5915,7 @@ function global:Import-MirthChannel {
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder -create
+                [string]$o = Get-OutputFolder -create
                 $o = Join-Path $o $outFile 
                 Write-Debug "Saving Output to $o"
                 $r.save($o)     
@@ -5910,7 +5937,7 @@ function global:Import-MirthChannel {
 
 }  # Import-MirthChannel
 
-function global:Send-MirthMessage { 
+function Send-MirthMessage { 
     BEGIN { 
         Write-Debug "Send-MirthMessage Beginning"
     }
@@ -5936,7 +5963,7 @@ function global:Send-MirthMessage {
 <#        Code Template Functions                                                           #>
 <############################################################################################>
 
-function global:Get-MirthCodeTemplates { 
+function Get-MirthCodeTemplates { 
     <#
    .SYNOPSIS
        Gets Mirth Code Templates, either the targetIds specified, or all.
@@ -6004,7 +6031,7 @@ function global:Get-MirthCodeTemplates {
            Write-Debug "...done."
 
            if ($saveXML) { 
-               [string]$o = Get-PSMirthOutputFolder -create
+               [string]$o = Get-OutputFolder -create
                $o = Join-Path $o $outFile 
                $r.save($o)
            }
@@ -6020,7 +6047,7 @@ function global:Get-MirthCodeTemplates {
    }
 }  # Get-MirthCodeTemplates
 
-function global:Set-MirthCodeTemplate {
+function Set-MirthCodeTemplate {
     <#
     .SYNOPSIS
         Updates a code template.
@@ -6107,7 +6134,7 @@ function global:Set-MirthCodeTemplate {
             $r = Invoke-RestMethod -Uri $uri -Headers $headers -Method PUT -WebSession $session -Body $payLoadXML.OuterXml
             Write-Debug "...done."
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder -create
+                [string]$o = Get-OutputFolder -create
                 $o = Join-Path $o $outFile 
                 $r.save($o)
             }
@@ -6124,7 +6151,7 @@ function global:Set-MirthCodeTemplate {
 
 }  # Set-MirthCodeTemplate
 
-function global:Remove-MirthCodeTemplates  { 
+function Remove-MirthCodeTemplates  { 
     <#
     .SYNOPSIS
         Removes all Mirth code templates, or a list of them specified by id.
@@ -6187,18 +6214,20 @@ function global:Remove-MirthCodeTemplates  {
             }
         }
 
+        $headers = $DEFAULT_HEADERS.Clone()
+        $headers.Add("Content-Type","application/xml")
+
         foreach ($targetId in $targetIds) {
             
             $uri = $serverUrl + '/api/codeTemplates/' + $targetId
-            $msg = "Deleting code template: " + $targetId
-            Write-Debug $msg
+            Write-Debug ("Deleting code template: {0}" -f $targetId)
 
             Write-Debug "DELETE to Mirth $uri "
             try { 
-                $r = Invoke-RestMethod -Uri $uri -WebSession $session -Method DELETE -ContentType 'application/xml' -Body $userXML.OuterXml
+                $r = Invoke-RestMethod -Uri $uri -WebSession $session -Method DELETE -Headers $headers -Body $userXML.OuterXml
 
                 if ($saveXML) { 
-                    [string]$o = Get-PSMirthOutputFolder -create
+                    [string]$o = Get-OutputFolder -create
                     $o = Join-Path $o $outFile 
                     Write-Debug "Saving Output to $o"
                     Set-Content $o -Value $r
@@ -6217,7 +6246,7 @@ function global:Remove-MirthCodeTemplates  {
     }
 }  # Remove-MirthCodeTemplates
 
-function global:Get-MirthCodeTemplateLibraries { 
+function Get-MirthCodeTemplateLibraries { 
      <#
     .SYNOPSIS
         Gets Mirth Code Template Libraries, either the targetIds specified, or all.
@@ -6331,7 +6360,7 @@ function global:Get-MirthCodeTemplateLibraries {
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder -create
+                [string]$o = Get-OutputFolder -create
                 $o = Join-Path $o $outFile 
                 $r.save($o)
             }
@@ -6347,7 +6376,7 @@ function global:Get-MirthCodeTemplateLibraries {
     }
 }  # Get-MirthCodeTemplateLibraries
 
-function global:Set-MirthCodeTemplateLibraries {
+function Set-MirthCodeTemplateLibraries {
     <#
     .SYNOPSIS
         Replaces all code template libraries.
@@ -6445,7 +6474,7 @@ function global:Set-MirthCodeTemplateLibraries {
             $r = Invoke-RestMethod -Uri $uri -Headers $headers -Method PUT -WebSession $session -Body $payLoadXML.OuterXml
             Write-Debug "...done."
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder -create
+                [string]$o = Get-OutputFolder -create
                 $o = Join-Path $o $outFile 
                 $r.save($o)
             }
@@ -6466,7 +6495,7 @@ function global:Set-MirthCodeTemplateLibraries {
 <#        SSL Manager Functions                                                             #>
 <############################################################################################>
 
-function global:Set-MirthSSLManagerKeystores { 
+function Set-MirthSSLManagerKeystores { 
     <#
     .SYNOPSIS
         Given a truststore and keystore encoded as a Base64 string, upload them to 
@@ -6544,7 +6573,7 @@ function global:Set-MirthSSLManagerKeystores {
 
 }  # Set-MirthSSLManagerKeystores
 
-function global:Get-MirthKeyStoreCertificates { 
+function Get-MirthKeyStoreCertificates { 
     <#
     .SYNOPSIS
         Gets the Mirth KeyStore certificates 
@@ -6633,12 +6662,14 @@ function global:Get-MirthKeyStoreCertificates {
 
         $uri = $serverUrl + '/api/extensions/ssl/all'
         Write-Debug "Invoking GET Mirth $uri "
+        $headers = $DEFAULT_HEADERS.Clone()
+        $headers.Add("Content-Type","application/xml")
         try { 
-            $r = Invoke-RestMethod -WebSession $session -Uri $uri -Method GET -ContentType 'application/xml' 
+            $r = Invoke-RestMethod -WebSession $session -Uri $uri -Method GET -Headers $headers
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder -create
+                [string]$o = Get-OutputFolder -create
                 $o = Join-Path $o $outFile 
                 $r.save($o)
             }
@@ -6655,7 +6686,7 @@ function global:Get-MirthKeyStoreCertificates {
     }
 }  # Get-MirthKeyStoreCertificates
 
-function global:Get-MirthKeyStoreBytes { 
+function Get-MirthKeyStoreBytes { 
     <#
     .SYNOPSIS
         Gets the Mirth KeyStore/TrustStore Bytes 
@@ -6710,7 +6741,7 @@ function global:Get-MirthKeyStoreBytes {
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder -create
+                [string]$o = Get-OutputFolder -create
                 $o = Join-Path $o $outFile 
                 $r.save($o)
             }
@@ -6731,7 +6762,7 @@ function global:Get-MirthKeyStoreBytes {
 <#        User Functions                                                                    #>
 <############################################################################################>
 
-function global:Connect-Mirth { 
+function Connect-Mirth { 
     <#
     .SYNOPSIS
         Logs into a Mirth server and returns a MirthConnection object that can be used
@@ -6771,45 +6802,22 @@ function global:Connect-Mirth {
         [securestring]$userPass = (ConvertTo-SecureString -String "admin" -AsPlainText)
     )
     BEGIN {
-        Write-Debug "Connect-Mirth Beginning..." 
-        <#if($PSEdition -ne 'Core') {
-            Write-Debug "Initializing SSL session attributes to ignore self-signed certs, trust all cert policy...."
-            # Force the script to ignore Mirth's self-signed certificate
-            add-type "
-            using System.Net;
-            using System.Security.Cryptography.X509Certificates;
-            public class TrustAllCertsPolicy : ICertificatePolicy {
-                public bool CheckValidationResult(
-                    ServicePoint srvPoint, X509Certificate certificate,
-                    WebRequest request, int certificateProblem) {
-                    return true;
-                }
-            }"
-
-            [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
-        }
-    # and to use TLS1.2
-    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12#>
+        Write-Debug "Connect-Mirth Beginning..."
     }
     PROCESS {
         Write-Debug "Logging into Mirth..."
         Write-Debug "serverUrl = $serverUrl"
         Write-Debug "userName = $userName"
-        Write-Debug "userPass = $userPass" 
+        Write-Debug ("userPass = {0}" -f (ConvertFrom-SecureString $userPass -AsPlainText))
         $headers = $DEFAULT_HEADERS.Clone()
         $headers.Add("Accept","application/xml")
         $uri = $serverUrl + '/api/users/_login'
         $body = ("username={0}&password={1}" -f $userName, (ConvertFrom-SecureString $userPass -AsPlainText))
         try { 
             $r = Invoke-RestMethod -uri $uri -Headers $headers -Body $body -Method POST -SessionVariable session
-            $msg = "Response: " + $r.'com.mirth.connect.model.LoginStatus'.status
-            Write-Debug $msg
+            Write-Debug ("Response: {0}" -f $r.'com.mirth.connect.model.LoginStatus'.status)
 
-            $connection = [MirthConnection]::new($session,$serverUrl,$userName,$userPass)
-            Set-PSMirthConnection($connection);
-
-            return $connection
-
+            return $script:currentConnection = [MirthConnection]::new($session,$serverUrl,$userName,$userPass)
         }
         catch {
             Write-Error $_
@@ -6821,7 +6829,7 @@ function global:Connect-Mirth {
 
 }  # Connect-Mirth
 
-function global:Set-MirthUserPassword {
+function Set-MirthUserPassword {
     <#
     .SYNOPSIS
         Update Mirth user passwords
@@ -6883,16 +6891,19 @@ function global:Set-MirthUserPassword {
         }
         Write-Debug "There were $($users.Count) users retrieved for set password command"
 
+        $headers = $DEFAULT_HEADERS.Clone()
+        $headers.Add("Content-Type","text/plain")
+
         foreach ($u in $users) {
             Write-Debug "Changing password user: $($u.id): $($u.username) assigned to $($u.lastName)"
                 
             $uri = $serverUrl + '/api/users/' + $u.id + '/password'
             Write-Debug "PUT to Mirth at $uri"
             try { 
-                $r = Invoke-RestMethod -Uri $uri -WebSession $session -Method PUT -ContentType 'text/plain' -Body (ConvertFrom-SecureString $newPassword -AsPlainText)
+                $r = Invoke-RestMethod -Uri $uri -WebSession $session -Method PUT -Headers $headers -Body (ConvertFrom-SecureString $newPassword -AsPlainText)
                 Write-Debug "...Password set"
                 if ($saveXML) { 
-                    [string]$o = Get-PSMirthOutputFolder -create
+                    [string]$o = Get-OutputFolder -create
                     $o = Join-Path $o $outFile 
                     Set-Content -Path $o -Value "$targetId : $(ConvertFrom-SecureString $newPassword -AsPlainText)" 
                 }
@@ -6908,7 +6919,7 @@ function global:Set-MirthUserPassword {
     }
 }  # Set-MirthUserPassword
 
-function global:Test-MirthUserLogged { 
+function Test-MirthUserLogged { 
     <#
     .SYNOPSIS
         Tests the mirth user specified by the targetId and returns [bool] value
@@ -6968,27 +6979,23 @@ function global:Test-MirthUserLogged {
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder -create
+                [string]$o = Get-OutputFolder -create
                 $o = Join-Path $o $outFile 
                 Set-Content -Path $o -Value $r.OuterXml
             }
             Write-Verbose "$($r.OuterXml)"
-            $loggedIn = [System.Convert]::ToBoolean($r.boolean)
-
-            return $loggedIn
+            
+            return [System.Convert]::ToBoolean($r.boolean)
         }
         catch [System.Net.WebException] {
             # a 500 server error is thrown when you use a non-existent user id.
-            $msg = "StatusCode:" + $_.Exception.Response.StatusCode.value__ 
-            Write-Error $msg
-            $msg = "StatusDescription:" + $_.Exception.Response.StatusDescription
-            Write-Error $msg
+            Write-Error ("StatusCode: {0}" -f $_.Exception.Response.StatusCode.value__)
+            Write-Error ("StatusDescription: {0}" -f $_.Exception.Response.StatusDescription)
             return $false
         }
         catch {
             Write-Error $_
             return $false
-
         }     
     }
     END {
@@ -6996,7 +7003,7 @@ function global:Test-MirthUserLogged {
     }
 }  # Test-MirthUserLogged
 
-function global:Get-MirthLoggedUsers {
+function Get-MirthLoggedUsers {
     <#
     .SYNOPSIS
         Gets the currently logged in Mirth users.
@@ -7065,13 +7072,13 @@ function global:Get-MirthLoggedUsers {
         foreach($user in $allUsers.list.user) {
             $uTmp = $user.username
             Write-Debug "Checking user $uTmp" 
-            if (Test-MirthUserLogged -connection $connection -targetId $user.id ) {
+            if (Test-MirthUserLogged -connection $connection -targetId $user.id) {
                 Write-Verbose "$uTmp is logged in!"
                 $loggedUsers.DocumentElement.AppendChild($loggedUsers.ImportNode($user,$true))
             }
         }
         if ($saveXML) { 
-            [string]$o = Get-PSMirthOutputFolder -create
+            [string]$o = Get-OutputFolder -create
             $o = Join-Path $o $outFile 
             Write-Debug "Saving Output to $o"
             $loggedUsers.save($o)     
@@ -7086,7 +7093,7 @@ function global:Get-MirthLoggedUsers {
 
 }  # Get-MirthLoggedUsers
 
-function global:Get-MirthUsers {
+function Get-MirthUsers {
     <#
     .SYNOPSIS
         Gets all Mirth users, or a specific mirth user by either id or username. 
@@ -7182,7 +7189,7 @@ function global:Get-MirthUsers {
             }
 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder -create
+                [string]$o = Get-OutputFolder -create
                 #$o = $o + $outFile
                 $o = Join-Path $o $outFile 
                 $r.save($o)     
@@ -7200,7 +7207,7 @@ function global:Get-MirthUsers {
     }
 }  # Get-MirthUsers
 
-function global:Set-MirthUser {
+function Set-MirthUser {
     <#
     .SYNOPSIS
         Updates a Mirth user, specified by targetId (id only).
@@ -7290,12 +7297,14 @@ function global:Set-MirthUser {
 
         $uri = $serverUrl + '/api/users/' + $targetId
         Write-Debug "PUT to Mirth $uri "
+        $headers = $DEFAULT_HEADERS.Clone()
+        $headers.Add("Content-Type","application/xml")
         try { 
-            $r = Invoke-RestMethod -Uri $uri -WebSession $session -Method PUT -ContentType 'application/xml' -Body $userXML.OuterXml
+            $r = Invoke-RestMethod -Uri $uri -WebSession $session -Method PUT -Headers $headers -Body $userXML.OuterXml
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder -create
+                [string]$o = Get-OutputFolder -create
                 $o = Join-Path $o $outFile 
                 Write-Debug "Saving Output to $o"
                 $r.save($o)     
@@ -7314,7 +7323,7 @@ function global:Set-MirthUser {
  
 }  # Set-MirthUser
 
-function global:Add-MirthUser { 
+function Add-MirthUser { 
 
     <#
     .SYNOPSIS
@@ -7419,12 +7428,14 @@ function global:Add-MirthUser {
 
         $uri = $serverUrl + '/api/users'
         Write-Debug "POST to Mirth $uri "
+        $headers = $DEFAULT_HEADERS.Clone()
+        $headers.Add("Content-Type","application/xml")
         try { 
-            $r = Invoke-RestMethod -Uri $uri -WebSession $session -Method POST -ContentType 'application/xml' -Body $userXML.OuterXml
+            $r = Invoke-RestMethod -Uri $uri -WebSession $session -Method POST -Headers $headers -Body $userXML.OuterXml
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder -create
+                [string]$o = Get-OutputFolder -create
                 $o = Join-Path $o $outFile 
                 Write-Debug "Saving Output to $o"
                 $r.save($o)     
@@ -7444,7 +7455,7 @@ function global:Add-MirthUser {
 
 }  # Add-MirthUser
 
-function global:Remove-MirthUser {
+function Remove-MirthUser {
     <#
     .SYNOPSIS
         Deletes a Mirth user, specified by targetId (id only).
@@ -7502,12 +7513,14 @@ function global:Remove-MirthUser {
 
         $uri = $serverUrl + '/api/users/' + $targetId
         Write-Debug "DELETE to Mirth $uri "
+        $headers = $DEFAULT_HEADERS.Clone()
+        $headers.Add("Content-Type","application/xml")
         try { 
-            $r = Invoke-RestMethod -Uri $uri -WebSession $session -Method DELETE -ContentType 'application/xml' -Body $userXML.OuterXml
+            $r = Invoke-RestMethod -Uri $uri -WebSession $session -Method DELETE -Headers $headers -Body $userXML.OuterXml
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-PSMirthOutputFolder -create
+                [string]$o = Get-OutputFolder -create
                 $o = Join-Path $o $outFile 
                 Write-Debug "Saving Output to $o"
                 $r.save($o)     
@@ -7542,7 +7555,7 @@ function Save-Content {
         Write-Debug "Save-Content Beginning"
     }
     PROCESS {
-        [string]$BaseFolder = Get-PSMirthOutputFolder -create
+        [string]$BaseFolder = Get-OutputFolder -create
         $destFile = Join-Path $BaseFolder $OutFile
         Write-Debug "Saving Output to $destFile"
         Set-Content -Path $destFile -Value $Content

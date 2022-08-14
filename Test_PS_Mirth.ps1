@@ -43,9 +43,6 @@ Import-Module PS_Mirth -force
 $Version_PS_Mirth = (Get-Module -Name "PS_Mirth").Version
 Write-InformationColored -MessageData "PS_Mirth Version: " -NoNewline
 Write-InformationColored -MessageData "$($Version_PS_Mirth.Major).$($Version_PS_Mirth.Minor).$($Version_PS_Mirth.Build)"  -ForegroundColor Green   -BackgroundColor Black
-$Output_Folder = Get-PSMirthOutputFolder 
-Write-InformationColored -MessageData "PS_Mirth Output folder: " -NoNewline
-Write-InformationColored -MessageData "$Output_Folder"  -ForegroundColor Green   -BackgroundColor Black
 
 $serverUrl = "https://" + $server + ":" + $port
 Write-InformationColored -MessageData "Establishing Mirth connection to  " -ForegroundColor White -BackgroundColor Black -NoNewline
