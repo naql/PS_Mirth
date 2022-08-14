@@ -65,7 +65,7 @@ $DEFAULT_HEADERS = @{
 
 # This is where the -saveXML flag will cause files to be saved.  It 
 # defaults to a subfolder in the current location.
-[string]$DEFAULT_OUTPUT_FOLDER = Join-Path -Path $pwd -ChildPath "/PS_Mirth_Output/" 
+[string]$DEFAULT_OUTPUT_FOLDER = Join-Path $pwd "PS_Mirth_Output" 
 [string]$SavePath = $DEFAULT_OUTPUT_FOLDER
 Write-Verbose "Current PS_Mirth output folder is: $SavePath"
 
@@ -105,20 +105,6 @@ function Set-PSConfig([hashtable]$Config) {
     }
 }
 
-# function Set-PSMirthDebug( [bool]$debug ) {
-#     <#
-#     .SYNOPSIS
-#         Call to set the module $DebugPreference 
-#     #> 
-#     if ($debug) { 
-#         $Script:DebugPreference = 'Continue'
-#         Write-Debug ("Debug On")
-#     } else { 
-#         $Script:DebugPreference = 'SilentlyContinue'
-#         Write-Debug ("Debug Off") # won't be seen
-#     }
-# }
-
 function Set-OutputFolder( $path ) {
     <#
     .SYNOPSIS
@@ -134,7 +120,7 @@ function Set-OutputFolder( $path ) {
         but must be a valid path.
 
     .OUTPUTS
-        Returns the path, normalized with a backslash at the end.
+        Returns the path.
         The folder is NOT created and will be lazily created on first output by the module.
 
     .LINK
@@ -145,29 +131,16 @@ function Set-OutputFolder( $path ) {
     #> 
     $path = $path.Trim()
     if ([string]::IsNullOrEmpty($path)) {
+        Write-Debug "Empty path provided, reverting to default"
         $script:SavePath = $DEFAULT_OUTPUT_FOLDER
     }
     elseif (!(Test-Path -Path $path -IsValid)) {
         Write-Error ("The path specified is not valid: {0}" -f $path)
     }
     else {
-        $script:SavePath = PathAddBackslash($path)
+        $script:SavePath = $path
         Write-Debug "Current PS_Mirth output folder is: $script:SavePath"
     }
-}
-
-function PathAddBackslash($path) {
-    $DirSep = [IO.Path]::DirectorySeparatorChar
-    $AltDirSep = [System.IO.Path]::AltDirectorySeparatorChar 
-
-    $path = $path.TrimEnd()
-    if ($path.EndsWith($DirSep) -or $path.EndsWith($AltDirSep)) {
-        return $path;
-    }
-    if ($path.Contains($AltDirSep)) {
-        return $path + $AltDirSep;
-    }
-    return $path + $DirSep;
 }
 
 function Get-OutputFolder () { 
@@ -264,7 +237,7 @@ function New-MirthKeyStoreCertificatesPayLoad {
    
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
 
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -335,7 +308,7 @@ function New-MirthKeyStoreCertificatesPayLoad {
 
 
         if ($saveXML) { 
-            Save-Content -Content $templateXML -OutFile $outFile
+            Save-Content $templateXML $outFile
         }
         Write-Verbose $templateXML.OuterXml
 
@@ -396,7 +369,7 @@ function New-MirthSSLMgrPropertiesPayload {
    
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
 
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -441,7 +414,7 @@ function New-MirthSSLMgrPropertiesPayload {
 "@
 
         if ($saveXML) { 
-            Save-Content -Content $templateXML -OutFile $outFile
+            Save-Content $templateXML $outFile
         }
         Write-Verbose $templateXML.OuterXml
         return $templateXML
@@ -678,7 +651,7 @@ function New-MirthConfigMapFromProperties {
    
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -736,7 +709,7 @@ function New-MirthConfigMapFromProperties {
             }
         }
         if ($saveXML) {
-            Save-Content -Content $mapXML -OutFile $outFile
+            Save-Content $mapXML $outFile
         }
         Write-Verbose $mapXML.OuterXml
         return $mapXML
@@ -809,42 +782,33 @@ function Save-MirthPropertiesFile {
 
         # A switch to suppress sorting of the created property file.
         [Parameter()]
-        [switch]$unsorted = $false
+        [switch]$unsorted
     ) 
 
     BEGIN { 
         Write-Debug "Save-MirthPropertiesFile Beginning"
     }
     PROCESS {
-        [string]$outPath = Get-OutputFolder -create
-        $targetPath = Join-Path $outPath $outFile 
-        if (($null -ne $payLoad ) -and ($payLoad -is [xml]) ) {
-            if (Test-Path -Path $targetPath) {
-                Clear-Content -Path $targetPath 
-            } else { 
-                New-Item -Name $outFile -ItemType File -Path $outPath  | Out-Null
-            }
-            $entries = $payLoad.map.entry;
-            if ($unsorted) { 
-                $outputEntries = $entries
-            } else { 
-                $outputEntries = $entries | Sort-Object { [string]$_.string }
-            }
-            foreach ($entry in $outputEntries) {
-                $line = "#`t" + $entry.'com.mirth.connect.util.ConfigurationProperty'.comment
-                Add-Content -Path $targetPath -value $line
-                $line = “{0,-40} {1,1} {2}” -f $entry.string, "=", $entry.'com.mirth.connect.util.ConfigurationProperty'.value
-                Add-Content -Path $targetPath -value $line
-            }
-            Get-Content -path $targetPath | Write-Verbose  
-            # Return the properties as a hashtable
-            [hashtable]$returnMap = ConvertFrom-StringData (Get-Content $targetPath | Out-String)
-            return $returnMap
-
-        } else { 
+        if (($null -eq $payLoad ) -or ($payLoad -isnot [xml]) ) {
             Write-Error "payLoad is not XML document"
             return
         }
+
+        $entries = $payLoad.map.entry;
+        if ($unsorted) { 
+            $outputEntries = $entries
+        } else { 
+            $outputEntries = $entries | Sort-Object { [string]$_.string }
+        }
+        [System.Collections.ArrayList]$Lines = @()
+        foreach ($entry in $outputEntries) {
+            #create a comment line
+            $Lines += "#`t" + $entry.'com.mirth.connect.util.ConfigurationProperty'.comment
+            $Lines += “{0,-40} {1,1} {2}” -f $entry.string, "=", $entry.'com.mirth.connect.util.ConfigurationProperty'.value
+        }
+        Save-Content $Lines $outFile
+        # Return the properties as a hashtable
+        ConvertFrom-StringData ($Lines | Out-String)
     }
     END { 
         Write-Debug "Save-MirthPropertiesFile Ending"
@@ -948,7 +912,7 @@ function Invoke-PSMirthTool {
 
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -1153,11 +1117,11 @@ function Get-MirthServerAbout {
 
         # If true, return the about properties in a hashtable instead of xml object.
         [Parameter()]
-        [switch]$asHashtable = $false, 
+        [switch]$asHashtable, 
 
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -1180,7 +1144,7 @@ function Get-MirthServerAbout {
             Write-Debug "...done."
 
             if ($saveXML) {
-                Save-Content -Content $r -OutFile $outFile
+                Save-Content $r $outFile
             }
             Write-Verbose "$($r.OuterXml)"
             #TODO 'plugins' and such should retain their maps, not become strings
@@ -1246,7 +1210,7 @@ function Get-MirthServerConfig {
 
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -1270,7 +1234,7 @@ function Get-MirthServerConfig {
             Write-Debug "...done."
 
             if ($saveXML) { 
-                Save-Content -Content $r -OutFile $outFile
+                Save-Content $r $outFile
             }
             Write-Verbose $r.innerXml
             return $r
@@ -1317,7 +1281,7 @@ function Get-MirthServerVersion {
 
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -1342,7 +1306,7 @@ function Get-MirthServerVersion {
             Write-Debug "...done."
 
             if ($saveXML) {
-                Save-Content -Content $r -OutFile $outFile
+                Save-Content $r $outFile
             }
             Write-Verbose $r
             return $r
@@ -1392,7 +1356,7 @@ function Get-MirthServerTime {
 
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -1418,9 +1382,7 @@ function Get-MirthServerTime {
             $r = Invoke-RestMethod -Uri $uri -Method GET -Headers $headers -WebSession $session
             
             if ($saveXML) { 
-                [string]$o = Get-OutputFolder -create
-                $o = Join-Path $o $outFile 
-                Set-Content -Path $o -Value $r.OuterXml      
+                Save-Content $r $outFile
             }
             Write-Verbose "$($r.OuterXml)"
             return $r
@@ -1500,7 +1462,7 @@ function Get-MirthChannelGroups {
    
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -1535,9 +1497,7 @@ function Get-MirthChannelGroups {
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-OutputFolder -create
-                $o = Join-Path $o $outFile 
-                $r.save($o)
+                Save-Content $r $outFile
             }
             Write-Verbose "$($r.OuterXml)"
             return $r;
@@ -1602,11 +1562,11 @@ function Set-MirthChannelGroups {
         # If true, the code group will be updated even if a different revision 
         # exists on the server
         [Parameter()]
-        [switch]$override = $false,
+        [switch]$override,
 
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -1714,7 +1674,7 @@ function Remove-MirthChannelGroups {
    
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
 
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -1797,7 +1757,7 @@ function Add-MirthChannelGroups {
 
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -1887,10 +1847,7 @@ function Add-MirthChannelGroups {
         # Update the channelGroups with the new list
         $r = Set-MirthChannelGroups -connection $connection -payLoad $newGroupSet.OuterXml -override
         if ($saveXML) { 
-            [string]$o = Get-OutputFolder -create
-            $o = Join-Path $o $outFile 
-            Write-Verbose "Saving merged channelGroups to $o"
-            Set-Content $o $newGroupSet.OuterXml
+            Save-Content $newGroupSet $outFile
         }
         Write-Verbose $newGroupSet.OuterXml
         return $r
@@ -1950,11 +1907,11 @@ function Get-MirthServerChannelMetadata {
 
         # If true, return a hashtable of the metadata, using the channel id as the key.
         [Parameter()]
-        [switch]$asHashtable = $false,
+        [switch]$asHashtable,
 
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -1975,10 +1932,8 @@ function Get-MirthServerChannelMetadata {
             $r = Invoke-RestMethod -Uri $uri -Method GET -WebSession $session
             Write-Debug "...done."
 
-            if ($saveXML) { 
-                [string]$o = Get-OutputFolder -create
-                $o = Join-Path $o $outFile 
-                $r.save($o)
+            if ($saveXML) {
+                Save-Content $r $outFile
             }
             Write-Verbose "$($r.OuterXml)"
             if ($asHashtable) { 
@@ -2046,7 +2001,7 @@ function Set-MirthServerChannelMetadata {
 
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -2170,7 +2125,7 @@ function Get-MirthChannelTags {
 
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -2192,10 +2147,8 @@ function Get-MirthChannelTags {
             $r = Invoke-RestMethod -Uri $uri -Method GET -WebSession $session
             Write-Debug "...done."
 
-            if ($saveXML) { 
-                [string]$o = Get-OutputFolder -create
-                $o = Join-Path $o $outFile 
-                $r.save($o)
+            if ($saveXML) {
+                Save-Content $r $outFile
             }
             Write-Verbose "$($r.OuterXml)"
             return $r
@@ -2283,7 +2236,7 @@ function Set-MirthChannelTags {
 
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -2389,7 +2342,7 @@ function Set-MirthTaggedChannels {
 
         # If no channelIds are specified, the channelTag is entirely removed from the server.
         [Parameter()]
-        [switch]$remove = $false,
+        [switch]$remove,
         
         # an optional array of channelId guids
         # the channelTag id guid strings that the tag applies to when creating or updating a tag
@@ -2400,7 +2353,7 @@ function Set-MirthTaggedChannels {
         # If true, replaces the tag's existing channel assignments, 
         # otherwise, adds to them, ignored when the remove switch is set.
         [Parameter()]
-        [switch]$replaceChannels = $false,
+        [switch]$replaceChannels,
 
         # the alpha value, 0-255
         # has no effect if the remove tag is specfiied
@@ -2431,7 +2384,7 @@ function Set-MirthTaggedChannels {
 
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -2707,9 +2660,7 @@ function Get-MirthConfigMap {
             $r = Invoke-RestMethod -Uri $uri -Method GET -WebSession $session
 
             if ($saveXML) { 
-                [string]$o = Get-OutputFolder -create
-                $o = Join-Path $o $outFile 
-                $r.save($o)
+                Save-Content $r $outFile
             }
             Write-Verbose "$($r.OuterXml)"
 
@@ -2805,11 +2756,11 @@ function Set-MirthConfigMap {
         # If true, does not replace the current config map, merges with
         # the current settings, overwriting any that conflict
         [Parameter()]
-        [switch]$merge = $false,
+        [switch]$merge,
 
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -2905,10 +2856,8 @@ function Set-MirthConfigMap {
             $r = Invoke-RestMethod -Uri $uri -Headers $headers -Method PUT -WebSession $session -Body $payLoadXML.OuterXml
             Write-Debug "...done."
             if ($saveXML) { 
-                [string]$o = Get-OutputFolder -create
-                $o = Join-Path $o $outFile 
-                $output = "Configuration Map Updated Successfully: $payLoad"
-                Set-Content -Path $o -Value $output   
+                $Content = "Configuration Map Updated Successfully: $payLoad"
+                Save-Content $Content $outFile
             }
             Write-Verbose "$($r.OuterXml)"
 
@@ -2985,11 +2934,11 @@ function Get-MirthExtensionProperties {
 
         # Switch to decode html encoded data
         [Parameter()]
-        [switch]$decode = $false,
+        [switch]$decode,
 
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -3020,9 +2969,7 @@ function Get-MirthExtensionProperties {
             }
 
             if ($saveXML) { 
-                [string]$o = Get-OutputFolder -create
-                $o = Join-Path $o $outFile 
-                $r.save($o)
+                Save-Content $r $outFile
             }
             Write-Verbose "$($r.OuterXml)"
 
@@ -3100,7 +3047,7 @@ function Set-MirthExtensionProperties {
 
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -3130,9 +3077,7 @@ function Set-MirthExtensionProperties {
                 $r = [xml]$decoded
             }
             if ($saveXML) { 
-                [string]$o = Get-OutputFolder -create
-                $o = Join-Path $o $outFile 
-                $r.save($o)
+                Save-Content $r $outFile
             }
             Write-Verbose "$($r.OuterXml)"
 
@@ -3209,7 +3154,7 @@ function Get-MirthGlobalScripts {
 
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -3234,9 +3179,7 @@ function Get-MirthGlobalScripts {
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-OutputFolder -create
-                $o = Join-Path $o $outFile 
-                $r.save($o)
+                Save-Content $r $outFile
             }
             Write-Verbose "$($r.OuterXml)"
             return $r
@@ -3328,7 +3271,7 @@ function Set-MirthGlobalScripts {
    
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -3364,10 +3307,8 @@ function Set-MirthGlobalScripts {
             $r = Invoke-RestMethod -Uri $uri -Headers $headers -Method PUT -WebSession $session -Body $payLoadXML.OuterXml
             Write-Debug "...done."
             if ($saveXML) { 
-                [string]$o = Get-OutputFolder -create
-                $o = Join-Path $o $outFile  
-                $output = "Global Scripts Updated Successfully: $payLoad"
-                Set-Content -Path $o -Value $output   
+                $Content = "Global Scripts Updated Successfully: $payLoad"
+                Save-Content $Content $outFile
             }
             Write-Verbose "$($r.OuterXml)"
 
@@ -3443,7 +3384,7 @@ function Get-MirthServerSettings {
 
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -3462,13 +3403,11 @@ function Get-MirthServerSettings {
  
         $uri = $serverUrl + '/api/server/settings'
         Write-Debug "Invoking GET Mirth API server at: $uri "
-        try { 
+        try {
             $r = Invoke-RestMethod -Uri $uri -Method GET -WebSession $session 
             Write-Debug "...done."
             if ($saveXML) { 
-                [string]$o = Get-OutputFolder -create
-                $o = Join-Path $o $outFile 
-                $r.save($o)
+                Save-Content $r $outFile
             }
             Write-Verbose "$($r.OuterXml)"
             return $r
@@ -3528,7 +3467,7 @@ function Set-MirthServerSettings {
 
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -3566,10 +3505,8 @@ function Set-MirthServerSettings {
             $r = Invoke-RestMethod -Uri $uri -Headers $headers -Method PUT -WebSession $session -Body $payLoadXML.OuterXml
             Write-Debug "...done."
             if ($saveXML) { 
-                [string]$o = Get-OutputFolder -create
-                $o = Join-Path $o $outFile 
-                $output = "Server Settings Updated Successfully: $payLoad"
-                Set-Content -Path $o -Value $output   
+                $Content = "Server Settings Updated Successfully: $payLoad"
+                Save-Content $Content $outFile
             }
              Write-Verbose "$($r.OuterXml)"
 
@@ -3626,11 +3563,11 @@ function Get-MirthSystemProperties {
 
         # If true, return the properties as a hashtable instead of an xml object for convenience
         [Parameter()]
-        [switch]$asHashtable = $false,
+        [switch]$asHashtable,
 
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -3649,42 +3586,23 @@ function Get-MirthSystemProperties {
             Write-Verbose $toolPayLoad.OuterXml
             if (-not $asHashtable) { 
                 if ($saveXML) { 
-                    [string]$outPath = Get-OutputFolder -create
-                    $outPath = Join-Path $outPath $outFile 
-                    Write-Debug "Saving to $outPath"    
-                    $toolPayLoad.save($outPath)
+                    Save-Content $toolPayLoad $outFile
                 }
                 return $toolPayLoad
             } else { 
                 Write-Debug "Converting XML response to hashtable"
                 $returnMap = @{};
-                if ($saveXML) {
-                    [string]$outPath = Get-OutputFolder -create
-                    $outPath = Join-Path $outPath $outFile 
-                    if (Test-Path -Path $outPath) {
-                        Clear-Content -path $outPath 
-                        $line = "#  PS_Mirth fetched from $($connection.serverUrl) on $(Get-Date)"
-                        Add-Content -Path $outPath -value $line
-                    }
-                } 
                 foreach ($entry in $toolPayLoad.properties.entry) { 
                     $key = $entry.Attributes[0].Value
                     $value = $entry.InnerText
                     Write-Debug ("Adding Key: $key with value: $value")
                     $returnMap[$key] = $value
-                } 
-                Write-Debug "Sorting by key for output..."
-                $sorted = $returnMap.GetEnumerator() | Sort-Object -Property name 
+                }
                 if ($saveXML) {
-                    [string]$outPath = Get-OutputFolder -create
-                    $outPath = Join-Path $outPath $outFile 
-                    Write-Debug "Saving hash map to $outPath"
-                    foreach ($property in $sorted) { 
-                        $key    = $property.Name
-                        $value  = $property.Value
-                        $line = “{0,-40} {1,1} {2}” -f $key, "=", $value
-                        Add-Content -Path $outPath -value $line
-                    }  
+                    [System.Collections.ArrayList]$Content = @()
+                    $Content += "#  PS_Mirth fetched from $($connection.serverUrl) on $(Get-Date)"
+                    $Content += $returnMap.GetEnumerator() | Sort-Object -Property name | ForEach-Object {"{0,-40} {1,1} {2}” -f $_.Key, "=", $_.Value}  
+                    Save-Content $Content $outFile
                 }         
                 return $returnMap
             }
@@ -3741,11 +3659,11 @@ function Get-MirthServerProperties {
 
         # If true, return the properties as a hashtable instead of an xml object for convenience
         [Parameter()]
-        [switch]$asHashtable = $false,
+        [switch]$asHashtable,
 
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -3763,43 +3681,24 @@ function Get-MirthServerProperties {
             Write-Verbose $toolPayLoad.OuterXml
             if (-not $asHashtable) { 
                 if ($saveXML) { 
-                    [string]$outPath = Get-OutputFolder -create
-                    $outPath = Join-Path $outPath $outFile 
-                    Write-Debug "Saving to $outPath"    
-                    $toolPayLoad.save($outPath)
+                    Save-Content $toolPayLoad $outFile
                 }
                 return $toolPayLoad
             } else { 
                 Write-Debug "Converting XML response to hashtable"
-                $returnMap = @{};
-                if ($saveXML) {
-                    [string]$outPath = Get-OutputFolder -create
-                    $outPath = Join-Path $outPath $outFile 
-                    if (Test-Path -Path $outPath) {
-                        Clear-Content -path $outPath 
-                        $line = "#  PS_Mirth fetched from $($connection.serverUrl) on $(Get-Date)"
-                        Add-Content -Path $outPath -value $line
-                    }
-                } 
+                $returnMap = @{}
                 foreach ($entry in $toolPayLoad.properties.entry) { 
                     $key = $entry.Attributes[0].Value
                     $value = $entry.InnerText
                     Write-Debug ("Adding Key: $key with value: $value")
                     $returnMap[$key] = $value
                 } 
-                Write-Debug "Sorting by key for output..."
-                $sorted = $returnMap.GetEnumerator() | Sort-Object -Property name 
                 if ($saveXML) {
-                    [string]$outPath = Get-OutputFolder -create
-                    $outPath = Join-Path $outPath $outFile 
-                    Write-Debug "Saving hash map to $outPath"
-                    foreach ($property in $sorted) { 
-                        $key    = $property.Name
-                        $value  = $property.Value
-                        $line = “{0,-40} {1,1} {2}” -f $key, "=", $value
-                        Add-Content -Path $outPath -value $line
-                    }  
-                }         
+                    [System.Collections.ArrayList]$Content = @()
+                    $Content += "#  PS_Mirth fetched from $($connection.serverUrl) on $(Get-Date)"
+                    $Content += $returnMap.GetEnumerator() | Sort-Object -Property name | ForEach-Object {"{0,-40} {1,1} {2}” -f $_.Key, "=", $_.Value}  
+                    Save-Content $Content $outFile
+                }
                 return $returnMap
             }
         } else { 
@@ -3959,7 +3858,7 @@ function Get-MirthChannelIds {
    
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
 
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -3977,7 +3876,7 @@ function Get-MirthChannelIds {
 
         [xml] $allChannelXml = Get-MirthChannels -connection $connection 
         $channelNodes = $allChannelXml.SelectNodes(".//channel")
-        Write-Debug "There are $($channelNodes.Count) channels to considered."
+        Write-Debug "There are $($channelNodes.Count) channels to be considered."
         if ($channelNodes.Count -gt 0) { 
             foreach ($channelNode in $channelNodes) { 
                 # TBD: add some filtering logic here?
@@ -3987,13 +3886,7 @@ function Get-MirthChannelIds {
             Write-Debug "There are now $($channelNodes.Count) channel ids in the list."
         }
         if ($saveXML) { 
-            [string]$outPath = Get-OutputFolder -create
-            $outPath = Join-Path $outPath $outFile 
-            Write-Debug "Saving channel id list at: $outPath"
-            Clear-Content -path $outPath -ErrorAction SilentlyContinue | Out-Null
-            foreach ($id in $channelIds) {
-                Add-Content -Path $outPath -value $id
-            }
+            Save-Content $channelIds $outFile
         }
         return $channelIds
     }
@@ -4044,7 +3937,7 @@ function Get-MirthChannelStatuses {
    
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
 
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -4085,16 +3978,10 @@ function Get-MirthChannelStatuses {
                 if ($exportChannels) {
                     # iterate through list, saving each channel using the name
                     foreach ($channel in $r.list.channel) {
-                        $exportFileName = Get-OutputFolder -create
-                        $exportFileName = $exportFileName + $channel.name + '.xml' 
-                        $msg = "Exporting channel '$exportFileName'"
-                        Write-Debug $msg
-                        Set-Content $exportFileName $channel.OuterXml
+                        Save-Content $channel $channel.name + '.xml' 
                     }
                 } else {
-                    [string]$o = Get-OutputFolder -create
-                    $o = Join-Path $o $outFile   
-                    $r.save($o)
+                    Save-Content $r $outFile
                 }
             }
             Write-Verbose "$($r.OuterXml)"
@@ -4142,7 +4029,7 @@ function Set-MirthChannelProperties {
     .OUTPUTS
 
     .EXAMPLE
-        Set-MirthChannelProperties  -messageStorageMode PRODUCTION -clearGlobalChannelMap $True -pruneMetaDataDays 30 -pruneContentDays 15  -removeOnlyFilteredOnCompletion $True  
+        Set-MirthChannelProperties -messageStorageMode PRODUCTION -clearGlobalChannelMap $True -pruneMetaDataDays 30 -pruneContentDays 15 -removeOnlyFilteredOnCompletion $True  
 
     .LINK
 
@@ -4413,7 +4300,7 @@ function Get-MirthChannelMsgById {
 
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch] $saveXML = $false,
+        [switch] $saveXML,
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -4438,12 +4325,7 @@ function Get-MirthChannelMsgById {
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-OutputFolder -create
-                #$o = $o + $outFile
-                $o = Join-Path $o $outFile 
-                Write-Debug "Saving Output to $o"
-                $r.save($o)     
-                Write-Debug "Done!" 
+                Save-Content $r $outFile
             }
             Write-Verbose $r.innerXml
             return $r
@@ -4492,7 +4374,7 @@ function Get-MirthChannelMaxMsgId {
 
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch] $saveXML = $false,
+        [switch] $saveXML,
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -4517,12 +4399,7 @@ function Get-MirthChannelMaxMsgId {
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-OutputFolder -create
-                #$o = $o + $outFile
-                $o = Join-Path $o $outFile 
-                Write-Debug "Saving Output to $o"
-                $r.save($o)     
-                Write-Debug "Done!" 
+                Save-Content $r $outFile
             }
             Write-Verbose $r.innerXml
             return [long]$r.long
@@ -4589,11 +4466,11 @@ function Send-MirthStartChannels {
 
         # If true, an error response code and the exception will be returned.
         [Parameter()]
-        [switch]$returnErrors = $false,        
+        [switch]$returnErrors,        
    
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
 
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -4653,11 +4530,11 @@ function Send-MirthStopChannels {
 
         # If true, an error response code and the exception will be returned.
         [Parameter()]
-        [switch]$returnErrors = $false,        
+        [switch]$returnErrors,        
    
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
 
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -4715,11 +4592,11 @@ function Send-MirthHaltChannels {
 
         # If true, an error response code and the exception will be returned.
         [Parameter()]
-        [switch]$returnErrors = $false,        
+        [switch]$returnErrors,        
    
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
 
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -4778,11 +4655,11 @@ function Send-MirthPauseChannels {
 
         # If true, an error response code and the exception will be returned.
         [Parameter()]
-        [switch]$returnErrors = $false,        
+        [switch]$returnErrors,        
    
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
 
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -4841,11 +4718,11 @@ function Send-MirthResumeChannels {
 
         # If true, an error response code and the exception will be returned.
         [Parameter()]
-        [switch]$returnErrors = $false,        
+        [switch]$returnErrors,        
    
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
 
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -4919,11 +4796,11 @@ function Send-MirthChannelCommand {
 
         # If true, an error response code and the exception will be returned.
         [Parameter()]
-        [switch]$returnErrors = $false,        
+        [switch]$returnErrors,        
    
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
 
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -4973,11 +4850,7 @@ function Send-MirthChannelCommand {
         try { 
             Invoke-RestMethod -UseBasicParsing -Uri $uri -WebSession $session -Headers $headers -Method POST -Body $payloadBody
             if ($saveXML) { 
-                [string]$o = Get-OutputFolder -create
-                $o = Join-Path $o $outFile 
-                $line = "Channel command: $command successful for targets: "
-                Set-Content $o -Value $line 
-                Add-Content $o $payloadBody
+                Save-Content "Channel command: $command successful for targets: $payloadBody" $outFile
             }
             Write-Verbose "Channel Command [$command]: SUCCESS"
             return $true
@@ -5048,11 +4921,11 @@ function Send-MirthDeployChannels {
 
         # If true, an error response code and exception will be returned.
         [Parameter()]
-        [switch]$returnErrors = $false,
+        [switch]$returnErrors,
    
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
 
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -5090,12 +4963,9 @@ function Send-MirthDeployChannels {
             $r = Invoke-RestMethod -UseBasicParsing -Uri $uri -WebSession $session -Headers $headers -Method POST -Body $payloadXML.OuterXml
 
             if ($saveXML) { 
-                [string]$o = Get-OutputFolder -create
-                $o = Join-Path $o $outFile 
-                Write-Debug "Saving Output to $o"
-                Set-Content $o -Value $r  
+                Save-Content $r $outFile
             }
-            Write-Verbose -Message "Deployed: $r"
+            Write-Verbose "Deployed: $r"
             return $true
         } catch {
             $_.response
@@ -5161,11 +5031,11 @@ function Send-MirthRedeployAllChannels {
 
         # If true, an error response code and exception will be returned.
         [Parameter()]
-        [switch]$returnErrors = $false,
+        [switch]$returnErrors,
    
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
 
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -5205,9 +5075,7 @@ function Send-MirthRedeployAllChannels {
             # Write-Debug $r.StatusDescription
             # Write-Debug $r.RawContent
             if ($saveXML) { 
-                [string]$o = Get-OutputFolder -create
-                $o = Join-Path $o $outFile 
-                Set-Content $o -Value $r.getType()   
+                Save-Content $r.getType() $outFile
             }
             Write-Verbose "$r"
             return $true
@@ -5276,11 +5144,11 @@ function Send-MirthUndeployChannels {
 
         # If true, an error response code and the exception will be returned.
         [Parameter()]
-        [switch]$returnErrors = $false,        
+        [switch]$returnErrors,        
    
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
 
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -5318,9 +5186,7 @@ function Send-MirthUndeployChannels {
             $r = Invoke-RestMethod -UseBasicParsing -Uri $uri -WebSession $session -Headers $headers -Method POST -Body $payLoadXML.OuterXml
 
             if ($saveXML) { 
-                [string]$o = Get-OutputFolder -create
-                $o = Join-Path $o $outFile 
-                Set-Content $o -Value $r 
+                Save-Content $r $outFile
             }
             Write-Verbose "Undeployed: $r"
             return $true
@@ -5485,12 +5351,12 @@ function Get-MirthChannels {
    
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
 
         # Save each channel XML in a separate file using the channel name.
         # saveXML switch must also be on.
         [Parameter()]
-        [switch]$exportChannels = $false,
+        [switch]$exportChannels,
 
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -5618,16 +5484,10 @@ function Get-MirthChannels {
                 if ($exportChannels) {
                     # iterate through list, saving each channel using the name
                     foreach ($channel in $r.list.channel) {
-                        $exportFileName = Get-OutputFolder -create
-                        $exportFileName = $exportFileName + $channel.name + '.xml' 
-                        $msg = "Exporting channel '$exportFileName'"
-                        Write-Debug $msg
-                        Set-Content $exportFileName $channel.OuterXml
+                        Save-Content $channel $channel.name + '.xml' 
                     }
                 } else {
-                    [string]$o = Get-OutputFolder -create
-                    $o = Join-Path $o $outFile   
-                    $r.save($o)
+                    Save-Content $r $outFile
                 }
             }
             Write-Verbose "$($r.OuterXml)"
@@ -5680,11 +5540,11 @@ function Remove-MirthChannels {
         # if true, all channels will be removed
         [Parameter(ParameterSetName="all",
                    Mandatory=$True)]
-        [switch]$removeAllChannels = $false,
+        [switch]$removeAllChannels,
    
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
 
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -5729,9 +5589,7 @@ function Remove-MirthChannels {
             $r = Invoke-RestMethod -Uri $uri -Method DELETE -WebSession $session
 
             if ($saveXML) { 
-                [string]$o = Get-OutputFolder -create
-                $o = Join-Path $o $outFile      
-                Set-Content -Path $o -Value "Deleted Channels: $id" 
+                Save-Content "Deleted Channels: $id" $outFile
             }
             Write-Verbose $r
             return $r
@@ -5781,7 +5639,7 @@ function Remove-MirthChannelByName {
    
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
 
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -5815,8 +5673,7 @@ function Remove-MirthChannelByName {
         $r = Remove-MirthChannels -connection $connection -targetId $targetIds -saveXML:$saveXML
 
         if ($saveXML) { 
-            [string]$o = Get-OutputFolder -create
-            $o = Join-Path $o $outFile    
+            #TODO what to save?
         }
         Write-Verbose "$($r.OuterXml)"
         return $r
@@ -5873,7 +5730,7 @@ function Import-MirthChannel {
    
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -5915,11 +5772,7 @@ function Import-MirthChannel {
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-OutputFolder -create
-                $o = Join-Path $o $outFile 
-                Write-Debug "Saving Output to $o"
-                $r.save($o)     
-                Write-Debug "Done!" 
+                Save-Content $r $outFile
             }
             # response is a plaintext string, XML was not an option
             Write-Verbose $r
@@ -5996,7 +5849,7 @@ function Get-MirthCodeTemplates {
   
        # Saves the response from the server as a file in the current location.
        [Parameter()]
-       [switch]$saveXML = $false,
+       [switch]$saveXML,
        
        # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
        [Parameter()]
@@ -6031,9 +5884,7 @@ function Get-MirthCodeTemplates {
            Write-Debug "...done."
 
            if ($saveXML) { 
-               [string]$o = Get-OutputFolder -create
-               $o = Join-Path $o $outFile 
-               $r.save($o)
+               Save-Content $r $outFile
            }
            Write-Verbose "$($r.OuterXml)"
            return $r;
@@ -6089,11 +5940,11 @@ function Set-MirthCodeTemplate {
         # If true, the code template will be updated even if a different revision 
         # exists on the server
         [Parameter()]
-        [switch]$override = $false,
+        [switch]$override,
    
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -6134,9 +5985,7 @@ function Set-MirthCodeTemplate {
             $r = Invoke-RestMethod -Uri $uri -Headers $headers -Method PUT -WebSession $session -Body $payLoadXML.OuterXml
             Write-Debug "...done."
             if ($saveXML) { 
-                [string]$o = Get-OutputFolder -create
-                $o = Join-Path $o $outFile 
-                $r.save($o)
+                Save-Content $r $outFile
             }
             Write-Verbose "$($r.OuterXml)"
             return $r
@@ -6184,7 +6033,7 @@ function Remove-MirthCodeTemplates  {
    
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
                 
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -6227,11 +6076,7 @@ function Remove-MirthCodeTemplates  {
                 $r = Invoke-RestMethod -Uri $uri -WebSession $session -Method DELETE -Headers $headers -Body $userXML.OuterXml
 
                 if ($saveXML) { 
-                    [string]$o = Get-OutputFolder -create
-                    $o = Join-Path $o $outFile 
-                    Write-Debug "Saving Output to $o"
-                    Set-Content $o -Value $r
-                    #$r.save($o)     
+                    Save-Content $r $outFile
                 }
                 Write-Verbose "$($r.OuterXml)"
             }
@@ -6284,11 +6129,11 @@ function Get-MirthCodeTemplateLibraries {
 
         # If true, full code templates will be included inside each library.
         [parameter()]
-        [switch]$includeCodeTemplates = $false,
+        [switch]$includeCodeTemplates,
    
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -6360,9 +6205,7 @@ function Get-MirthCodeTemplateLibraries {
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-OutputFolder -create
-                $o = Join-Path $o $outFile 
-                $r.save($o)
+                Save-Content $r $outFile
             }
             Write-Verbose "$($r.OuterXml)"
             return $r;
@@ -6422,11 +6265,11 @@ function Set-MirthCodeTemplateLibraries {
         # If true, the code template library will be updated even if a different revision 
         # exists on the server
         [Parameter()]
-        [switch]$override = $false,
+        [switch]$override,
    
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -6474,9 +6317,7 @@ function Set-MirthCodeTemplateLibraries {
             $r = Invoke-RestMethod -Uri $uri -Headers $headers -Method PUT -WebSession $session -Body $payLoadXML.OuterXml
             Write-Debug "...done."
             if ($saveXML) { 
-                [string]$o = Get-OutputFolder -create
-                $o = Join-Path $o $outFile 
-                $r.save($o)
+                Save-Content $r $outFile
             }
             Write-Verbose "$($r.OuterXml)"
             return $r
@@ -6554,7 +6395,7 @@ function Set-MirthSSLManagerKeystores {
 
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false
+        [switch]$saveXML
     )
     BEGIN { 
         Write-Debug "Set-MirthSSLManagerKeystores Beginning..."
@@ -6644,7 +6485,7 @@ function Get-MirthKeyStoreCertificates {
 
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -6669,9 +6510,7 @@ function Get-MirthKeyStoreCertificates {
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-OutputFolder -create
-                $o = Join-Path $o $outFile 
-                $r.save($o)
+                Save-Content $r $outFile
             }
             Write-Verbose "$($r.OuterXml)"
             return $r
@@ -6718,7 +6557,7 @@ function Get-MirthKeyStoreBytes {
 
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -6741,9 +6580,7 @@ function Get-MirthKeyStoreBytes {
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-OutputFolder -create
-                $o = Join-Path $o $outFile 
-                $r.save($o)
+                Save-Content $r $outFile
             }
             Write-Verbose "$($r.OuterXml)"
             return $r
@@ -6869,7 +6706,7 @@ function Set-MirthUserPassword {
    
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -6903,9 +6740,7 @@ function Set-MirthUserPassword {
                 $r = Invoke-RestMethod -Uri $uri -WebSession $session -Method PUT -Headers $headers -Body (ConvertFrom-SecureString $newPassword -AsPlainText)
                 Write-Debug "...Password set"
                 if ($saveXML) { 
-                    [string]$o = Get-OutputFolder -create
-                    $o = Join-Path $o $outFile 
-                    Set-Content -Path $o -Value "$targetId : $(ConvertFrom-SecureString $newPassword -AsPlainText)" 
+                    Save-Content "$targetId : $(ConvertFrom-SecureString $newPassword -AsPlainText)" $outFile
                 }
                 Write-Verbose $r
             }
@@ -6956,7 +6791,7 @@ function Test-MirthUserLogged {
    
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -6979,9 +6814,7 @@ function Test-MirthUserLogged {
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-OutputFolder -create
-                $o = Join-Path $o $outFile 
-                Set-Content -Path $o -Value $r.OuterXml
+                Save-Content $r $outFile
             }
             Write-Verbose "$($r.OuterXml)"
             
@@ -7054,7 +6887,7 @@ function Get-MirthLoggedUsers {
    
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
 
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -7078,11 +6911,7 @@ function Get-MirthLoggedUsers {
             }
         }
         if ($saveXML) { 
-            [string]$o = Get-OutputFolder -create
-            $o = Join-Path $o $outFile 
-            Write-Debug "Saving Output to $o"
-            $loggedUsers.save($o)     
-            Write-Debug "Done!" 
+            Save-Content $loggedUsers $outFile
         }
         Write-Verbose $loggedUsers.OuterXml
         return $loggedUsers
@@ -7144,7 +6973,7 @@ function Get-MirthUsers {
    
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -7189,11 +7018,7 @@ function Get-MirthUsers {
             }
 
             if ($saveXML) { 
-                [string]$o = Get-OutputFolder -create
-                #$o = $o + $outFile
-                $o = Join-Path $o $outFile 
-                $r.save($o)     
-                Write-Debug "Output saved to $o"
+                Save-Content $r $outFile
             }
             Write-Verbose "$($r.OuterXml)"
             return $r   
@@ -7263,7 +7088,7 @@ function Set-MirthUser {
    
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -7304,11 +7129,7 @@ function Set-MirthUser {
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-OutputFolder -create
-                $o = Join-Path $o $outFile 
-                Write-Debug "Saving Output to $o"
-                $r.save($o)     
-                Write-Debug "Done!" 
+                Save-Content $r $outFile
             }
             Write-Verbose "$($r.OuterXml)"
             return $r
@@ -7394,7 +7215,7 @@ function Add-MirthUser {
    
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false,
+        [switch]$saveXML,
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -7435,11 +7256,7 @@ function Add-MirthUser {
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-OutputFolder -create
-                $o = Join-Path $o $outFile 
-                Write-Debug "Saving Output to $o"
-                $r.save($o)     
-                Write-Debug "Done!" 
+                Save-Content $r $outFile
             }
             Write-Verbose "$($r.OuterXml)"
             Set-MirthUserPassword -connection $connection -targetId $userXML.user.username -newPassword $newPassword
@@ -7489,7 +7306,7 @@ function Remove-MirthUser {
    
         # Saves the response from the server as a file in the current location.
         [Parameter()]
-        [switch]$saveXML = $false
+        [switch]$saveXML
     )    
     BEGIN { 
         Write-Debug "Remove-MirthUser Beginning"
@@ -7520,12 +7337,7 @@ function Remove-MirthUser {
             Write-Debug "...done."
 
             if ($saveXML) { 
-                [string]$o = Get-OutputFolder -create
-                $o = Join-Path $o $outFile 
-                Write-Debug "Saving Output to $o"
-                $r.save($o)     
-                #Set-Content -Path $o -Value "$targetId : $newPassword" 
-                Write-Debug "Done!" 
+                Save-Content $r $outFile
             }
             Write-Verbose "$($r.OuterXml)"
             return $r
@@ -7549,7 +7361,7 @@ function Save-Content {
         $Content,
         # the output file, will be appended to standard output folder
         [Parameter(Position=1)]
-        [string]$OutFile        
+        [string]$OutFile
     )    
     BEGIN { 
         Write-Debug "Save-Content Beginning"
@@ -7557,7 +7369,10 @@ function Save-Content {
     PROCESS {
         [string]$BaseFolder = Get-OutputFolder -create
         $destFile = Join-Path $BaseFolder $OutFile
-        Write-Debug "Saving Output to $destFile"
+        Write-Debug ("Saving output to {0}" -f $destFile)
+        if($Content -is [xml]) {
+            $Content = $Content.OuterXml
+        }
         Set-Content -Path $destFile -Value $Content
         Write-Debug "Done!"
     }
