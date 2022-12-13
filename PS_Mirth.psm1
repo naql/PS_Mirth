@@ -1,7 +1,4 @@
-﻿# needed for WebRequestSession
-Add-Type -AssemblyName System.Web
-
-# classes and enums #
+﻿# classes and enums #
 
 enum MirthMsgStorageMode {
     DISABLED = 1
