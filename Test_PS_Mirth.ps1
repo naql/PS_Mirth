@@ -39,7 +39,8 @@ Function Write-InformationColored {
 #######################################################################################################################################
 Write-InformationColored -MessageData "Beginning PS_Mirth Test" -ForegroundColor Black -BackgroundColor DarkGreen 
 Write-Verbose "Importing Module"
-Import-Module PS_Mirth -force
+#Import-Module PS_Mirth -force
+".\PS_Mirth.psd1"|gci|Import-Module
 $Version_PS_Mirth = (Get-Module -Name "PS_Mirth").Version
 Write-InformationColored -MessageData "PS_Mirth Version: " -NoNewline
 Write-InformationColored -MessageData "$($Version_PS_Mirth.Major).$($Version_PS_Mirth.Minor).$($Version_PS_Mirth.Build)"  -ForegroundColor Green   -BackgroundColor Black
