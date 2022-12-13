@@ -1,4 +1,7 @@
-﻿# classes and enums #
+﻿# aliases
+Set-Alias cm Connect-Mirth
+
+# classes and enums #
 
 enum MirthMsgStorageMode {
     DISABLED = 1
