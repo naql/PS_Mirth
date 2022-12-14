@@ -65,9 +65,8 @@ $DEFAULT_HEADERS = @{
 
 # This is where the -saveXML flag will cause files to be saved.  It 
 # defaults to a subfolder in the current location.
-[string]$DEFAULT_OUTPUT_FOLDER = Join-Path $pwd "PS_Mirth_Output" 
+[string]$DEFAULT_OUTPUT_FOLDER = Join-Path $pwd "PS_Mirth_Output"
 [string]$SavePath = $DEFAULT_OUTPUT_FOLDER
-Write-Verbose "Current PS_Mirth output folder is: $SavePath"
 
 [MirthConnection]$currentConnection = $null;
 
@@ -1303,7 +1302,7 @@ function Get-MirthServerVersion {
         [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.txt'
     ) 
     BEGIN {
-        Write-Debug "Get-MirthServerVersion Beginning..." 
+        Write-Debug "Get-MirthServerVersion Beginning..."
     }
     PROCESS {
         if ($null -eq $connection) { 
@@ -7382,7 +7381,7 @@ function Save-Content {
         Write-Debug "Save-Content Beginning"
     }
     PROCESS {
-        [string]$BaseFolder = Get-OutputFolder -create
+        $BaseFolder = Get-OutputFolder -create
         $destFile = Join-Path $BaseFolder $OutFile
         Write-Debug ("Saving output to {0}" -f $destFile)
         if($Content -is [xml]) {
