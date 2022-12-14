@@ -1147,21 +1147,36 @@ function Get-MirthServerAbout {
                 Save-Content $r $outFile
             }
             Write-Verbose "$($r.OuterXml)"
-            #TODO 'plugins' and such should retain their maps, not become strings
             if ($asHashtable) { 
                 $returnMap = @{}
-                foreach ($entry in $r.map.entry) { 
-                    $node = $entry.FirstChild
-                    while ($node.NodeType -eq "Whitespace") { 
-                        $node = $node.NextSibling
+
+                foreach ($element in $r.map.entry) {
+                    $String = @($element.string)
+                    #Write-Debug ("Processing {0}" -f $String[0])
+
+                    $PropNames = $element | Get-Member -Type Property | Select-Object -ExpandProperty Name
+
+                    if($String.Count -eq 2) {
+                        #Write-Debug ("Found two strings: '{0}' and '{1}'" -f $String[0], $String[1])
+                        $returnMap.Add($String[0], $String[1])
+                    } elseif($PropNames -contains "int") {
+                        #Write-Debug "Found int"
+                        $returnMap.Add($String[0], $element.int)
+                    } elseif($PropNames -contains "map") {
+                        #Write-Debug "Found map"
+                        $innerMap = @{}
+
+                        foreach ($innerItem in $element.map.entry) {
+                            $InnerString = $innerItem.string
+                            #Write-Debug ("InnerString two strings: '{0}' and '{1}'" -f $InnerString[0], $InnerString[1])
+                            $innerMap.Add($InnerString[0].Trim(), $InnerString[1].Trim())
+                        }
+
+                        $returnMap.Add($String[0], $innerMap)
+                    } else {
+                        Write-Debug "Found unknown with properties: $PropNames, adding empty entry"
+                        $returnMap.Add($String[0], "")
                     }
-                    $key = $node.InnerText 
-                    $valueNode = $node.NextSibling
-                    while ($valueNode.NodeType -eq "Whitespace") { 
-                        $valueNode = $valueNode.NextSibling
-                    }
-                    $value = $valueNode.InnerText 
-                    $returnMap[$key] = $value
                 }
                 return $returnMap
             } else { 
