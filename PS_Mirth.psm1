@@ -25,13 +25,13 @@ class MirthConnection {
     [ValidateNotNullOrEmpty()][securestring]$userPass
 
     MirthConnection($session, $serverUrl, $userName, $userPass) {
-       $this.session   = $session
-       $this.serverUrl = $serverUrl
-       $this.userName  = $userName
-       $this.userPass  = $userPass
+        $this.session = $session
+        $this.serverUrl = $serverUrl
+        $this.userName = $userName
+        $this.userPass = $userPass
     }
     
-    [String] ToString()  {
+    [String] ToString() {
         return "MirthConnection" + ":" + $this.serverUrl + ":" + $this.userName + ":" + $this.userPass
     }
 }
@@ -48,13 +48,13 @@ class MirthServerSummary {
 }
 
 #default function parameters
-$PSDefaultParameterValues=@{
-    "Invoke-RestMethod:SkipCertificateCheck"=$true
+$PSDefaultParameterValues = @{
+    "Invoke-RestMethod:SkipCertificateCheck" = $true
 }
 
 #default API headers
 $DEFAULT_HEADERS = @{
-    "X-Requested-With"="PS_Mirth"
+    "X-Requested-With" = "PS_Mirth"
 }
 
 # Dynamically Scoped/Globals
@@ -78,9 +78,9 @@ $DEFAULT_HEADERS = @{
 function Get-PSConfig {
     @{
         "SkipCertificateCheck" = $script:PSDefaultParameterValues["Invoke-RestMethod:SkipCertificateCheck"]
-        "DefaultHeaders" = $script:DEFAULT_HEADERS.Clone()
-        "OutputFolder" = $script:SavePath
-        "MirthConnection" = $script:currentConnection
+        "DefaultHeaders"       = $script:DEFAULT_HEADERS.Clone()
+        "OutputFolder"         = $script:SavePath
+        "MirthConnection"      = $script:currentConnection
     }
 }
 
@@ -97,9 +97,9 @@ function Set-PSConfig([hashtable]$Config) {
                 Set-OutputFolder $Config[$Key]
             }
             "SkipCertificateCheck" {
-                $script:PSDefaultParameterValues=@{"Invoke-RestMethod:SkipCertificateCheck" = $Config[$Key]}
+                $script:PSDefaultParameterValues = @{"Invoke-RestMethod:SkipCertificateCheck" = $Config[$Key] }
             }
-            Default {Write-Warning ("Unknown option '{0}', ignoring" -f $Key)}
+            Default { Write-Warning ("Unknown option '{0}', ignoring" -f $Key) }
         }
     }
 }
@@ -160,7 +160,7 @@ function Get-OutputFolder () {
 <############################################################################################>
 
 function Convert-XmlElementToDoc { 
-   <#
+    <#
     .SYNOPSIS
         Convert an Xml.XmlElement to an XmlDocument, with the element as the root
     .DESCRIPTION
@@ -173,7 +173,7 @@ function Convert-XmlElementToDoc {
     [CmdletBinding()] 
     PARAM (
         # The alias for the server default client public certificate.
-        [Parameter(Mandatory=$True)]
+        [Parameter(Mandatory = $True)]
         [Xml.XmlElement]$element
     )
     $xml = New-Object -TypeName xml
@@ -213,12 +213,12 @@ function New-MirthKeyStoreCertificatesPayLoad {
         [string]$defaultClientAlias = "default-client",
 
         # The base64 PEM for the server default client public certificate.
-        [Parameter(ParameterSetName="pemProvided",
-                   ValueFromPipeline=$True)]
+        [Parameter(ParameterSetName = "pemProvided",
+            ValueFromPipeline = $True)]
         [string]$pubCertPem = $null,
         
         # The path to the text file containing the public PEM
-        [Parameter(ParameterSetName="filePaths")]
+        [Parameter(ParameterSetName = "filePaths")]
         [string]$pubCertPemPath,
 
         # The alias for the server default server private certificate.
@@ -226,12 +226,12 @@ function New-MirthKeyStoreCertificatesPayLoad {
         [string]$defaultServerAlias = "default-server",
 
         # The base64 PEM for the server default server private certificate, unencrypted.
-        [Parameter(ParameterSetName="pemProvided",
-                   ValueFromPipeline=$True)]
+        [Parameter(ParameterSetName = "pemProvided",
+            ValueFromPipeline = $True)]
         [string]$privCertPem = $null,
 
         # The path to the text file containing the private PEM
-        [Parameter(ParameterSetName="filePaths")]
+        [Parameter(ParameterSetName = "filePaths")]
         [string]$privCertPemPath,
    
         # Saves the response from the server as a file in the current location.
@@ -252,23 +252,25 @@ function New-MirthKeyStoreCertificatesPayLoad {
             if (Test-Path $pubCertPemPath -PathType Leaf) { 
                 Write-Debug "Loading Public Cert PEM from path " $pubCertPemPath
                 $pubCertPem = Get-Content $pubCertPemPath -Raw
-            } else { 
-              Write-Error "No Public PEM provided and path " $pubCertPemPath " does not exist!"
-              return;
+            }
+            else { 
+                Write-Error "No Public PEM provided and path " $pubCertPemPath " does not exist!"
+                return;
             }
         }
         if ([string]::IsNullOrEmpty($privCertPem)) {
             if (Test-Path $privCertPemPath -PathType Leaf) { 
                 Write-Debug "Loading Private Cert PEM from path " $privCertPemPath
                 $privCertPem = Get-Content $privCertPemPath -Raw
-            } else { 
-              Write-Error "No Private PEM provided and path " $privCertPemPath " does not exist!"
-              return;
+            }
+            else { 
+                Write-Error "No Private PEM provided and path " $privCertPemPath " does not exist!"
+                return;
             }
         }
 
         $templateXML = 
-[xml]@"
+        [xml]@"
 <com.mirth.connect.plugins.ssl.model.KeyStoreCertificates>
 <trustedCertificateMap>
         <entry>
@@ -347,7 +349,7 @@ function New-MirthSSLMgrPropertiesPayload {
     PARAM (
 
         # The base64 encoded JKS keystore.
-        [Parameter(ValueFromPipeline=$True)]
+        [Parameter(ValueFromPipeline = $True)]
         [string]$keyStore = $null,
         
         # The path to the JKS keystore file
@@ -355,7 +357,7 @@ function New-MirthSSLMgrPropertiesPayload {
         [string]$keyStorePath,
 
         # The base64 encoded JKS truststore.
-        [Parameter(ValueFromPipeline=$True)]
+        [Parameter(ValueFromPipeline = $True)]
         [string]$trustStore = $null,
 
         # The path to the text file containing the private PEM
@@ -384,23 +386,25 @@ function New-MirthSSLMgrPropertiesPayload {
                 Write-Debug "Loading TrustStore from path $trustStorePath"
                 $trustStore = [Convert]::ToBase64String([IO.File]::ReadAllBytes($trustStorePath))
                 #$trustStore = Get-Content $trustStorePath -Raw
-            } else { 
-              Write-Error "No TrustStore JKS provided and path " $trustStorePath " does not exist!"
-              return;
+            }
+            else { 
+                Write-Error "No TrustStore JKS provided and path " $trustStorePath " does not exist!"
+                return;
             }
         }
         if ([string]::IsNullOrEmpty($keyStore)) {
             if (Test-Path $keyStorePath -PathType Leaf) { 
                 Write-Debug "Loading KeyStore from path $keyStorePath"
                 $keyStore = [Convert]::ToBase64String([IO.File]::ReadAllBytes($keyStorePath))
-            } else { 
-              Write-Error "No KeyStore JKS provided and path " $keyStorePath " does not exist!"
-              return;
+            }
+            else { 
+                Write-Error "No KeyStore JKS provided and path " $keyStorePath " does not exist!"
+                return;
             }
         }
 
         $templateXML = 
-[xml]@"
+        [xml]@"
 <properties>
   <property name="KeyStore">$keyStore</property>
   <property name="KeyStorePassword">$keyStorePass</property>
@@ -425,7 +429,7 @@ function New-MirthSSLMgrPropertiesPayload {
 }  # New-MirthSSLMgrPropertiesPayload
 
 function New-MirthChannelTagObject {
-       <#
+    <#
     .SYNOPSIS
         Creates an XML object representing a Mirth channel tag.
 
@@ -467,37 +471,37 @@ function New-MirthChannelTagObject {
     PARAM (
 
         # the channelTag id guid, if not provided one will be generated
-        [Parameter(ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ValueFromPipelineByPropertyName = $True)]
         [string]$tagId = $(New-Guid).toString(),
 
         # the property key name
-        [Parameter(Mandatory=$True,
-                   ValueFromPipelineByPropertyName=$True)]
+        [Parameter(Mandatory = $True,
+            ValueFromPipelineByPropertyName = $True)]
         [string]$tagName,
 
         # the alpha value, 0-255, defaults to 255
-        [Parameter(ValueFromPipelineByPropertyName=$True)]
-        [ValidateRange(0,255)]
+        [Parameter(ValueFromPipelineByPropertyName = $True)]
+        [ValidateRange(0, 255)]
         [int]$alpha = 255,
    
         # the red value, 0-255, defaults to 0
-        [Parameter(ValueFromPipelineByPropertyName=$True)]
-        [ValidateRange(0,255)]
+        [Parameter(ValueFromPipelineByPropertyName = $True)]
+        [ValidateRange(0, 255)]
         [int]$red = 0,
         
         # the green value,, 0-255, defaults to 0
-        [Parameter(ValueFromPipelineByPropertyName=$True)]
-        [ValidateRange(0,255)]
+        [Parameter(ValueFromPipelineByPropertyName = $True)]
+        [ValidateRange(0, 255)]
         [int]$green = 0,
 
         # the blue value, 0-255, defaults to 0
-        [Parameter(ValueFromPipelineByPropertyName=$True)]
-        [ValidateRange(0,255)]
+        [Parameter(ValueFromPipelineByPropertyName = $True)]
+        [ValidateRange(0, 255)]
         [int]$blue = 0,
 
         # an optional array of channelId guids
         # the channelTag id guid strings that the tag applies to
-        [Parameter(ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ValueFromPipelineByPropertyName = $True)]
         [string[]]$channelIds
 
     ) 
@@ -559,17 +563,17 @@ function New-MirthConfigMapEntry {
     PARAM (
 
         # the property key name
-        [Parameter(Mandatory=$True,
-                   ValueFromPipelineByPropertyName=$True)]
+        [Parameter(Mandatory = $True,
+            ValueFromPipelineByPropertyName = $True)]
         [string]$entryKey,
    
         # the property value
-        [Parameter(Mandatory=$True,
-                   ValueFromPipelineByPropertyName=$True)]
+        [Parameter(Mandatory = $True,
+            ValueFromPipelineByPropertyName = $True)]
         [string]$entryValue,
         
         # comment describing the property
-        [Parameter(ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ValueFromPipelineByPropertyName = $True)]
         [string]$entryComment = ""
 
     ) 
@@ -637,15 +641,15 @@ function New-MirthConfigMapFromProperties {
     PARAM (
 
         # hashtable of property names and values, no comments
-        [Parameter(ParameterSetName="propertiesProvided",
-                   Mandatory=$True,
-                   ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ParameterSetName = "propertiesProvided",
+            Mandatory = $True,
+            ValueFromPipelineByPropertyName = $True)]
         [hashtable]$payLoad,
 
         # path to file containing the properties file (including comments)
-        [Parameter(ParameterSetName="pathProvided",
-                   Mandatory=$True,
-                   ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ParameterSetName = "pathProvided",
+            Mandatory = $True,
+            ValueFromPipelineByPropertyName = $True)]
         [string]$payloadFilePath,
    
         # Saves the response from the server as a file in the current location.
@@ -661,7 +665,7 @@ function New-MirthConfigMapFromProperties {
         Write-Debug "New-MirthConfigMapFromProperties Beginning"
     }
     PROCESS {
-    [xml]$mapXML = [xml]"<map></map>"
+        [xml]$mapXML = [xml]"<map></map>"
         if (($payLoad -ne $null) -and ($payLoad -is [hashtable]) -and ($payLoad.Count -gt 0)) {
             Write-Debug "$msg = Properties hashtable provided in payLoad with $($payLoad.Count) entries"
             # Note:  We are losing comments here, because they are not represented in a vanilla hashtable
@@ -670,38 +674,41 @@ function New-MirthConfigMapFromProperties {
                 $entryXML = New-MirthConfigMapEntry -entryKey $key -entryValue $newValue -entryComment ""
                 $mapXML.DocumentElement.AppendChild($mapXML.ImportNode($entryXML.entry, $true)) | Out-Null
             }
-        } else { 
+        }
+        else { 
             # Verify the payLoadFilePath exists, load it
             if (Test-Path $payloadFilePath -PathType Leaf) {
                 [string]$commentBuffer = ""
                 Get-Content $payloadFilePath | ForEach-Object {
-                  # comments are lines that begin with # character and must precede the property
-                  # so, we will read building a comment string from any # lines, and create a 
-                  # map entry when we encounter a property using whatever comment string has been 
-                  # built so far, and then flushing it
-                  [string]$line = $_
-                  $line = $line.trim()
-                  Write-Verbose "Read line: $_ "
-                  [bool]$isComment = $line.StartsWith('#')
-                  if ($isComment) {
-                    #Write-Debug "Comment Found"
-                    $commentBuffer += $line.substring(1)
-                  } else { 
-                    # it should be a property
-                    Write-Debug "Property Found"
-                    $propLine = $line.Split('=')
-                    $keyName  = $propLine[0].trim()
-                    $value    = $propLine[1].trim()
-                    Write-Debug "Key:     $keyName"
-                    Write-Debug "Value:   $value"
-                    Write-Debug "Comment: $commentBuffer"
-                    $entryXML = New-MirthConfigMapEntry -entryKey $keyName -entryValue $value -entryComment $commentBuffer
-                    $mapXML.DocumentElement.AppendChild($mapXML.ImportNode($entryXML.entry, $true)) | Out-Null
+                    # comments are lines that begin with # character and must precede the property
+                    # so, we will read building a comment string from any # lines, and create a 
+                    # map entry when we encounter a property using whatever comment string has been 
+                    # built so far, and then flushing it
+                    [string]$line = $_
+                    $line = $line.trim()
+                    Write-Verbose "Read line: $_ "
+                    [bool]$isComment = $line.StartsWith('#')
+                    if ($isComment) {
+                        #Write-Debug "Comment Found"
+                        $commentBuffer += $line.substring(1)
+                    }
+                    else { 
+                        # it should be a property
+                        Write-Debug "Property Found"
+                        $propLine = $line.Split('=')
+                        $keyName = $propLine[0].trim()
+                        $value = $propLine[1].trim()
+                        Write-Debug "Key:     $keyName"
+                        Write-Debug "Value:   $value"
+                        Write-Debug "Comment: $commentBuffer"
+                        $entryXML = New-MirthConfigMapEntry -entryKey $keyName -entryValue $value -entryComment $commentBuffer
+                        $mapXML.DocumentElement.AppendChild($mapXML.ImportNode($entryXML.entry, $true)) | Out-Null
 
-                    $commentBuffer = ''
-                  }
+                        $commentBuffer = ''
+                    }
                 }
-            } else { 
+            }
+            else { 
                 $msg = "The properties file path provided was invalid: " + $payloadFilePath
                 Write-Error $msg
                 return
@@ -771,8 +778,8 @@ function Save-MirthPropertiesFile {
     PARAM (
 
         # xml document containing the mirth configuration map
-        [Parameter(Mandatory=$True,
-                   ValueFromPipeline=$True)]
+        [Parameter(Mandatory = $True,
+            ValueFromPipeline = $True)]
         [xml]$payLoad,
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
@@ -796,7 +803,8 @@ function Save-MirthPropertiesFile {
         $entries = $payLoad.map.entry;
         if ($unsorted) { 
             $outputEntries = $entries
-        } else { 
+        }
+        else { 
             $outputEntries = $entries | Sort-Object { [string]$_.string }
         }
         [System.Collections.ArrayList]$Lines = @()
@@ -901,12 +909,12 @@ function Invoke-PSMirthTool {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # required path to the tool to deploy
-        [Parameter(Mandatory=$True)]
+        [Parameter(Mandatory = $True)]
         [string]$toolPath,
 
         # Saves the response from the server as a file in the current location.
@@ -923,7 +931,7 @@ function Invoke-PSMirthTool {
     PROCESS { 
         Write-Debug "Loading tool channel..."
         [xml]$tool = Get-Content $toolPath
-        $toolName  = $tool.channel.name
+        $toolName = $tool.channel.name
         $toolId = $tool.channel.id
         $toolTransportType = $tool.channel.sourceConnector.transportName
         Write-Debug "Tool:      $toolName"
@@ -933,7 +941,8 @@ function Invoke-PSMirthTool {
         $pollsOnStart = ($pollSetting.ToUpper() -eq "TRUE")
         if ($pollsOnStart) { 
             Write-Debug "The tool channel polls automatically on deployment"
-        } else { 
+        }
+        else { 
             Write-Debug "The tool channel does NOT poll on deployment!"
             # we will add some logic to support this later
         }
@@ -963,7 +972,8 @@ function Invoke-PSMirthTool {
         [xml]$channelMsg = $null
         if (-not $maxMsgId -gt 0) { 
             Write-Warning "No tool telemetry could be obtained"
-        } else { 
+        }
+        else { 
             $attempts = 0
             while (($null -eq $channelMsg) -and ($attempts -lt 3)) { 
                 Write-Verbose "Getting telemetry result..." 
@@ -992,12 +1002,14 @@ function Invoke-PSMirthTool {
                 if ($dataType -eq "XML") { 
                     [xml]$decoded = [System.Web.HttpUtility]::HtmlDecode($connectorMessageNode.encoded.content)
                     Set-Variable returnValue -Value ($decoded -as [Xml])
-                } else { 
+                }
+                else { 
                     Write-Warning "Unimplemented PSMirthTool datatype"
                     $toolMessage = [System.Web.HttpUtility]::HtmlDecode($connectorMessageNode.encoded.content)
                     Set-Variable returnValue -Value ($toolMessage -as [String])                
                 }
-            } else { 
+            }
+            else { 
                 # probe failed to process
                 Write-Error "Tool probe channel $toolName failed to return telemetry."
             }
@@ -1110,8 +1122,8 @@ function Get-MirthServerAbout {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-         [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # If true, return the about properties in a hashtable instead of xml object.
@@ -1155,13 +1167,15 @@ function Get-MirthServerAbout {
 
                     $PropNames = $element | Get-Member -Type Property | Select-Object -ExpandProperty Name
 
-                    if($String.Count -eq 2) {
+                    if ($String.Count -eq 2) {
                         #Write-Debug ("Found two strings: '{0}' and '{1}'" -f $String[0], $String[1])
                         $returnMap.Add($String[0], $String[1])
-                    } elseif($PropNames -contains "int") {
+                    }
+                    elseif ($PropNames -contains "int") {
                         #Write-Debug "Found int"
                         $returnMap.Add($String[0], $element.int)
-                    } elseif($PropNames -contains "map") {
+                    }
+                    elseif ($PropNames -contains "map") {
                         #Write-Debug "Found map"
                         $innerMap = @{}
 
@@ -1172,13 +1186,15 @@ function Get-MirthServerAbout {
                         }
 
                         $returnMap.Add($String[0], $innerMap)
-                    } else {
+                    }
+                    else {
                         Write-Debug "Found unknown with properties: $PropNames, adding empty entry"
                         $returnMap.Add($String[0], "")
                     }
                 }
                 return $returnMap
-            } else { 
+            }
+            else { 
                 return $r
             }
         }
@@ -1218,8 +1234,8 @@ function Get-MirthServerConfig {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # Saves the response from the server as a file in the current location.
@@ -1289,8 +1305,8 @@ function Get-MirthServerVersion {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # Saves the response from the server as a file in the current location.
@@ -1364,8 +1380,8 @@ function Get-MirthServerTime {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # Saves the response from the server as a file in the current location.
@@ -1388,8 +1404,8 @@ function Get-MirthServerTime {
  
         $uri = $serverUrl + '/api/server/time'
         $headers = $DEFAULT_HEADERS.Clone();
-        $headers.Add("Accept","application/xml")
-        $headers.Add("Content-Type","application/xml")
+        $headers.Add("Accept", "application/xml")
+        $headers.Add("Content-Type", "application/xml")
 
         Write-Debug "Invoking GET Mirth API server at: $uri "
         try { 
@@ -1466,12 +1482,12 @@ function Get-MirthChannelGroups {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # The id of the channelGroup to retrieve, empty for all
-        [Parameter(ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ValueFromPipelineByPropertyName = $True)]
         [string[]]$targetId = @(),
    
         # Saves the response from the server as a file in the current location.
@@ -1497,7 +1513,8 @@ function Get-MirthChannelGroups {
         if ([string]::IsNullOrEmpty($targetId) -or [string]::IsNullOrWhiteSpace($targetId)) {
             Write-Debug "Fetching all channel Groups"
             $parameters = $null
-        } else {
+        }
+        else {
             $parameters = [System.Web.HttpUtility]::ParseQueryString([String]::Empty)
             foreach ($target in $targetId) {
                 $parameters.Add('channelGroupId', $target)
@@ -1552,20 +1569,20 @@ function Set-MirthChannelGroups {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # xml of the configuration map to be added
-        [Parameter(ParameterSetName="xmlProvided",
-                   Mandatory=$True,
-                   ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ParameterSetName = "xmlProvided",
+            Mandatory = $True,
+            ValueFromPipelineByPropertyName = $True)]
         [string]$payLoad,
 
         # path to file containing the xml of the configuation map
-        [Parameter(ParameterSetName="pathProvided",
-                   Mandatory=$True,
-                   ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ParameterSetName = "pathProvided",
+            Mandatory = $True,
+            ValueFromPipelineByPropertyName = $True)]
         [string]$payloadFilePath,
 
         # array of string values containing channel group ids to remove
@@ -1598,11 +1615,13 @@ function Set-MirthChannelGroups {
             if ([string]::IsNullOrEmpty($payloadFilePath) -or [string]::IsNullOrWhiteSpace($payloadFilePath)) {
                 Write-Error "A channel XML payLoad string is required!"
                 return $null
-            } else {
+            }
+            else {
                 Write-Debug "Loading channel XML from path $payLoadFilePath"
                 [xml]$payloadXML = Get-Content $payLoadFilePath  
             }
-        } else {
+        }
+        else {
             $payloadXML = [xml]$payLoad
         }
 
@@ -1620,8 +1639,8 @@ function Set-MirthChannelGroups {
         $parameters.Add('override', $override)
         $uri = $uri + '?' + $parameters.toString()
         $headers = $DEFAULT_HEADERS.Clone()
-        $headers.Add("Accept","application/xml")  
-        $headers.Add("Content-Type","multipart/form-data; boundary=`"$boundary`"")
+        $headers.Add("Accept", "application/xml")  
+        $headers.Add("Content-Type", "multipart/form-data; boundary=`"$boundary`"")
 
         Write-Debug "POST to Mirth $uri "
 
@@ -1637,7 +1656,7 @@ function Set-MirthChannelGroups {
             "Content-Type: application/xml$LF",  
             $removeChannelGroupXml.OuterXml,
             "--$boundary--$LF"
-            ) -join $LF
+        ) -join $LF
         Write-Debug $bodyLines
         try {
             # Returns the response received from the server (we pass it on).
@@ -1678,12 +1697,12 @@ function Remove-MirthChannelGroups {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # The ids of the channelGroup to remove, empty for all
-        [Parameter(ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ValueFromPipelineByPropertyName = $True)]
         [string[]]$targetIds = @(),
    
         # Saves the response from the server as a file in the current location.
@@ -1706,14 +1725,16 @@ function Remove-MirthChannelGroups {
                 Write-Verbose "ChannelGroup id: $($channelGroup.id) name: $($channelGroup.name)" 
                 if ($targetIds.contains($channelGroup.id)) { 
                     Write-Verbose "This channel is marked for removal, skipping..."
-                } else { 
+                }
+                else { 
                     # add this channelGroup we are keeping to the set
-                    $payLoad.DocumentElement.AppendChild($payLoad.ImportNode($channelGroup,$true))
+                    $payLoad.DocumentElement.AppendChild($payLoad.ImportNode($channelGroup, $true))
                 }
             }
             Set-MirthChannelGroups -payLoad $payLoad.OuterXml -removedChannelGroupIds $targetIds -override -saveXML:$saveXML 
 
-        } else { 
+        }
+        else { 
             Write-Debug "All groups are to be deleted"
             $channelGroupIds = $currentGroups.list.channelGroup.id
             Write-Debug "There will be $($currentGroups.Count) channel groups deleted."
@@ -1753,20 +1774,20 @@ function Add-MirthChannelGroups {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # xml of the set of channelGroup objects
-        [Parameter(ParameterSetName="xmlProvided",
-                   Mandatory=$True,
-                   ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ParameterSetName = "xmlProvided",
+            Mandatory = $True,
+            ValueFromPipelineByPropertyName = $True)]
         [string]$payLoad,
 
         # path to file containing the xml of the channelGroup set
-        [Parameter(ParameterSetName="pathProvided",
-                   Mandatory=$True,
-                   ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ParameterSetName = "pathProvided",
+            Mandatory = $True,
+            ValueFromPipelineByPropertyName = $True)]
         [string]$payloadFilePath,
 
         # Saves the response from the server as a file in the current location.
@@ -1787,15 +1808,18 @@ function Add-MirthChannelGroups {
             if ([string]::IsNullOrEmpty($payloadFilePath) -or [string]::IsNullOrWhiteSpace($payloadFilePath)) {
                 Write-Error "A channelGroup XML payLoad string is required!"
                 return $null
-            } else {
+            }
+            else {
                 if (Test-Path -Path $payLoadFilePath) {
                     Write-Debug "Loading channelGroup XML from path $payLoadFilePath"
                     [xml]$payloadXML = Get-Content $payLoadFilePath  
-                } else { 
+                }
+                else { 
                     Throw "The payloadFilePath specified is invalid!"
                 }
             }
-        } else {
+        }
+        else {
             $payloadXML = [xml]$payLoad
         }
         # We need to get a list of channel ids referenced in the merged groups
@@ -1805,7 +1829,7 @@ function Add-MirthChannelGroups {
         $idNodes = $payLoadXML.SelectNodes("//channelGroup/channels/channel/id")
         foreach ($idNode in $idNodes) {
             Write-Debug "Adding channel id $($idNode.innerText) to list..."
-            $refChannelIdList  += $idNode.innerText
+            $refChannelIdList += $idNode.innerText
         }
         Write-Debug "There are $($refChannelIdList.Count) channels referenced in the new merged groups"
         foreach ($id in $refChannelIdList) { 
@@ -1817,7 +1841,7 @@ function Add-MirthChannelGroups {
         [hashtable] $currChannelGroupMap = @{}
        
         foreach ($channelGroup in $currChannelGroups.list.channelGroup) { 
-            $key    = $channelGroup.id
+            $key = $channelGroup.id
             Write-Debug "Processing current channelGroup $key, $($channelGroup.name)"
             [Xml.XmlElement[]]$nodesToDelete = @()
             foreach ($channel in $channelGroup.channels.channel) {
@@ -1842,7 +1866,8 @@ function Add-MirthChannelGroups {
             if ($null -eq $currentGroupNode) { 
                 Write-Debug "Inserting new channelGroup"
                 $currChannelGroupMap[$channelGroup.id] = $channelGroup
-            } else { 
+            }
+            else { 
                 Write-Debug "Updating existing channelGroup"
                 Write-Debug "Replacing $($currentGroupNode.OuterXml)"
                 Write-Debug "With Node $($channelGroup.OuterXml)"
@@ -1916,7 +1941,7 @@ function Get-MirthServerChannelMetadata {
     [CmdletBinding()] 
     PARAM (
         # A mirth session is required. You can obtain one or pipe one in from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # If true, return a hashtable of the metadata, using the channel id as the key.
@@ -1955,11 +1980,12 @@ function Get-MirthServerChannelMetadata {
                 $returnMap = @{}
                 foreach ($entry in $r.map.entry) { 
                     $channelId = $entry.string
-                    $metaData  = $entry.SelectSingleNode("com.mirth.connect.model.ChannelMetadata")
+                    $metaData = $entry.SelectSingleNode("com.mirth.connect.model.ChannelMetadata")
                     $returnMap[$channelId] = $metaData
                 }
                 return $returnMap
-            } else { 
+            }
+            else { 
                 return $r
             }
         }
@@ -1997,20 +2023,20 @@ function Set-MirthServerChannelMetadata {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # xml of set of channelTags to be added
-        [Parameter(ParameterSetName="xmlProvided",
-                   Mandatory=$True,
-                   ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ParameterSetName = "xmlProvided",
+            Mandatory = $True,
+            ValueFromPipelineByPropertyName = $True)]
         [string]$payLoad,
 
         # path to file containing the xml for the payload
-        [Parameter(ParameterSetName="pathProvided",
-                   Mandatory=$True,
-                   ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ParameterSetName = "pathProvided",
+            Mandatory = $True,
+            ValueFromPipelineByPropertyName = $True)]
         [string]$payloadFilePath,     
 
         # Saves the response from the server as a file in the current location.
@@ -2033,18 +2059,20 @@ function Set-MirthServerChannelMetadata {
             if ([string]::IsNullOrEmpty($payloadFilePath) -or [string]::IsNullOrWhiteSpace($payloadFilePath)) {
                 Write-Error "A server channel metadata XML payLoad string is required!"
                 return $null
-            } else {
+            }
+            else {
                 Write-Debug "Loading server channel metadata from path $payLoadFilePath"
                 [xml]$payloadXML = Get-Content $payLoadFilePath  
             }
-        } else {
+        }
+        else {
             $payloadXML = [xml]$payLoad
         }
 
         $uri = $serverUrl + '/api/server/channelMetadata'
         $headers = $DEFAULT_HEADERS.Clone()
-        $headers.Add("Accept","application/xml")
-        $headers.Add("Content-Type","application/xml")
+        $headers.Add("Accept", "application/xml")
+        $headers.Add("Content-Type", "application/xml")
 
         Write-Debug "PUT to Mirth $uri "
 
@@ -2134,7 +2162,7 @@ function Get-MirthChannelTags {
 
     
         # A mirth session is required. You can obtain one or pipe one in from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # Saves the response from the server as a file in the current location.
@@ -2232,20 +2260,20 @@ function Set-MirthChannelTags {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # xml of set of channelTags to be added
-        [Parameter(ParameterSetName="xmlProvided",
-                   Mandatory=$True,
-                   ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ParameterSetName = "xmlProvided",
+            Mandatory = $True,
+            ValueFromPipelineByPropertyName = $True)]
         [string]$payLoad,
 
         # path to file containing the xml for the payload
-        [Parameter(ParameterSetName="pathProvided",
-                   Mandatory=$True,
-                   ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ParameterSetName = "pathProvided",
+            Mandatory = $True,
+            ValueFromPipelineByPropertyName = $True)]
         [string]$payloadFilePath,     
 
         # Saves the response from the server as a file in the current location.
@@ -2268,11 +2296,13 @@ function Set-MirthChannelTags {
             if ([string]::IsNullOrEmpty($payloadFilePath) -or [string]::IsNullOrWhiteSpace($payloadFilePath)) {
                 Write-Error "A channelTag set XML payLoad string is required!"
                 return $null
-            } else {
+            }
+            else {
                 Write-Debug "Loading channelTag XML from path $payLoadFilePath"
                 [xml]$payloadXML = Get-Content $payLoadFilePath  
             }
-        } else {
+        }
+        else {
             $payloadXML = [xml]$payLoad
         }
 
@@ -2281,8 +2311,8 @@ function Set-MirthChannelTags {
         
         $uri = $serverUrl + '/api/server/channelTags'
         $headers = $DEFAULT_HEADERS.Clone()
-        $headers.Add("Accept","application/xml")
-        $headers.Add("Content-Type","application/xml")
+        $headers.Add("Accept", "application/xml")
+        $headers.Add("Content-Type", "application/xml")
 
         Write-Debug "PUT to Mirth $uri "
 
@@ -2342,16 +2372,16 @@ function Set-MirthTaggedChannels {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # the channelTag id guid, if not provided one will be generated
-        [Parameter(ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ValueFromPipelineByPropertyName = $True)]
         [string]$tagId,
 
         # the property key name
-        [Parameter(ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ValueFromPipelineByPropertyName = $True)]
         [string]$tagName,
 
         # If no channelIds are specified, the channelTag is entirely removed from the server.
@@ -2361,7 +2391,7 @@ function Set-MirthTaggedChannels {
         # an optional array of channelId guids
         # the channelTag id guid strings that the tag applies to when creating or updating a tag
         # if the remove switch is set, these channel ids will removed from the tags set of channelIds
-        [Parameter(ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ValueFromPipelineByPropertyName = $True)]
         [string[]]$channelIds,
 
         # If true, replaces the tag's existing channel assignments, 
@@ -2371,29 +2401,29 @@ function Set-MirthTaggedChannels {
 
         # the alpha value, 0-255
         # has no effect if the remove tag is specfiied
-        [Parameter(ValueFromPipelineByPropertyName=$True)]
-        [ValidateRange(0,255)]
+        [Parameter(ValueFromPipelineByPropertyName = $True)]
+        [ValidateRange(0, 255)]
         [int]$alpha = 255,
    
         # the red value, 0-255
         # has no effect if the remove tag is specfiied
-        [Parameter(ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ValueFromPipelineByPropertyName = $True)]
         [AllowNull()]
-        [ValidateRange(0,255)]
+        [ValidateRange(0, 255)]
         [int]$red,
         
         # the green value,, 0-255
         # has no effect if the remove tag is specfiied
-        [Parameter(ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ValueFromPipelineByPropertyName = $True)]
         [AllowNull()]
-        [ValidateRange(0,255)]
+        [ValidateRange(0, 255)]
         [int]$green,
 
         # the blue value, 0-255
         # has no effect if the remove tag is specfiied
-        [Parameter(ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ValueFromPipelineByPropertyName = $True)]
         [AllowNull()]
-        [ValidateRange(0,255)]
+        [ValidateRange(0, 255)]
         [int]$blue,
 
         # Saves the response from the server as a file in the current location.
@@ -2419,10 +2449,12 @@ function Set-MirthTaggedChannels {
             # they provided some channel ids
             if ($remove) {
                 Write-Debug "Removing $($channelIds.count) channels from this tag."
-            } else {
+            }
+            else {
                 Write-Debug "Assigning $($channelIds.count) channels to this tag."
             }
-        } else { 
+        }
+        else { 
             # go and get them all
             Write-Debug "Assigning tag to all existing channels"
             $channelIds = $(Get-MirthChannels ).list.channel.id
@@ -2439,8 +2471,8 @@ function Set-MirthTaggedChannels {
             $tmpTagId = $channelTag.id
             $tmpTagName = $channelTag.name
             Write-Debug "Tag Read: $tmpTagId - $tmpTagName"
-            $tagIdMap.add($tmpTagId,$channelTag)
-            $tagNameMap.add($tmpTagName,$channelTag)
+            $tagIdMap.add($tmpTagId, $channelTag)
+            $tagNameMap.add($tmpTagName, $channelTag)
         }
         # If a tagId was provided, see if it exists, else
         # if name provided, see if it exists.
@@ -2453,7 +2485,8 @@ function Set-MirthTaggedChannels {
                 $newTag = New-Object -TypeName xml
                 $newTag.AppendChild($newTag.ImportNode($foundTag, $true)) | Out-Null
                 $targetTag = $newTag
-            } else { 
+            }
+            else { 
                 # The tag id does not exist, so they must be trying to add
                 # ensure that the tagName parameter was also set
                 Write-Debug "Adding tagId: $tagId"
@@ -2474,7 +2507,8 @@ function Set-MirthTaggedChannels {
                 $targetTag = $newTag
             }
             
-        } else { 
+        }
+        else { 
             # tag was found by id
             Write-Debug "Existing channel tag found by id."
             #check to see if we are updating the name?
@@ -2492,7 +2526,8 @@ function Set-MirthTaggedChannels {
                 Write-Debug "Creating new channel tag object"
                 [xml]$targetTag = New-MirthChannelTagObject -tagId $tagId -tagName $tagName -channelIds $channelIds -alpha $alpha -red $red -green $green -blue $blue 
             }
-        } else { 
+        }
+        else { 
             Write-Debug "Channel Tag already exists... updating it."
         }
         if ($remove -and ($null -eq $targetTag)) { 
@@ -2517,16 +2552,17 @@ function Set-MirthTaggedChannels {
                     Write-Debug "Updating channel Tag"
                     $targetTag.channelTag.name = $tagName
                     $targetTag.channelTag.backgroundColor.alpha = [string]$alpha
-                    $targetTag.channelTag.backgroundColor.red   = [string]$red
+                    $targetTag.channelTag.backgroundColor.red = [string]$red
                     $targetTag.channelTag.backgroundColor.green = [string]$green 
-                    $targetTag.channelTag.backgroundColor.blue  = [string]$blue 
+                    $targetTag.channelTag.backgroundColor.blue = [string]$blue 
                     #  update the channel ids here...
                     [string[]]$mergedChannelIds = @()
                     if ($replaceChannels) { 
                         Write-Debug "Replacing existing tag channel assignments"
                         Write-Debug "There will be $($channelIds.count) channels assigned to this tag."
                         $mergedChannelIds = $channelIds
-                    } else { 
+                    }
+                    else { 
                         Write-Debug "Merging existing tag channel assignments"
                         [string[]] $currentChannels = $channeltag.channelIds.string
                         Write-Debug "There are $($currentChannels.count) channels currently assigned to this tag."
@@ -2537,13 +2573,15 @@ function Set-MirthTaggedChannels {
                                 Write-Debug "Checking [$id] against list: [$channelIds]"
                                 if (-not ($channelIds -contains $id)) {
                                     $remainingChannelIds = $remainingChannelIds += $id
-                                } else { 
+                                }
+                                else { 
                                     Write-Debug "Omitting channel id $id from new list."
                                 }
                             }
                             Write-Debug "After removing channels, the tag is assigned to $($remainingChannelIds.Count) channels."
                             $mergedChannelIds = $remainingChannelIds
-                        } else { 
+                        }
+                        else { 
                             Write-Debug "There are $($channelIds.count) channels to be merged to this tag."
                             $mergedChannelIds = $channelIds + $currentChannels | Sort-Object -Unique
                             Write-Debug "There are $($mergedChannelIds.count) merged channels assigned to this tag."
@@ -2559,14 +2597,16 @@ function Set-MirthTaggedChannels {
                     Write-Debug "Tag update complete"
 
                     Write-Debug "Appending tag to set"
-                    $newTagSet.DocumentElement.AppendChild($newTagSet.ImportNode($targetTag.channelTag,$true)) | Out-Null
-                } else { 
+                    $newTagSet.DocumentElement.AppendChild($newTagSet.ImportNode($targetTag.channelTag, $true)) | Out-Null
+                }
+                else { 
                     Write-Debug "Omitting tag from new set"
                 }
-            } else {
+            }
+            else {
                 Write-Debug "Existing tag not a target, keeping in list."
                 # existing tag not a match, keep in new set
-                $newTagSet.DocumentElement.AppendChild($newTagSet.ImportNode($channelTag,$true)) | Out-Null
+                $newTagSet.DocumentElement.AppendChild($newTagSet.ImportNode($channelTag, $true)) | Out-Null
             }
         }  # foreach current channelTag...
 
@@ -2574,7 +2614,7 @@ function Set-MirthTaggedChannels {
         # if not remove, now we add the newly generated channelTag
         if ((-not $remove) -and (-not $found)) { 
             Write-Debug "Adding new channel tag to new tag set"
-            $newTagSet.DocumentElement.AppendChild($newTagSet.ImportNode($targetTag.channelTag,$true)) | Out-Null
+            $newTagSet.DocumentElement.AppendChild($newTagSet.ImportNode($targetTag.channelTag, $true)) | Out-Null
         } 
         Set-MirthChannelTags -payLoad $newTagSet.OuterXml | Out-Null
         return $targetTag.channelTag.id
@@ -2643,8 +2683,8 @@ function Get-MirthConfigMap {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # Switch, if true, returns hashtable response, otherwise XML
@@ -2680,7 +2720,8 @@ function Get-MirthConfigMap {
 
             if (-not $asHashtable) { 
                 return $r;
-            } else { 
+            }
+            else { 
                 Write-Debug "Converting XML response to hashtable"
                 $returnMap = @{};
                 $entries = $r.map.entry | Sort-Object { [string]$_.string }
@@ -2693,7 +2734,8 @@ function Get-MirthConfigMap {
                 }         
                 return $returnMap
             }
-        } catch {
+        }
+        catch {
             Write-Error $_
         }
     }
@@ -2751,20 +2793,20 @@ function Set-MirthConfigMap {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # xml of the configuration map to be added
-        [Parameter(ParameterSetName="xmlProvided",
-                   Mandatory=$True,
-                   ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ParameterSetName = "xmlProvided",
+            Mandatory = $True,
+            ValueFromPipelineByPropertyName = $True)]
         [string]$payLoad,
 
         # path to file containing the xml of the configuation map
-        [Parameter(ParameterSetName="pathProvided",
-                   Mandatory=$True,
-                   ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ParameterSetName = "pathProvided",
+            Mandatory = $True,
+            ValueFromPipelineByPropertyName = $True)]
         [string]$payloadFilePath,
 
         # If true, does not replace the current config map, merges with
@@ -2797,15 +2839,18 @@ function Set-MirthConfigMap {
             if ([string]::IsNullOrEmpty($payloadFilePath) -or [string]::IsNullOrWhiteSpace($payloadFilePath)) {
                 Write-Error "A configuration map XML payLoad string is required!"
                 return $null
-            } else {
+            }
+            else {
                 Write-Debug "Loading channel XML from path $payLoadFilePath"
                 try {
                     [xml]$payLoadXML = Get-Content $payLoadFilePath  
-                } catch {
+                }
+                catch {
                     throw $_
                 }
             }
-        } else {
+        }
+        else {
             Write-Debug "Creating XML payload from string: $payLoad"
             $payLoadXML = [xml]$payLoad
         }
@@ -2830,14 +2875,16 @@ function Set-MirthConfigMap {
                     $currValueNode = $currentNode.SelectSingleNode(".//com.mirth.connect.util.ConfigurationProperty/value")
                     if ($null -ne $currValueNode) { 
                         $oldValue = $currValueNode.InnerText
-                    } else { 
+                    }
+                    else { 
                         Write-Warning "Expected value node was not found!"
                     }
                     $oldComment = $null
                     $currCommentNode = $currentNode.SelectSingleNode(".//com.mirth.connect.util.ConfigurationProperty/comment")
                     if ($null -ne $currCommentNode) { 
                         $oldComment = $currCommentNode.InnerText
-                    } else { 
+                    }
+                    else { 
                         # we need to add a comment node
                         $configPropertyNode = $currentNode.SelectSingleNode(".//com.mirth.connect.util.ConfigurationProperty")
                         $currCommentNode = $currentConfigMap.CreateElement('comment')
@@ -2852,7 +2899,8 @@ function Set-MirthConfigMap {
                     
                     Write-Debug "Updating old comment [$oldComment] property to new value [$newComment]"
                     $currCommentNode.set_InnerText($newComment)
-                } else { 
+                }
+                else { 
                     Write-Debug "Adding new merged property..."
                     $currentConfigMapNode.AppendChild($currentConfigMap.ImportNode($newEntry, $True)) | Out-Null
                 }
@@ -2862,8 +2910,8 @@ function Set-MirthConfigMap {
         }  # if merging
 
         $headers = $DEFAULT_HEADERS.Clone()
-        $headers.Add("Accept","application/xml")
-        $headers.Add("Content-Type","application/xml")
+        $headers.Add("Accept", "application/xml")
+        $headers.Add("Content-Type", "application/xml")
 
         Write-Debug "Invoking PUT Mirth API server at: $uri "
         try { 
@@ -2937,13 +2985,13 @@ function Get-MirthExtensionProperties {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # The name of the extension that we want to fetch the properties of
-        [Parameter(Mandatory=$True,
-                   ValueFromPipelineByPropertyName=$True)]
+        [Parameter(Mandatory = $True,
+            ValueFromPipelineByPropertyName = $True)]
         [string]$targetId,
 
         # Switch to decode html encoded data
@@ -2971,7 +3019,7 @@ function Get-MirthExtensionProperties {
         $targetId = [uri]::EscapeDataString($targetId)
         $uri = $serverUrl + '/api/extensions/' + $targetId + "/properties"
         $headers = $DEFAULT_HEADERS.Clone()
-        $headers.Add("Content-Type","application/xml")
+        $headers.Add("Content-Type", "application/xml")
         Write-Debug "Invoking GET Mirth API server at: $uri "
         try { 
             $r = Invoke-RestMethod -Uri $uri -Method GET -WebSession $session -Headers $headers
@@ -3044,19 +3092,19 @@ function Set-MirthExtensionProperties {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # The name of the extension that we want to fetch the properties of
-        [Parameter(Mandatory=$True,
-                   ValueFromPipelineByPropertyName=$True)]
+        [Parameter(Mandatory = $True,
+            ValueFromPipelineByPropertyName = $True)]
         [string]$targetId,
 
         
         # xml of the properties to be added
-        [Parameter(Mandatory=$True,
-                   ValueFromPipelineByPropertyName=$True)]
+        [Parameter(Mandatory = $True,
+            ValueFromPipelineByPropertyName = $True)]
         [xml]$payLoad,
 
         # Saves the response from the server as a file in the current location.
@@ -3078,8 +3126,8 @@ function Set-MirthExtensionProperties {
         $serverUrl = $connection.serverUrl
          
         $headers = $DEFAULT_HEADERS.Clone()
-        $headers.Add("Accept","application/xml")
-        $headers.Add("Content-Type","application/xml")
+        $headers.Add("Accept", "application/xml")
+        $headers.Add("Content-Type", "application/xml")
         $targetId = [uri]::EscapeDataString($targetId)
         $uri = $serverUrl + '/api/extensions/' + $targetId + "/properties"
         Write-Debug "Invoking PUT Mirth API server at: $uri "
@@ -3162,8 +3210,8 @@ function Get-MirthGlobalScripts {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # Saves the response from the server as a file in the current location.
@@ -3187,7 +3235,7 @@ function Get-MirthGlobalScripts {
         $uri = $serverUrl + '/api/server/globalScripts'
         Write-Debug "Invoking GET Mirth at $uri"
         $headers = $DEFAULT_HEADERS.Clone()
-        $headers.Add("Content-Type","application/xml")
+        $headers.Add("Content-Type", "application/xml")
         try { 
             $r = Invoke-RestMethod -Uri $uri -Method GET -WebSession $session -Headers $headers
             Write-Debug "...done."
@@ -3267,20 +3315,20 @@ function Set-MirthGlobalScripts {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # xml of the configuration map to be added
-        [Parameter(ParameterSetName="xmlProvided",
-                   Mandatory=$True,
-                   ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ParameterSetName = "xmlProvided",
+            Mandatory = $True,
+            ValueFromPipelineByPropertyName = $True)]
         [string]$payLoad,
 
         # path to file containing the xml of the configuation map
-        [Parameter(ParameterSetName="pathProvided",
-                   Mandatory=$True,
-                   ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ParameterSetName = "pathProvided",
+            Mandatory = $True,
+            ValueFromPipelineByPropertyName = $True)]
         [string]$payloadFilePath,
    
         # Saves the response from the server as a file in the current location.
@@ -3304,17 +3352,19 @@ function Set-MirthGlobalScripts {
             if ([string]::IsNullOrEmpty($payloadFilePath) -or [string]::IsNullOrWhiteSpace($payloadFilePath)) {
                 Write-Error "A configuration map XML payLoad string is required!"
                 return $null
-            } else {
+            }
+            else {
                 Write-Debug "Loading channel XML from path $payLoadFilePath"
                 [xml]$payLoadXML = Get-Content $payLoadFilePath  
             }
-        } else {
+        }
+        else {
             Write-Debug "Creating XML payload from string: $payLoad"
             $payLoadXML = [xml]$payLoad
         }
         $headers = $DEFAULT_HEADERS.Clone()
-        $headers.Add("Accept","application/xml")
-        $headers.Add("Content-Type","application/xml")
+        $headers.Add("Accept", "application/xml")
+        $headers.Add("Content-Type", "application/xml")
 
         Write-Debug "Invoking PUT Mirth API server at: $uri "
         try { 
@@ -3392,8 +3442,8 @@ function Get-MirthServerSettings {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # Saves the response from the server as a file in the current location.
@@ -3463,20 +3513,20 @@ function Set-MirthServerSettings {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # xml of the configuration map to be added
-        [Parameter(ParameterSetName="xmlProvided",
-                   Mandatory=$True,
-                   ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ParameterSetName = "xmlProvided",
+            Mandatory = $True,
+            ValueFromPipelineByPropertyName = $True)]
         [string]$payLoad,
 
         # path to file containing the xml of the configuation map
-        [Parameter(ParameterSetName="pathProvided",
-                   Mandatory=$True,
-                   ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ParameterSetName = "pathProvided",
+            Mandatory = $True,
+            ValueFromPipelineByPropertyName = $True)]
         [string]$payloadFilePath,
 
         # Saves the response from the server as a file in the current location.
@@ -3502,17 +3552,19 @@ function Set-MirthServerSettings {
             if ([string]::IsNullOrEmpty($payloadFilePath) -or [string]::IsNullOrWhiteSpace($payloadFilePath)) {
                 Write-Error "A configuration map XML payLoad string is required!"
                 return $null
-            } else {
+            }
+            else {
                 Write-Debug "Loading channel XML from path $payLoadFilePath"
                 [xml]$payLoadXML = Get-Content $payLoadFilePath  
             }
-        } else {
+        }
+        else {
             Write-Debug "Creating XML payload from string: $payLoad"
             $payLoadXML = [xml]$payLoad
         }
         $headers = $DEFAULT_HEADERS.Clone()
-        $headers.Add("Accept","application/xml")
-        $headers.Add("Content-Type","application/xml")
+        $headers.Add("Accept", "application/xml")
+        $headers.Add("Content-Type", "application/xml")
 
         Write-Debug "Invoking PUT Mirth API server at: $uri "
         try { 
@@ -3522,7 +3574,7 @@ function Set-MirthServerSettings {
                 $Content = "Server Settings Updated Successfully: $payLoad"
                 Save-Content $Content $outFile
             }
-             Write-Verbose "$($r.OuterXml)"
+            Write-Verbose "$($r.OuterXml)"
 
             return $r
         }
@@ -3571,8 +3623,8 @@ function Get-MirthSystemProperties {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # If true, return the properties as a hashtable instead of an xml object for convenience
@@ -3603,7 +3655,8 @@ function Get-MirthSystemProperties {
                     Save-Content $toolPayLoad $outFile
                 }
                 return $toolPayLoad
-            } else { 
+            }
+            else { 
                 Write-Debug "Converting XML response to hashtable"
                 $returnMap = @{};
                 foreach ($entry in $toolPayLoad.properties.entry) { 
@@ -3615,12 +3668,13 @@ function Get-MirthSystemProperties {
                 if ($saveXML) {
                     [System.Collections.ArrayList]$Content = @()
                     $Content += "#  PS_Mirth fetched from $($connection.serverUrl) on $(Get-Date)"
-                    $Content += $returnMap.GetEnumerator() | Sort-Object -Property name | ForEach-Object {"{0,-40} {1,1} {2}” -f $_.Key, "=", $_.Value}  
+                    $Content += $returnMap.GetEnumerator() | Sort-Object -Property name | ForEach-Object { "{0,-40} {1,1} {2}” -f $_.Key, "=", $_.Value }  
                     Save-Content $Content $outFile
                 }         
                 return $returnMap
             }
-        } else { 
+        }
+        else { 
             Throw "Mirth probe returned no results"
         }
     }
@@ -3667,8 +3721,8 @@ function Get-MirthServerProperties {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # If true, return the properties as a hashtable instead of an xml object for convenience
@@ -3698,7 +3752,8 @@ function Get-MirthServerProperties {
                     Save-Content $toolPayLoad $outFile
                 }
                 return $toolPayLoad
-            } else { 
+            }
+            else { 
                 Write-Debug "Converting XML response to hashtable"
                 $returnMap = @{}
                 foreach ($entry in $toolPayLoad.properties.entry) { 
@@ -3710,12 +3765,13 @@ function Get-MirthServerProperties {
                 if ($saveXML) {
                     [System.Collections.ArrayList]$Content = @()
                     $Content += "#  PS_Mirth fetched from $($connection.serverUrl) on $(Get-Date)"
-                    $Content += $returnMap.GetEnumerator() | Sort-Object -Property name | ForEach-Object {"{0,-40} {1,1} {2}” -f $_.Key, "=", $_.Value}  
+                    $Content += $returnMap.GetEnumerator() | Sort-Object -Property name | ForEach-Object { "{0,-40} {1,1} {2}” -f $_.Key, "=", $_.Value }  
                     Save-Content $Content $outFile
                 }
                 return $returnMap
             }
-        } else { 
+        }
+        else { 
             Throw "Mirth properties probe returned no results"
         }
     }
@@ -3725,7 +3781,7 @@ function Get-MirthServerProperties {
 } #  Get-MirthServerProperties 
 
 function Test-MirthFileReadWrite { 
-   <#
+    <#
     .SYNOPSIS
         Tests whether or not Mirth can read and/or write from a file folder path.
 
@@ -3750,18 +3806,18 @@ function Test-MirthFileReadWrite {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # Saves the response from the server as a file in the current location.
-        [Parameter(Mandatory=$True)]
+        [Parameter(Mandatory = $True)]
         [String]$testPath,
 
         # File mode to test: R = Read, W = Write, RW = Read/Write
         [Parameter()]
-        [ValidateSet('R','W','RW')]        
-        [String]$mode   = "R"
+        [ValidateSet('R', 'W', 'RW')]        
+        [String]$mode = "R"
     ) 
     BEGIN { 
         Write-Debug "Test-MirthFileReadWrite Beginning"
@@ -3800,8 +3856,8 @@ function Test-MirthFileReadWrite {
         $parameters.Add('channelName', $channelName)
 
         $headers = $DEFAULT_HEADERS.Clone()
-        $headers.Add("Accept","application/xml")
-        $headers.Add("Content-Type","application/xml")
+        $headers.Add("Accept", "application/xml")
+        $headers.Add("Content-Type", "application/xml")
       
         $result = $True
         try { 
@@ -3866,8 +3922,8 @@ function Get-MirthChannelIds {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
    
         # Saves the response from the server as a file in the current location.
@@ -3937,12 +3993,12 @@ function Get-MirthChannelStatuses {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # The id of the channels to fetch status for, empty for all
-        [Parameter(ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ValueFromPipelineByPropertyName = $True)]
         [string[]]$targetId,
 
         [string] $filter,
@@ -3973,9 +4029,10 @@ function Get-MirthChannelStatuses {
             $parameters.Add('filter', $filter)
         }
         if ($includeUndeployed) { 
-            $parameters.Add('includeUndeployed','true')
-        } else {
-            $parameters.Add('includeUndeployed','false')
+            $parameters.Add('includeUndeployed', 'true')
+        }
+        else {
+            $parameters.Add('includeUndeployed', 'false')
         }
         if (-not([string]::IsNullOrEmpty($targetId) -or [string]::IsNullOrWhiteSpace($targetId))) {
             foreach ($target in $targetId) {
@@ -3994,7 +4051,8 @@ function Get-MirthChannelStatuses {
                     foreach ($channel in $r.list.channel) {
                         Save-Content $channel $channel.name + '.xml' 
                     }
-                } else {
+                }
+                else {
                     Save-Content $r $outFile
                 }
             }
@@ -4062,12 +4120,12 @@ function Set-MirthChannelProperties {
     #> 
     [CmdletBinding()] 
     PARAM (
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # The id of the channels to be set to the specified message storage mode, empty for all
-        [Parameter(ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ValueFromPipelineByPropertyName = $True)]
         [string[]]$channelIds,
 
         # If true, the channel is enabled and can be deployed
@@ -4110,19 +4168,20 @@ function Set-MirthChannelProperties {
         # If negative, then store content until metadata is removed.
         [Parameter()]
         [ValidateScript({
-            if ($PSBoundParameters.containsKey('pruneMetaDays')) {
-                # A pruneMetaDays parameter was provided along with pruneContentDays...
-                if ($_ -gt $pruneMetaDataDays) {
-                    Throw "pruneContentDays ($_) cannot be greater than pruneMetaDays!"
+                if ($PSBoundParameters.containsKey('pruneMetaDays')) {
+                    # A pruneMetaDays parameter was provided along with pruneContentDays...
+                    if ($_ -gt $pruneMetaDataDays) {
+                        Throw "pruneContentDays ($_) cannot be greater than pruneMetaDays!"
+                    }
+                    else { 
+                        $True
+                    }
                 }
-                else { 
+                else {
+                    # they only specified pruneContentDays, so we'll have to check it at time of update
                     $True
                 }
-            } else {
-                # they only specified pruneContentDays, so we'll have to check it at time of update
-                $True
-            }
-        })]
+            })]
         [int] $pruneContentDays,
 
         # Allow message archiving
@@ -4175,8 +4234,8 @@ function Set-MirthChannelProperties {
                 $channelNode.properties.storeAttachments = $storeAttachments.ToString()
             }
             if (($PSBoundParameters.containsKey('enabled')) -or
-                ($PSBoundParameters.containsKey('pruneMetaDataDays'))  -or 
-                ($PSBoundParameters.containsKey('pruneContentDays'))  -or
+                ($PSBoundParameters.containsKey('pruneMetaDataDays')) -or 
+                ($PSBoundParameters.containsKey('pruneContentDays')) -or
                 ($PSBoundParameters.containsKey('allowArchiving'))) { 
                 Write-Debug "Searching for pruningSettings node"
                 [Xml.XmlElement] $psNode = $channelNode.SelectSingleNode("exportData/metadata/pruningSettings")
@@ -4197,10 +4256,12 @@ function Set-MirthChannelProperties {
                             if ($null -ne $pruneMetaDataDaysNode) { 
                                 Write-Debug "Removing pruneMetaDaysNode"
                                 $psNode.removeChild($pruneMetaDataDaysNode) | Out-Null
-                            } else { 
+                            }
+                            else { 
                                 Write-Debug "There is no pruneMetaDaysNode node to remove"
                             }  
-                        } else {
+                        }
+                        else {
                             # updating
                             if (-not $PSBoundParameters.containsKey('pruneContentDays')) { 
                                 # no validation has been performed
@@ -4214,7 +4275,8 @@ function Set-MirthChannelProperties {
                             if ($null -ne $pruneMetaDataDaysNode) { 
                                 Write-Verbose "Updating pruneMetaDataDays node"
                                 $channelNode.exportData.metadata.pruningSettings.pruneMetaDataDays = $pruneMetaDataDays.ToString()
-                            } else { 
+                            }
+                            else { 
                                 # add pruneMetaDataDays here
                                 $pruneMetaDataDaysNode = $channelList.CreateElement('pruneMetaDataDays')
                                 $pruneMetaDataDaysNode.set_InnerText($pruneMetaDataDays.ToString())
@@ -4230,10 +4292,12 @@ function Set-MirthChannelProperties {
                             if ($null -ne $pruneContentDaysNode) { 
                                 Write-Debug "Removing pruneContentDaysNode"
                                 $psNode.removeChild($pruneContentDaysNode)  | Out-Null
-                            } else { 
+                            }
+                            else { 
                                 Write-Debug "There is no pruneContentDaysNode node to remove"
                             }                 
-                        } else { 
+                        }
+                        else { 
                             # updating
                             if (-not $PSBoundParameters.containsKey('pruneMetaDataDays')) { 
                                 # no validation has been performed
@@ -4247,7 +4311,8 @@ function Set-MirthChannelProperties {
                             if ($null -ne $pruneContentDaysNode) { 
                                 Write-Debug "Updating existing pruneContentDays node"                
                                 $channelNode.exportData.metadata.pruningSettings.pruneContentDays = $pruneContentDays.ToString()
-                            } else { 
+                            }
+                            else { 
                                 # add a pruneContentDays node and update
                                 $pruneContentDaysNode = $channelList.CreateElement('pruneContentDays')
                                 $pruneContentDaysNode.set_InnerText($pruneContentDays.ToString())
@@ -4260,7 +4325,8 @@ function Set-MirthChannelProperties {
                         Write-Verbose "Updating archiveEnabled"
                         $channelNode.exportData.metadata.pruningSettings.archiveEnabled = $allowArchiving.ToString()
                     }  
-                } else { 
+                }
+                else { 
                     # If passed a channel xml which has not been merged with metadata,if so, we'll warn and skip
                     Write-Warn "The channel has no pruningSettings node, skipping."
                 }
@@ -4298,18 +4364,18 @@ function Get-MirthChannelMsgById {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection] $connection = $currentConnection,
 
         # The id of the chennel to interrogate, required
-        [Parameter(Mandatory=$True,
-                   ValueFromPipelineByPropertyName=$True)]
+        [Parameter(Mandatory = $True,
+            ValueFromPipelineByPropertyName = $True)]
         [string]  $channelId,
 
         # The message id to retrieve from the channel
-        [Parameter(Mandatory=$True,
-                   ValueFromPipelineByPropertyName=$True)]
+        [Parameter(Mandatory = $True,
+            ValueFromPipelineByPropertyName = $True)]
         [long]  $messageId,        
 
         # Saves the response from the server as a file in the current location.
@@ -4377,13 +4443,13 @@ function Get-MirthChannelMaxMsgId {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection] $connection = $currentConnection,
 
         # The id of the chennel to interrogate, required
-        [Parameter(Mandatory=$True,
-                   ValueFromPipelineByPropertyName=$True)]
+        [Parameter(Mandatory = $True,
+            ValueFromPipelineByPropertyName = $True)]
         [string]  $targetId,
 
         # Saves the response from the server as a file in the current location.
@@ -4421,7 +4487,7 @@ function Get-MirthChannelMaxMsgId {
         }
         catch {
             $_.response
-        $errorMessage = $_.Exception.Message
+            $errorMessage = $_.Exception.Message
             if (Get-Member -InputObject $_.Exception -Name 'Response') {
                 try {
                     $result = $_.Exception.Response.GetResponseStream()
@@ -4429,7 +4495,8 @@ function Get-MirthChannelMaxMsgId {
                     $reader.BaseStream.Position = 0
                     $reader.DiscardBufferedData()
                     $responseBody = $reader.ReadToEnd();
-                } catch {
+                }
+                catch {
                     Throw "An error occurred while calling REST method at: $uri. Error: $errorMessage. Cannot get more information."
                 }
             }
@@ -4470,12 +4537,12 @@ function Send-MirthStartChannels {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # The array of the channel ids to undeploy, empty for all
-        [Parameter(ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ValueFromPipelineByPropertyName = $True)]
         [string[]]$targetIds,
 
         # If true, an error response code and the exception will be returned.
@@ -4534,12 +4601,12 @@ function Send-MirthStopChannels {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # The array of the channel ids to undeploy, empty for all
-        [Parameter(ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ValueFromPipelineByPropertyName = $True)]
         [string[]]$targetIds,
 
         # If true, an error response code and the exception will be returned.
@@ -4596,12 +4663,12 @@ function Send-MirthHaltChannels {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # The array of the channel ids to undeploy, empty for all
-        [Parameter(ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ValueFromPipelineByPropertyName = $True)]
         [string[]]$targetIds,
 
         # If true, an error response code and the exception will be returned.
@@ -4659,12 +4726,12 @@ function Send-MirthPauseChannels {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # The array of the channel ids to undeploy, empty for all
-        [Parameter(ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ValueFromPipelineByPropertyName = $True)]
         [string[]]$targetIds,
 
         # If true, an error response code and the exception will be returned.
@@ -4722,12 +4789,12 @@ function Send-MirthResumeChannels {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # The array of the channel ids to undeploy, empty for all
-        [Parameter(ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ValueFromPipelineByPropertyName = $True)]
         [string[]]$targetIds,
 
         # If true, an error response code and the exception will be returned.
@@ -4795,17 +4862,17 @@ function Send-MirthChannelCommand {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # The array of the channel ids to undeploy, empty for all
-        [Parameter(ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ValueFromPipelineByPropertyName = $True)]
         [string[]]$targetIds,
 
         # The command to send to the target channels
-        [Parameter(Mandatory=$True)]
-        [ValidateSet('pause','resume','start','stop','halt')]  
+        [Parameter(Mandatory = $True)]
+        [ValidateSet('pause', 'resume', 'start', 'stop', 'halt')]  
         [string]$command,
 
         # If true, an error response code and the exception will be returned.
@@ -4831,8 +4898,8 @@ function Send-MirthChannelCommand {
         $serverUrl = $connection.serverUrl
 
         $headers = $DEFAULT_HEADERS.Clone()
-        $headers.Add("Content-Type","application/x-www-form-urlencoded");
-        $headers.Add("Accept","application/xml")
+        $headers.Add("Content-Type", "application/x-www-form-urlencoded");
+        $headers.Add("Accept", "application/xml")
 
         $uri = $serverUrl + "/api/channels/_$command"
         $parameters = [System.Web.HttpUtility]::ParseQueryString([String]::Empty)
@@ -4840,7 +4907,7 @@ function Send-MirthChannelCommand {
         $uri = $uri + '?' + $parameters.toString()
 
         $payloadBody = "";
-        if ($targetIds.count -eq 0){ 
+        if ($targetIds.count -eq 0) { 
             Write-Debug "No target channel ids specified..."
             # get all channel IDs here
             # later we will add ways to filter
@@ -4850,7 +4917,7 @@ function Send-MirthChannelCommand {
         }
         if ($targetIds.count -gt 0) { 
             Write-Debug "Attempting to $command $($targetIds.count) channels"
-            for($i=0; $i -lt $targetIds.count; $i++) {
+            for ($i = 0; $i -lt $targetIds.count; $i++) {
                 $channelId = $targetIds[$i]
                 if ($i -gt 0) {
                     $payloadBody += '&'
@@ -4868,9 +4935,10 @@ function Send-MirthChannelCommand {
             }
             Write-Verbose "Channel Command [$command]: SUCCESS"
             return $true
-        } catch {
+        }
+        catch {
             $_.response
-        $errorMessage = $_.Exception.Message
+            $errorMessage = $_.Exception.Message
             if (Get-Member -InputObject $_.Exception -Name 'Response') {
                 try {
                     $result = $_.Exception.Response.GetResponseStream()
@@ -4878,7 +4946,8 @@ function Send-MirthChannelCommand {
                     $reader.BaseStream.Position = 0
                     $reader.DiscardBufferedData()
                     $responseBody = $reader.ReadToEnd();
-                } catch {
+                }
+                catch {
                     Throw "An error occurred while calling REST method at: $uri. Error: $errorMessage. Cannot get more information."
                 }
             }
@@ -4925,12 +4994,12 @@ function Send-MirthDeployChannels {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # The id of the channels to undeploy, empty for all
-        [Parameter(ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ValueFromPipelineByPropertyName = $True)]
         [string[]]$targetIds,
 
         # If true, an error response code and exception will be returned.
@@ -4964,8 +5033,8 @@ function Send-MirthDeployChannels {
         }
 
         $headers = $DEFAULT_HEADERS.Clone()
-        $headers.Add("Accept","application/xml")
-        $headers.Add("Content-Type","application/xml")
+        $headers.Add("Accept", "application/xml")
+        $headers.Add("Content-Type", "application/xml")
 
         $uri = $serverUrl + '/api/channels/_deploy'
         $parameters = [System.Web.HttpUtility]::ParseQueryString([String]::Empty)
@@ -4981,9 +5050,10 @@ function Send-MirthDeployChannels {
             }
             Write-Verbose "Deployed: $r"
             return $true
-        } catch {
+        }
+        catch {
             $_.response
-        $errorMessage = $_.Exception.Message
+            $errorMessage = $_.Exception.Message
             if (Get-Member -InputObject $_.Exception -Name 'Response') {
                 try {
                     $result = $_.Exception.Response.GetResponseStream()
@@ -4991,7 +5061,8 @@ function Send-MirthDeployChannels {
                     $reader.BaseStream.Position = 0
                     $reader.DiscardBufferedData()
                     $responseBody = $reader.ReadToEnd();
-                } catch {
+                }
+                catch {
                     Throw "An error occurred while calling REST method at: $uri. Error: $errorMessage. Cannot get more information."
                 }
             }
@@ -5039,8 +5110,8 @@ function Send-MirthRedeployAllChannels {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # If true, an error response code and exception will be returned.
@@ -5066,8 +5137,8 @@ function Send-MirthRedeployAllChannels {
         $serverUrl = $connection.serverUrl
 
         $headers = $DEFAULT_HEADERS.Clone()
-        $headers.Add("Accept","application/xml")
-        $headers.Add("Content-Type","application/xml")
+        $headers.Add("Accept", "application/xml")
+        $headers.Add("Content-Type", "application/xml")
 
         $uri = $serverUrl + '/api/channels/_redeployAll'
         $parameters = [System.Web.HttpUtility]::ParseQueryString([String]::Empty)
@@ -5093,7 +5164,8 @@ function Send-MirthRedeployAllChannels {
             }
             Write-Verbose "$r"
             return $true
-        } catch {
+        }
+        catch {
             $_.response
             $errorMessage = $_.Exception.Message
             if (Get-Member -InputObject $_.Exception -Name 'Response') {
@@ -5103,7 +5175,8 @@ function Send-MirthRedeployAllChannels {
                     $reader.BaseStream.Position = 0
                     $reader.DiscardBufferedData()
                     $responseBody = $reader.ReadToEnd();
-                } catch {
+                }
+                catch {
                     Throw "An error occurred while calling REST method at: $uri. Error: $errorMessage. Cannot get more information."
                 }
             }
@@ -5148,12 +5221,12 @@ function Send-MirthUndeployChannels {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # The array of the channel ids to undeploy, empty for all
-        [Parameter(ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ValueFromPipelineByPropertyName = $True)]
         [string[]]$targetIds,
 
         # If true, an error response code and the exception will be returned.
@@ -5179,8 +5252,8 @@ function Send-MirthUndeployChannels {
         $serverUrl = $connection.serverUrl
 
         $headers = $DEFAULT_HEADERS.Clone()
-        $headers.Add("Accept","application/xml")
-        $headers.Add("Content-Type","application/xml")
+        $headers.Add("Accept", "application/xml")
+        $headers.Add("Content-Type", "application/xml")
 
         $uri = $serverUrl + '/api/channels/_undeploy'
         $parameters = [System.Web.HttpUtility]::ParseQueryString([String]::Empty)
@@ -5204,9 +5277,10 @@ function Send-MirthUndeployChannels {
             }
             Write-Verbose "Undeployed: $r"
             return $true
-        } catch {
+        }
+        catch {
             $_.response
-        $errorMessage = $_.Exception.Message
+            $errorMessage = $_.Exception.Message
             if (Get-Member -InputObject $_.Exception -Name 'Response') {
                 try {
                     $result = $_.Exception.Response.GetResponseStream()
@@ -5214,7 +5288,8 @@ function Send-MirthUndeployChannels {
                     $reader.BaseStream.Position = 0
                     $reader.DiscardBufferedData()
                     $responseBody = $reader.ReadToEnd();
-                } catch {
+                }
+                catch {
                     Throw "An error occurred while calling REST method at: $uri. Error: $errorMessage. Cannot get more information."
                 }
             }
@@ -5355,12 +5430,12 @@ function Get-MirthChannels {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # The id of the channelGroup to retrieve, empty for all
-        [Parameter(ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ValueFromPipelineByPropertyName = $True)]
         [string[]]$targetId,
    
         # Saves the response from the server as a file in the current location.
@@ -5390,7 +5465,8 @@ function Get-MirthChannels {
         if ([string]::IsNullOrEmpty($targetId) -or [string]::IsNullOrWhiteSpace($targetId)) {
             Write-Debug "Fetching all channels"
             $parameters = $null
-        } else {
+        }
+        else {
             $parameters = [System.Web.HttpUtility]::ParseQueryString([String]::Empty)
             foreach ($target in $targetId) {
                 $parameters.Add('channelId', $target)
@@ -5418,7 +5494,8 @@ function Get-MirthChannels {
                     Write-Debug "Key inserting into channelTagMap: $key"
                     if ($channelTagMap.containsKey($key)) {
                         $channelTagMap[$key] += $channelTag
-                    } else { 
+                    }
+                    else { 
                         $channelTagMap[$key] = @($channelTag)
                     }
                     Write-Debug "There are now $($channelTagMap[ $key].Count) tag entries for channelID  $key in the channelTagMap"
@@ -5443,10 +5520,11 @@ function Get-MirthChannels {
                     try { 
                         $enabledNode = $entry.SelectSingleNode("enabled")
                         if ($null -ne $enabledNode) {
-                            $enabledNode = $r.ImportNode($enabledNode,$true) 
+                            $enabledNode = $r.ImportNode($enabledNode, $true) 
                             $enabledNode = $metaDataNode.AppendChild($enabledNode)
                         }
-                    } catch { 
+                    }
+                    catch { 
                         Write-Error $_
                     }
                     # lastModified
@@ -5454,10 +5532,11 @@ function Get-MirthChannels {
                     try {
                         $lastModifiedNode = $entry.SelectSingleNode("lastModified")
                         if ($null -ne $lastModifiedNode) {
-                            $lastModifiedNode = $r.ImportNode($lastModifiedNode,$true) 
+                            $lastModifiedNode = $r.ImportNode($lastModifiedNode, $true) 
                             $lastModifiedNode = $metaDataNode.AppendChild($lastModifiedNode)
                         }
-                    } catch { 
+                    }
+                    catch { 
                         Write-Error $_
                     }                        
                     # pruningSettings
@@ -5465,13 +5544,15 @@ function Get-MirthChannels {
                     try { 
                         $pruningSettingsNode = $entry.SelectSingleNode("pruningSettings")
                         if ($null -ne $pruningSettingsNode) {
-                            $pruningSettingsNode = $r.ImportNode($pruningSettingsNode,$true) 
+                            $pruningSettingsNode = $r.ImportNode($pruningSettingsNode, $true) 
                             $pruningSettingsNode = $metaDataNode.AppendChild($pruningSettingsNode)
                         }
-                    } catch { 
+                    }
+                    catch { 
                         Write-Error $_
                     }                        
-                } else { 
+                }
+                else { 
                     Write-Warning "No metadata was found!"
                 }
                 Write-Debug "All channel metadata processed"
@@ -5484,11 +5565,12 @@ function Get-MirthChannels {
                     $channelTagsNode = $exportNode.AppendChild($channelTagsNode)
                     foreach ($channelTag in $channelTagArray) { 
                         Write-Debug "Importing and appending channelTag"
-                        $channelIdNode = $r.ImportNode($channelTag,$true)
+                        $channelIdNode = $r.ImportNode($channelTag, $true)
                         $channelTagsNode.AppendChild($channelIdNode) | Out-Null
                     }
                     Write-Debug "channel tag data processed"
-                } else { 
+                }
+                else { 
                     Write-Debug "There were no channelTags associated with this channel id."
                 }
                 
@@ -5500,7 +5582,8 @@ function Get-MirthChannels {
                     foreach ($channel in $r.list.channel) {
                         Save-Content $channel $channel.name + '.xml' 
                     }
-                } else {
+                }
+                else {
                     Save-Content $r $outFile
                 }
             }
@@ -5541,19 +5624,19 @@ function Remove-MirthChannels {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # The required id of the channelGroup to remove
-        [Parameter(ParameterSetName="selected",
-                   Mandatory=$True,
-                   ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ParameterSetName = "selected",
+            Mandatory = $True,
+            ValueFromPipelineByPropertyName = $True)]
         [string[]]$targetId,
 
         # if true, all channels will be removed
-        [Parameter(ParameterSetName="all",
-                   Mandatory=$True)]
+        [Parameter(ParameterSetName = "all",
+            Mandatory = $True)]
         [switch]$removeAllChannels,
    
         # Saves the response from the server as a file in the current location.
@@ -5586,7 +5669,8 @@ function Remove-MirthChannels {
                 }
                 Write-Debug "There are now $($channelNodes.Count) channel ids in the removal list."
             }
-        } else { 
+        }
+        else { 
             Write-Debug "Removal of selected channels requested."
             $channelIdsToRemove = $targetId
         }
@@ -5618,7 +5702,7 @@ function Remove-MirthChannels {
 }  # Remove-MirthChannels
 
 function Remove-MirthChannelByName { 
-   <#
+    <#
     .SYNOPSIS
         Removes one ore more channels with the name(s) specified by targetNames parameter
 
@@ -5642,13 +5726,13 @@ function Remove-MirthChannelByName {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # The required list of channel names to be removed
-        [Parameter(Mandatory=$True,
-                   ValueFromPipelineByPropertyName=$True)]
+        [Parameter(Mandatory = $True,
+            ValueFromPipelineByPropertyName = $True)]
         [string[]]$targetNames,
    
         # Saves the response from the server as a file in the current location.
@@ -5674,7 +5758,8 @@ function Remove-MirthChannelByName {
                 # we found the channel
                 Write-Debug "Adding channel id $($channelFound.id) to targetId list..."
                 $targetIds += $channelFound.id
-            } else { 
+            }
+            else { 
                 Write-Warning "Skipping, the channel name was not found: $targetName"
             }
         }
@@ -5726,20 +5811,20 @@ function Import-MirthChannel {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # xml of the channel to be added
-        [Parameter(ParameterSetName="xmlProvided",
-                   Mandatory=$True,
-                   ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ParameterSetName = "xmlProvided",
+            Mandatory = $True,
+            ValueFromPipelineByPropertyName = $True)]
         [xml]$payLoad,
 
         # path to the file containing the channel xml to import
-        [Parameter(ParameterSetName="pathProvided",
-                   Mandatory=$True,
-                   ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ParameterSetName = "pathProvided",
+            Mandatory = $True,
+            ValueFromPipelineByPropertyName = $True)]
         [string]$payloadFilePath,
    
         # Saves the response from the server as a file in the current location.
@@ -5765,11 +5850,13 @@ function Import-MirthChannel {
             if ([string]::IsNullOrEmpty($payloadFilePath) -or [string]::IsNullOrWhiteSpace($payloadFilePath)) {
                 Write-Error "A channel XML payLoad string is required!"
                 return $null
-            } else {
+            }
+            else {
                 Write-Debug "Loading channel XML from path $payLoadFilePath"
                 [xml]$channelXML = Get-Content $payLoadFilePath
             }
-        } else {
+        }
+        else {
             Write-Debug "Import channel payload delivered via string parameter"
             $channelXML = $payLoad
         }
@@ -5850,66 +5937,67 @@ function Get-MirthCodeTemplates {
    .NOTES
 
    #> 
-   [CmdletBinding()] 
-   PARAM (
+    [CmdletBinding()] 
+    PARAM (
 
         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-       [Parameter(ValueFromPipeline=$True)]
-       [MirthConnection]$connection = $currentConnection,
+        [Parameter(ValueFromPipeline = $True)]
+        [MirthConnection]$connection = $currentConnection,
 
-       # The ids of the code templates to retrieve, empty for all
-       [Parameter(ValueFromPipelineByPropertyName=$True)]
-       [string[]]$targetIds,
+        # The ids of the code templates to retrieve, empty for all
+        [Parameter(ValueFromPipelineByPropertyName = $True)]
+        [string[]]$targetIds,
   
-       # Saves the response from the server as a file in the current location.
-       [Parameter()]
-       [switch]$saveXML,
+        # Saves the response from the server as a file in the current location.
+        [Parameter()]
+        [switch]$saveXML,
        
-       # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
-       [Parameter()]
-       [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
-   )    
-   BEGIN { 
-       Write-Debug "Get-MirthCodeTemplates Beginning"
-   }
-   PROCESS { 
+        # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
+        [Parameter()]
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
+    )    
+    BEGIN { 
+        Write-Debug "Get-MirthCodeTemplates Beginning"
+    }
+    PROCESS { 
 
-       if ($null -eq $connection) { 
-           Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"    
-       }  
-       [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
-       $serverUrl = $connection.serverUrl
+        if ($null -eq $connection) { 
+            Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"    
+        }  
+        [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
+        $serverUrl = $connection.serverUrl
        
-       $uri = $serverUrl + '/api/codeTemplates'
-       $parameters = [System.Web.HttpUtility]::ParseQueryString([String]::Empty)
-    #    $parameters.Add('includeCodeTemplates', $includeCodeTemplates)
+        $uri = $serverUrl + '/api/codeTemplates'
+        $parameters = [System.Web.HttpUtility]::ParseQueryString([String]::Empty)
+        #    $parameters.Add('includeCodeTemplates', $includeCodeTemplates)
 
-       if ([string]::IsNullOrEmpty($targetId) -or [string]::IsNullOrWhiteSpace($targetId)) {
-           Write-Debug "Fetching all code templates"
-       } else {
-           foreach ($target in $targetIds) {
-               $parameters.Add('codeTemplateId', $target)
-           }
-       }
-       $uri = $uri + '?' + $parameters.toString()
-       Write-Debug "Invoking GET Mirth $uri "
-       try { 
-           $r = Invoke-RestMethod -Uri $uri -Method GET -WebSession $session 
-           Write-Debug "...done."
+        if ([string]::IsNullOrEmpty($targetId) -or [string]::IsNullOrWhiteSpace($targetId)) {
+            Write-Debug "Fetching all code templates"
+        }
+        else {
+            foreach ($target in $targetIds) {
+                $parameters.Add('codeTemplateId', $target)
+            }
+        }
+        $uri = $uri + '?' + $parameters.toString()
+        Write-Debug "Invoking GET Mirth $uri "
+        try { 
+            $r = Invoke-RestMethod -Uri $uri -Method GET -WebSession $session 
+            Write-Debug "...done."
 
-           if ($saveXML) { 
-               Save-Content $r $outFile
-           }
-           Write-Verbose "$($r.OuterXml)"
-           return $r;
-       }
-       catch {
-           Write-Error $_
-       }
-   }
-   END { 
-       Write-Debug "Get-MirthCodeTemplates Ending"
-   }
+            if ($saveXML) { 
+                Save-Content $r $outFile
+            }
+            Write-Verbose "$($r.OuterXml)"
+            return $r;
+        }
+        catch {
+            Write-Error $_
+        }
+    }
+    END { 
+        Write-Debug "Get-MirthCodeTemplates Ending"
+    }
 }  # Get-MirthCodeTemplates
 
 function Set-MirthCodeTemplate {
@@ -5935,20 +6023,20 @@ function Set-MirthCodeTemplate {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # xml of the channel to be added
-        [Parameter(ParameterSetName="xmlProvided",
-                   Mandatory=$True,
-                   ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ParameterSetName = "xmlProvided",
+            Mandatory = $True,
+            ValueFromPipelineByPropertyName = $True)]
         [string]$payLoad,
 
         # path to the file containing the channel xml to import
-        [Parameter(ParameterSetName="pathProvided",
-                   Mandatory=$True,
-                   ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ParameterSetName = "pathProvided",
+            Mandatory = $True,
+            ValueFromPipelineByPropertyName = $True)]
         [string]$payloadFilePath,
 
         # If true, the code template will be updated even if a different revision 
@@ -5976,11 +6064,13 @@ function Set-MirthCodeTemplate {
             if ([string]::IsNullOrEmpty($payloadFilePath) -or [string]::IsNullOrWhiteSpace($payloadFilePath)) {
                 Write-Error "A channel XML payLoad string is required!"
                 return $null
-            } else {
+            }
+            else {
                 Write-Debug "Loading channel XML from path $payLoadFilePath"
                 [xml]$payLoadXML = Get-Content $payLoadFilePath  
             }
-        } else {
+        }
+        else {
             Write-Debug "Creating XML payload from string: $payLoad"
             $payLoadXML = [xml]$payLoad
         }
@@ -5992,7 +6082,7 @@ function Set-MirthCodeTemplate {
         $parameters.Add('override', $override)
         $uri = $uri + '?' + $parameters.toString()
         $headers = $DEFAULT_HEADERS.Clone()
-        $headers.Add("Accept","application/xml")
+        $headers.Add("Accept", "application/xml")
         $headers.Add("Content-Type", "application/xml")
         Write-Debug "Invoking PUT Mirth API server at: $uri "
         try { 
@@ -6014,7 +6104,7 @@ function Set-MirthCodeTemplate {
 
 }  # Set-MirthCodeTemplate
 
-function Remove-MirthCodeTemplates  { 
+function Remove-MirthCodeTemplates { 
     <#
     .SYNOPSIS
         Removes all Mirth code templates, or a list of them specified by id.
@@ -6037,12 +6127,12 @@ function Remove-MirthCodeTemplates  {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # Array of code template ids to be removed
-        [Parameter(ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ValueFromPipelineByPropertyName = $True)]
         [string[]]$targetIds,
    
         # Saves the response from the server as a file in the current location.
@@ -6066,19 +6156,21 @@ function Remove-MirthCodeTemplates  {
         if (-NOT [string]::IsNullOrEmpty($targetIds)) { 
             Write-Debug "Removal of list of $($targetIds.Count) code template ids is requested."
             
-        } else { 
+        }
+        else { 
             $allCodeTemplates = Get-MirthCodeTemplates -connection $connection 
             if ($null -ne $allCodeTemplates) { 
                 $targetIds = $allCodeTemplates.list.codeTemplate.id
                 Write-Debug "There are $($targetIds.Count) code templates to be removed."
-            } else { 
+            }
+            else { 
                 Write-Warning "Unable to fetch list of code templates."
                 $targetIds = @()
             }
         }
 
         $headers = $DEFAULT_HEADERS.Clone()
-        $headers.Add("Content-Type","application/xml")
+        $headers.Add("Content-Type", "application/xml")
 
         foreach ($targetId in $targetIds) {
             
@@ -6106,7 +6198,7 @@ function Remove-MirthCodeTemplates  {
 }  # Remove-MirthCodeTemplates
 
 function Get-MirthCodeTemplateLibraries { 
-     <#
+    <#
     .SYNOPSIS
         Gets Mirth Code Template Libraries, either the targetIds specified, or all.
 
@@ -6133,12 +6225,12 @@ function Get-MirthCodeTemplateLibraries {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # The id of the code template library to retrieve, empty for all
-        [Parameter(ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ValueFromPipelineByPropertyName = $True)]
         [string[]]$targetId,
 
         # If true, full code templates will be included inside each library.
@@ -6207,7 +6299,8 @@ function Get-MirthCodeTemplateLibraries {
 
         if ([string]::IsNullOrEmpty($targetId) -or [string]::IsNullOrWhiteSpace($targetId)) {
             Write-Debug "Fetching all code template libraries"
-        } else {
+        }
+        else {
             foreach ($target in $targetId) {
                 $parameters.Add('libraryId', $target)
             }
@@ -6260,20 +6353,20 @@ function Set-MirthCodeTemplateLibraries {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # xml of the channel to be added
-        [Parameter(ParameterSetName="xmlProvided",
-                   Mandatory=$True,
-                   ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ParameterSetName = "xmlProvided",
+            Mandatory = $True,
+            ValueFromPipelineByPropertyName = $True)]
         [string]$payLoad,
 
         # path to the file containing the channel xml to import
-        [Parameter(ParameterSetName="pathProvided",
-                   Mandatory=$True,
-                   ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ParameterSetName = "pathProvided",
+            Mandatory = $True,
+            ValueFromPipelineByPropertyName = $True)]
         [string]$payloadFilePath,
 
         # If true, the code template library will be updated even if a different revision 
@@ -6301,11 +6394,13 @@ function Set-MirthCodeTemplateLibraries {
             if ([string]::IsNullOrEmpty($payloadFilePath) -or [string]::IsNullOrWhiteSpace($payloadFilePath)) {
                 Write-Error "A codetemplate library list XML payLoad string is required!"
                 return $null
-            } else {
+            }
+            else {
                 Write-Debug "Loading codetemplate library XML from path $payLoadFilePath"
                 [xml]$payLoadXML = Get-Content $payLoadFilePath  
             }
-        } else {
+        }
+        else {
             Write-Debug "Creating XML payload from string: $payLoad"
             $payLoadXML = [xml]$payLoad
         }
@@ -6324,7 +6419,7 @@ function Set-MirthCodeTemplateLibraries {
         $parameters.Add('override', $override)
         $uri = $uri + '?' + $parameters.toString()
         $headers = $DEFAULT_HEADERS.Clone()
-        $headers.Add("Accept","application/xml")
+        $headers.Add("Accept", "application/xml")
         $headers.Add("Content-Type", 'application/xml')
         Write-Debug "Invoking PUT Mirth API server at: $uri "
         try { 
@@ -6383,24 +6478,24 @@ function Set-MirthSSLManagerKeystores {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # Base64 encoded string of a JKS file, used as SSL Manager keystore.
-        [Parameter(ParameterSetName="keystoreProvided")]
+        [Parameter(ParameterSetName = "keystoreProvided")]
         [string]$keyStore = $null,
         
         # The path to the text file containing the public PEM
-        [Parameter(ParameterSetName="pathProvided")]
+        [Parameter(ParameterSetName = "pathProvided")]
         [string]$keyStorePath,
 
         # Base64 encoded string of a JKS file, used as SSL Manager trustStore.
-        [Parameter(ParameterSetName="keystoreProvided")]
+        [Parameter(ParameterSetName = "keystoreProvided")]
         [string]$trustStore = $null,
         
         # The path to the text file containing the private PEM
-        [Parameter(ParameterSetName="pathProvided")]
+        [Parameter(ParameterSetName = "pathProvided")]
         [string]$trustStorePath,
 
         # keystore password.  This will be stored in the Mirth configuration table, category "SSL Manager", name "KeystorePass"
@@ -6493,8 +6588,8 @@ function Get-MirthKeyStoreCertificates {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # Saves the response from the server as a file in the current location.
@@ -6518,7 +6613,7 @@ function Get-MirthKeyStoreCertificates {
         $uri = $serverUrl + '/api/extensions/ssl/all'
         Write-Debug "Invoking GET Mirth $uri "
         $headers = $DEFAULT_HEADERS.Clone()
-        $headers.Add("Content-Type","application/xml")
+        $headers.Add("Content-Type", "application/xml")
         try { 
             $r = Invoke-RestMethod -WebSession $session -Uri $uri -Method GET -Headers $headers
             Write-Debug "...done."
@@ -6565,8 +6660,8 @@ function Get-MirthKeyStoreBytes {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # Saves the response from the server as a file in the current location.
@@ -6661,14 +6756,14 @@ function Connect-Mirth {
         Write-Debug "userName = $userName"
         Write-Debug ("userPass = {0}" -f (ConvertFrom-SecureString $userPass -AsPlainText))
         $headers = $DEFAULT_HEADERS.Clone()
-        $headers.Add("Accept","application/xml")
+        $headers.Add("Accept", "application/xml")
         $uri = $serverUrl + '/api/users/_login'
         $body = ("username={0}&password={1}" -f $userName, (ConvertFrom-SecureString $userPass -AsPlainText))
         try { 
             $r = Invoke-RestMethod -uri $uri -Headers $headers -Body $body -Method POST -SessionVariable session
             Write-Debug ("Response: {0}" -f $r.'com.mirth.connect.model.LoginStatus'.status)
 
-            return $script:currentConnection = [MirthConnection]::new($session,$serverUrl,$userName,$userPass)
+            return $script:currentConnection = [MirthConnection]::new($session, $serverUrl, $userName, $userPass)
         }
         catch {
             Write-Error $_
@@ -6706,16 +6801,16 @@ function Set-MirthUserPassword {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # The user id to be retrieved, this can be either the userName or the id
-        [Parameter(ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ValueFromPipelineByPropertyName = $True)]
         [string]$targetId,
 
         # The new password when performing the add-user or change-password commands, default is "changeit"
-        [Parameter(ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ValueFromPipelineByPropertyName = $True)]
         [securestring]$newPassword = (ConvertTo-SecureString -String "changeit" -AsPlainText),
    
         # Saves the response from the server as a file in the current location.
@@ -6743,7 +6838,7 @@ function Set-MirthUserPassword {
         Write-Debug "There were $($users.Count) users retrieved for set password command"
 
         $headers = $DEFAULT_HEADERS.Clone()
-        $headers.Add("Content-Type","text/plain")
+        $headers.Add("Content-Type", "text/plain")
 
         foreach ($u in $users) {
             Write-Debug "Changing password user: $($u.id): $($u.username) assigned to $($u.lastName)"
@@ -6794,13 +6889,13 @@ function Test-MirthUserLogged {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # The user id to be tested (not the username)
-        [Parameter(Mandatory=$True,
-                   ValueFromPipelineByPropertyName=$True)]
+        [Parameter(Mandatory = $True,
+            ValueFromPipelineByPropertyName = $True)]
         [string]$targetId,
    
         # Saves the response from the server as a file in the current location.
@@ -6891,12 +6986,12 @@ function Get-MirthLoggedUsers {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # The id of the channelGroup to retrieve, empty for all
-        [Parameter(ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ValueFromPipelineByPropertyName = $True)]
         [string[]]$targetId,
    
         # Saves the response from the server as a file in the current location.
@@ -6908,7 +7003,7 @@ function Get-MirthLoggedUsers {
         [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     ) 
     BEGIN {
-        Write-Debug 'Get-MirthLoggedUsers Beginning'  
+        Write-Debug 'Get-MirthLoggedUsers Beginning'
     }
     PROCESS { 
         if ($null -eq $connection) { 
@@ -6916,12 +7011,12 @@ function Get-MirthLoggedUsers {
         }  
         [xml]$loggedUsers = '<list></list>' 
         $allUsers = Get-MirthUsers -connection $connection 
-        foreach($user in $allUsers.list.user) {
+        foreach ($user in $allUsers.list.user) {
             $uTmp = $user.username
             Write-Debug "Checking user $uTmp" 
             if (Test-MirthUserLogged -connection $connection -targetId $user.id) {
                 Write-Verbose "$uTmp is logged in!"
-                $loggedUsers.DocumentElement.AppendChild($loggedUsers.ImportNode($user,$true))
+                $loggedUsers.DocumentElement.AppendChild($loggedUsers.ImportNode($user, $true))
             }
         }
         if ($saveXML) { 
@@ -6977,12 +7072,12 @@ function Get-MirthUsers {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # The user id to be retrieved, this can be either the userName or the id
-        [Parameter(ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ValueFromPipelineByPropertyName = $True)]
         [string]$targetId,
    
         # Saves the response from the server as a file in the current location.
@@ -7011,7 +7106,7 @@ function Get-MirthUsers {
             $uri = "$uri/$targetId"
         }
         $headers = $DEFAULT_HEADERS.Clone()
-        $headers.Add("Accept","application/xml")
+        $headers.Add("Accept", "application/xml")
 
         Write-Debug "Invoking GET Mirth  $uri "
         try { 
@@ -7024,7 +7119,7 @@ function Get-MirthUsers {
                 $userNode = $r.SelectSingleNode("/user")
                 [Xml]$newXml = New-Object -TypeName xml
                 $listNode = $newXml.CreateElement("list")
-                $userNode = $listNode.OwnerDocument.ImportNode($userNode,$True)
+                $userNode = $listNode.OwnerDocument.ImportNode($userNode, $True)
                 $listNode.AppendChild($userNode) | Out-Null  
                 $newXml.AppendChild($listNode) | Out-Null
 
@@ -7086,18 +7181,18 @@ function Set-MirthUser {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # The user id to be updated, this must be the numeric id.
-        [Parameter(Mandatory=$True,
-                   ValueFromPipelineByPropertyName=$True)]
+        [Parameter(Mandatory = $True,
+            ValueFromPipelineByPropertyName = $True)]
         [string]$targetId,
 
         # xml of the user to be added
-        [Parameter(Mandatory=$True,
-                   ValueFromPipelineByPropertyName=$True)]
+        [Parameter(Mandatory = $True,
+            ValueFromPipelineByPropertyName = $True)]
         [string]$payLoad,
    
         # Saves the response from the server as a file in the current location.
@@ -7126,7 +7221,8 @@ function Set-MirthUser {
         if ([string]::IsNullOrEmpty($payLoad) -or [string]::IsNullOrWhiteSpace($payLoad)) {
             Write-Error "A user XML payLoad string is required!"
             return
-        } else {
+        }
+        else {
             Write-Verbose "Creating payload from xml: $payLoad"
             $userXML = [xml]$payLoad
         }
@@ -7137,7 +7233,7 @@ function Set-MirthUser {
         $uri = $serverUrl + '/api/users/' + $targetId
         Write-Debug "PUT to Mirth $uri "
         $headers = $DEFAULT_HEADERS.Clone()
-        $headers.Add("Content-Type","application/xml")
+        $headers.Add("Content-Type", "application/xml")
         try { 
             $r = Invoke-RestMethod -Uri $uri -WebSession $session -Method PUT -Headers $headers -Body $userXML.OuterXml
             Write-Debug "...done."
@@ -7207,20 +7303,20 @@ function Add-MirthUser {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # xml of the channel to be added
-        [Parameter(ParameterSetName="xmlProvided",
-                   Mandatory=$True,
-                   ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ParameterSetName = "xmlProvided",
+            Mandatory = $True,
+            ValueFromPipelineByPropertyName = $True)]
         [string]$payLoad,
 
         # path to the file containing the channel xml to import
-        [Parameter(ParameterSetName="pathProvided",
-                   Mandatory=$True,
-                   ValueFromPipelineByPropertyName=$True)]
+        [Parameter(ParameterSetName = "pathProvided",
+            Mandatory = $True,
+            ValueFromPipelineByPropertyName = $True)]
         [string]$payloadFilePath,
 
         # The new password when performing the add-user or change-password commands, default is "changeit"
@@ -7251,11 +7347,13 @@ function Add-MirthUser {
             if ([string]::IsNullOrEmpty($payloadFilePath) -or [string]::IsNullOrWhiteSpace($payloadFilePath)) {
                 Write-Error "A user XML payLoad string is required!"
                 return $null
-            } else {
+            }
+            else {
                 Write-Debug "Loading user XML from path $payLoadFilePath"
                 $userXML = Get-Content $payLoadFilePath  
             }
-        } else {
+        }
+        else {
             $userXML = [xml]$payLoad
         }
         $msg = "Adding user: " + $userXML.user.username + " assigned to " + $userXML.user.firstName + " " + $userXML.user.lastName
@@ -7264,7 +7362,7 @@ function Add-MirthUser {
         $uri = $serverUrl + '/api/users'
         Write-Debug "POST to Mirth $uri "
         $headers = $DEFAULT_HEADERS.Clone()
-        $headers.Add("Content-Type","application/xml")
+        $headers.Add("Content-Type", "application/xml")
         try { 
             $r = Invoke-RestMethod -Uri $uri -WebSession $session -Method POST -Headers $headers -Body $userXML.OuterXml
             Write-Debug "...done."
@@ -7309,13 +7407,13 @@ function Remove-MirthUser {
     [CmdletBinding()] 
     PARAM (
 
-         # A MirthConnection is required. You can obtain one from Connect-Mirth.
-        [Parameter(ValueFromPipeline=$True)]
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
 
         # The user id to be deleted, this must be the numeric id.
-        [Parameter(Mandatory=$True,
-                   ValueFromPipelineByPropertyName=$True)]
+        [Parameter(Mandatory = $True,
+            ValueFromPipelineByPropertyName = $True)]
         [string]$targetId,
    
         # Saves the response from the server as a file in the current location.
@@ -7335,7 +7433,8 @@ function Remove-MirthUser {
         if (-NOT [string]::IsNullOrEmpty($targetId)) { 
             Write-Debug 'Getting user by target identifier'
             $uri = "$uri/$targetId"
-        } else { 
+        }
+        else { 
             Throw "A targetId is required!"
         }
 
@@ -7345,7 +7444,7 @@ function Remove-MirthUser {
         $uri = $serverUrl + '/api/users/' + $targetId
         Write-Debug "DELETE to Mirth $uri "
         $headers = $DEFAULT_HEADERS.Clone()
-        $headers.Add("Content-Type","application/xml")
+        $headers.Add("Content-Type", "application/xml")
         try { 
             $r = Invoke-RestMethod -Uri $uri -WebSession $session -Method DELETE -Headers $headers -Body $userXML.OuterXml
             Write-Debug "...done."
@@ -7371,10 +7470,10 @@ function Save-Content {
     PARAM (
 
         # the data to save
-        [Parameter(Position=0)]
+        [Parameter(Position = 0)]
         $Content,
         # the output file, will be appended to standard output folder
-        [Parameter(Position=1)]
+        [Parameter(Position = 1)]
         [string]$OutFile
     )    
     BEGIN { 
@@ -7384,7 +7483,7 @@ function Save-Content {
         $BaseFolder = Get-OutputFolder -create
         $destFile = Join-Path $BaseFolder $OutFile
         Write-Debug ("Saving output to {0}" -f $destFile)
-        if($Content -is [xml]) {
+        if ($Content -is [xml]) {
             $Content = $Content.OuterXml
         }
         Set-Content -Path $destFile -Value $Content
