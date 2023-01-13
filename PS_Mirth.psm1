@@ -11,6 +11,12 @@ enum MirthMsgStorageMode {
     DEVELOPMENT = 5
 }
 
+enum ChannelAutocompleteMode {
+    None = 1
+    Cache = 2
+    Live = 3
+}
+
 # The custom MirthConnection object is created and returned by Connect-Mirth.
 # All of the other functions which make calls to the Mirth REST API will require one.
 # (It is not mandatory because they are designed to work in an "interactive" manner.
@@ -70,6 +76,107 @@ $DEFAULT_HEADERS = @{
 
 [MirthConnection]$currentConnection = $null;
 
+#Option to enable autocompletions of ChannelIds and ChannelNames for specific Mirth functions.
+#Valid values are of type ChannelAutocompleteMode.
+$script:ChannelAutocomplete = [ChannelAutocompleteMode]::None
+$script:CachedChannelMapForAutocompletion = @{}
+
+<############################################################################################>
+<#       Tab-completion Functions                                                           #>
+<############################################################################################>
+
+function CommonArgCompletion {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory)]
+        $Values,
+        [Parameter(Mandatory)]
+        $wordToComplete
+    )
+
+    $Values | Sort-Object | Where-Object {
+        $_ -ilike "$wordToComplete*"
+    } | ForEach-Object {
+        #some names are multi-word, so wrap them in double-quotes for user convenience
+        """$_"""
+    }
+}
+
+function ChannelNameArgumentCompleter {
+    param ( $commandName,
+        $parameterName,
+        $wordToComplete,
+        $commandAst,
+        $fakeBoundParameters )
+
+    $searchMap = @{}
+
+    switch ($script:ChannelAutocomplete) {
+        None { }
+        Cache {
+            $searchMap = $script:CachedChannelMapForAutocompletion
+        }
+        Live {
+            $searchMap = Get-MirthChannelIdsAndNames
+        }
+        Default {
+            Write-Warning "Unknown option '$_' in ChannelNameArgumentCompleter, ignoring"
+        }
+    }
+
+    CommonArgCompletion $searchMap.Values $wordToComplete
+}
+
+function ChannelIdArgumentCompleter {
+    param ( $commandName,
+        $parameterName,
+        $wordToComplete,
+        $commandAst,
+        $fakeBoundParameters )
+
+    $searchMap = @{}
+
+    switch ($script:ChannelAutocomplete) {
+        None { }
+        Cache {
+            $searchMap = $script:CachedChannelMapForAutocompletion
+        }
+        Live {
+            $searchMap = Get-MirthChannelIdsAndNames
+        }
+        Default {
+            Write-Warning "Unknown option '$_' in ChannelIdArgumentCompleter, ignoring"
+        }
+    }
+
+    CommonArgCompletion $searchMap.Keys $wordToComplete
+}
+
+function Test-ChannelArgumentCompleter {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory)]
+        [ArgumentCompleter({ ChannelIdArgumentCompleter @args })]
+        $ChannelId,
+        [Parameter(Mandatory)]
+        [ArgumentCompleter({ ChannelNameArgumentCompleter @args })]
+        $ChannelName
+    )
+    
+    Write-Debug "Processing `$ChannelId=$ChannelId, `$ChannelName=$ChannelName"
+}
+
+function NotifyChannelMapCacheUpdate {
+    [CmdletBinding()]
+    param (
+        [Parameter()]
+        [hashtable]$channelMap = @{}
+    )
+
+    if ($script:ChannelAutocomplete -eq [ChannelAutocompleteMode]::Cache) {
+        $script:CachedChannelMapForAutocompletion = $channelMap.Clone()
+    }
+}
 
 <############################################################################################>
 <#       PS-Mirth Functions                                                                 #>
@@ -77,10 +184,11 @@ $DEFAULT_HEADERS = @{
 
 function Get-PSConfig {
     @{
-        "SkipCertificateCheck" = $script:PSDefaultParameterValues["Invoke-RestMethod:SkipCertificateCheck"]
         "DefaultHeaders"       = $script:DEFAULT_HEADERS.Clone()
-        "OutputFolder"         = $script:SavePath
+        "ChannelAutocomplete"  = $script:ChannelAutocomplete
         "MirthConnection"      = $script:currentConnection
+        "OutputFolder"         = $script:SavePath
+        "SkipCertificateCheck" = $script:PSDefaultParameterValues["Invoke-RestMethod:SkipCertificateCheck"]
     }
 }
 
@@ -89,6 +197,14 @@ function Set-PSConfig([hashtable]$Config) {
         switch ($Key) {
             "DefaultHeaders" {
                 $script:DEFAULT_HEADERS = $Config[$Key].Clone();
+            }
+            "ChannelAutocomplete" {
+                $Value = $Config[$Key] -as [ChannelAutocompleteMode]
+                if ($null -eq $Value) {
+                    Write-Warning "Invalid value for option '$Key', defaulting to None"
+                    $Value = [ChannelAutocompleteMode]::None
+                }
+                $script:ChannelAutocomplete = $Value
             }
             "MirthConnection" {
                 $script:currentConnection = $Config[$Key]
@@ -99,7 +215,7 @@ function Set-PSConfig([hashtable]$Config) {
             "SkipCertificateCheck" {
                 $script:PSDefaultParameterValues = @{"Invoke-RestMethod:SkipCertificateCheck" = $Config[$Key] }
             }
-            Default { Write-Warning ("Unknown option '{0}', ignoring" -f $Key) }
+            Default { Write-Warning "Unknown option '$Key', ignoring" }
         }
     }
 }
@@ -3965,6 +4081,55 @@ function Get-MirthChannelIds {
     }
 }  # Get-MirthChannelIds
 
+function Get-MirthChannelIdsAndNames {
+    [CmdletBinding()] 
+    PARAM (
+
+        # A MirthConnection is required. You can obtain one from Connect-Mirth.
+        [Parameter(ValueFromPipeline = $True)]
+        [MirthConnection]$connection = $currentConnection
+    )
+    BEGIN {
+        Write-Debug 'Get-MirthChannelIdsAndNames Beginning'
+    }
+    PROCESS {
+        if ($null -eq $connection) {
+            Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"    
+        }
+        [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
+        $serverUrl = $connection.serverUrl
+
+        $uri = $serverUrl + '/api/channels/idsAndNames'
+        $headers = $DEFAULT_HEADERS.Clone()
+        $headers.Add("Accept", "application/xml")
+        
+        Write-Debug "Invoking GET Mirth at $uri"
+        try {
+            $r = Invoke-RestMethod -Uri $uri -Method GET -WebSession $session -Headers $headers
+            Write-Debug "Parsing response"
+            
+            $channelIdsAndNames = @{}
+
+            #results are ordered ID then name
+            foreach ($entry in $r.map.entry) {
+                $channelIdsAndNames.Add($entry.string[0], $entry.string[1])
+            }
+
+            NotifyChannelMapCacheUpdate $channelIdsAndNames
+
+            Write-Debug "...done."
+
+            $channelIdsAndNames
+        }
+        catch {
+            Write-Error $_
+        }
+    }
+    END {
+        Write-Debug 'Get-MirthChannelIdsAndNames Ending' 
+    }
+}
+       
 function Get-MirthChannelStatuses {
     <#
     .SYNOPSIS
@@ -4978,6 +5143,7 @@ function Send-MirthChannelCommand {
             # get all channel IDs here
             # later we will add ways to filter
             Write-Debug "Fetching ALL channel ids in target server..."
+            #TODO refactor to use Get-MirthChannelIdAndNames and remove this original function
             $targetIds = Get-MirthChannelIds -connection $connection
             Write-Debug "There are $($targetIds.Count) channels as target of $command command."
         }
@@ -6829,7 +6995,13 @@ function Connect-Mirth {
             $r = Invoke-RestMethod -uri $uri -Headers $headers -Body $body -Method POST -SessionVariable session
             Write-Debug ("Response: {0}" -f $r.'com.mirth.connect.model.LoginStatus'.status)
 
-            return $script:currentConnection = [MirthConnection]::new($session, $serverUrl, $userName, $userPass)
+            $script:currentConnection = [MirthConnection]::new($session, $serverUrl, $userName, $userPass)
+
+            if ($script:ChannelAutocomplete -eq [ChannelAutocompleteMode]::Cache) {
+                Get-MirthChannelIdsAndNames
+            }
+
+            return $script:currentConnection
         }
         catch {
             Write-Error $_
@@ -6872,6 +7044,9 @@ function Disconnect-Mirth {
             #expect statusCode=204
             Write-Debug "`$statusCode=$statusCode"
 
+            #clear this feature's data as they've logged out
+            NotifyChannelMapCacheUpdate @{}
+            
             $script:currentConnection = $null
         }
         catch {
