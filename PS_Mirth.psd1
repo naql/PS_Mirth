@@ -1,6 +1,6 @@
 @{
   RootModule           = 'PS_Mirth.psm1'
-  ModuleVersion        = '1.3.0'
+  ModuleVersion        = '1.3.1'
   PowerShellVersion    = "6.0"
   RequiredAssemblies   = @('Microsoft.PowerShell.Commands.Utility.dll')
   GUID                 = '6b42c995-67da-4139-be79-597a328056cc'

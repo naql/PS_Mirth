@@ -4,8 +4,8 @@ using namespace System.Management.Automation
 #################################################################################################################################
 param (
     [string]    $deployPath = "$pwd/deploy",  
-    [string]    $server   = 'localhost',  
-    [string]    $port     = '8443',
+    [string]    $server = 'localhost',  
+    [string]    $port = '8443',
     [string]    $username = 'admin', 
     [securestring]    $password = (ConvertTo-SecureString -String 'admin' -AsPlainText),
     [switch]    $saveTranscript,
@@ -40,7 +40,7 @@ Function Write-InformationColored {
 Write-InformationColored -MessageData "Beginning PS_Mirth Test" -ForegroundColor Black -BackgroundColor DarkGreen 
 Write-Verbose "Importing Module"
 #Import-Module PS_Mirth -force
-".\PS_Mirth.psd1"|gci|Import-Module
+".\PS_Mirth.psd1" | gci | Import-Module
 $Version_PS_Mirth = (Get-Module -Name "PS_Mirth").Version
 Write-InformationColored -MessageData "PS_Mirth Version: " -NoNewline
 Write-InformationColored -MessageData "$($Version_PS_Mirth.Major).$($Version_PS_Mirth.Minor).$($Version_PS_Mirth.Build)"  -ForegroundColor Green   -BackgroundColor Black
@@ -63,10 +63,12 @@ try {
     if ($null -ne $channelGroups) { 
         Write-InformationColored -MessageData "OK" -ForegroundColor Green -BackgroundColor Black
         Write-Verbose "$($channelGroups.OuterXml)"
-    } else { 
+    }
+    else { 
         Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black
     }
-} catch { 
+}
+catch { 
     Write-Error $_
     Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black
 }
@@ -79,10 +81,12 @@ try {
     if ($null -ne $channelMetadata) { 
         Write-InformationColored -MessageData "OK" -ForegroundColor Green -BackgroundColor Black
         Write-Verbose "$($channelMetadata.OuterXml)"
-    } else { 
+    }
+    else { 
         Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black
     }
-} catch { 
+}
+catch { 
     Write-Error $_
     Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black
 }
@@ -94,10 +98,12 @@ try {
     if ($null -ne $channels) { 
         Write-InformationColored -MessageData "OK" -ForegroundColor Green -BackgroundColor Black
         Write-Verbose "$($channels.OuterXml)"
-    } else { 
+    }
+    else { 
         Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black
     }
-} catch { 
+}
+catch { 
     Write-Error $_
     Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black
 }
@@ -107,10 +113,12 @@ try {
     $channels = Get-MirthChannelTags -connection $connection
     if ($null -ne $channels) { 
         Write-InformationColored -MessageData "OK" -ForegroundColor Green -BackgroundColor Black
-    } else { 
+    }
+    else { 
         Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black
     }
-} catch { 
+}
+catch { 
     Write-Error $_
     Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black
 }
@@ -120,10 +128,12 @@ try {
     $libraries = Get-MirthCodeTemplateLibraries -connection $connection
     if ($null -ne $libraries) { 
         Write-InformationColored -MessageData "OK" -ForegroundColor Green -BackgroundColor Black
-    } else { 
+    }
+    else { 
         Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black
     }
-} catch { 
+}
+catch { 
     Write-Error $_
     Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black
 }
@@ -134,10 +144,12 @@ try {
     if ($null -ne $serverConfigMap) {
         Write-InformationColored -MessageData "OK" -ForegroundColor Green -BackgroundColor Black
         Write-Verbose "$($serverConfigMap.OuterXml)"
-    } else { 
+    }
+    else { 
         Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black  
     }
-} catch { 
+}
+catch { 
     Write-Error $_
     Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black
 }
@@ -148,10 +160,12 @@ try {
     if ($null -ne $sslProperties) {
         Write-InformationColored -MessageData "OK" -ForegroundColor Green -BackgroundColor Black
         Write-Verbose "$($sslProperties.OuterXml)"
-    } else { 
+    }
+    else { 
         Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black  
     }
-} catch { 
+}
+catch { 
     Write-Error $_
     Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black
 }
@@ -162,10 +176,12 @@ try {
     if ($null -ne $serverGlobalScripts) { 
         Write-InformationColored -MessageData "OK" -ForegroundColor Green -BackgroundColor Black
         Write-Verbose "$($serverGlobalScripts.OuterXml)"
-    } else { 
+    }
+    else { 
         Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black
     }
-} catch {
+}
+catch {
     Write-Error $_
     Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black
 }
@@ -176,10 +192,12 @@ try {
     if ($null -ne $keystoreBytes) { 
         Write-InformationColored -MessageData "OK" -ForegroundColor Green -BackgroundColor Black
         Write-Verbose "$($keystoreBytes.OuterXml)"
-    } else { 
+    }
+    else { 
         Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black
     }
-} catch {
+}
+catch {
     Write-Error $_
     Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black
 }
@@ -190,24 +208,28 @@ try {
     if ($null -ne $keystoreCerts) { 
         Write-InformationColored -MessageData "OK" -ForegroundColor Green -BackgroundColor Black
         Write-Verbose "$($keystoreCerts.OuterXml)"
-    } else { 
+    }
+    else { 
         Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black
     }
-} catch {
+}
+catch {
     Write-Error $_
     Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black
 }
 
 Write-InformationColored -MessageData "Get-MirthLoggedUsers " -ForegroundColor White -BackgroundColor Black -NoNewline
 try {
-    $loggedUsers = Get-MirthLoggedUsers -connection $connection 
+    $loggedUsers = Get-MirthLoggedInUsers -connection $connection 
     if ($null -ne $loggedUsers) { 
         Write-InformationColored -MessageData "OK" -ForegroundColor Green -BackgroundColor Black
         Write-Verbose "$($loggedUsers.OuterXml)"
-    } else { 
+    }
+    else { 
         Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black
     }
-} catch {
+}
+catch {
     Write-Error $_
     Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black
 }
@@ -218,11 +240,13 @@ try {
     if ($null -ne $serverAbout) {
         Write-Verbose "$($serverAbout.OuterXml)"
         Write-InformationColored -MessageData "OK" -ForegroundColor Green -BackgroundColor Black
-    } else { 
+    }
+    else { 
         Write-Verbose "serverAbout response is null!"
         Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black
     }
-} catch {
+}
+catch {
     Write-Error $_
     Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black 
 }
@@ -233,10 +257,12 @@ try {
     if ($null -ne $serverChannelMetaData) { 
         Write-InformationColored -MessageData "OK" -ForegroundColor Green -BackgroundColor Black
         Write-Verbose "$($serverChannelMetaData.OuterXml)"
-    } else { 
+    }
+    else { 
         Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black
     }
-} catch { 
+}
+catch { 
     Write-Error $_
     Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black
 }
@@ -247,10 +273,12 @@ try {
     if ($null -ne $serverConfig) { 
         Write-InformationColored -MessageData "OK" -ForegroundColor Green -BackgroundColor Black
         Write-Verbose "$($serverConfig.OuterXml)"
-    } else { 
+    }
+    else { 
         Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black
     }
-} catch { 
+}
+catch { 
     Write-Error $_
     Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black
 }
@@ -261,10 +289,12 @@ try {
     if ($null -ne $serverProperties) { 
         Write-InformationColored -MessageData "OK" -ForegroundColor Green -BackgroundColor Black
         Write-Verbose "$serverProperties"
-    } else { 
+    }
+    else { 
         Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black
     }
-} catch { 
+}
+catch { 
     Write-Error $_
     Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black
 }
@@ -275,11 +305,13 @@ try {
     if ($null -ne $serverSettings) {
         Write-Verbose "$($serverSettings.OuterXml)"
         Write-InformationColored -MessageData "OK" -ForegroundColor Green -BackgroundColor Black
-    } else { 
+    }
+    else { 
         Write-Verbose "serverSettings response is null!"
         Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black
     }  
-} catch { 
+}
+catch { 
     Write-Error $_
     Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black
 }
@@ -290,10 +322,12 @@ try {
     if ($null -ne $serverTime) { 
         Write-InformationColored -MessageData "OK" -ForegroundColor Green -BackgroundColor Black
         Write-Verbose "$($serverTime.OuterXml)"
-    } else { 
+    }
+    else { 
         Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black
     }
-} catch { 
+}
+catch { 
     Write-Error $_
     Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black
 }
@@ -304,11 +338,13 @@ try {
     if ($null -ne $serverVersion) {
         Write-Verbose $serverVersion
         Write-InformationColored -MessageData "OK" -ForegroundColor Green -BackgroundColor Black
-    } else { 
+    }
+    else { 
         Write-Verbose "serverVersion response is null!"
         Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black
     }  
-} catch { 
+}
+catch { 
     Write-Error $_
     Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black
 }
@@ -319,11 +355,13 @@ try {
     if ($null -ne $mirthUsers) {
         Write-Verbose $mirthUsers
         Write-InformationColored -MessageData "OK" -ForegroundColor Green -BackgroundColor Black
-    } else { 
+    }
+    else { 
         Write-Verbose "$mirthUsers"
         Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black
     }  
-} catch { 
+}
+catch { 
     Write-Error $_
     Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black
 }
@@ -333,10 +371,12 @@ try {
     $channelStatuses = Get-MirthChannelStatuses -connection $connection
     if ($null -ne $channelStatuses) { 
         Write-InformationColored -MessageData "OK" -ForegroundColor Green -BackgroundColor Black
-    } else { 
+    }
+    else { 
         Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black
     }
-} catch { 
+}
+catch { 
     Write-Error $_
     Write-InformationColored -MessageData "FAIL" -ForegroundColor Red -BackgroundColor Black
 }
