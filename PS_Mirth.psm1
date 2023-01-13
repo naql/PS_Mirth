@@ -30,14 +30,14 @@ class MirthConnection {
         $this.userName = $userName
         $this.userPass = $userPass
     }
-    
+
     [String] ToString() {
         return "MirthConnection" + ":" + $this.serverUrl + ":" + $this.userName + ":" + $this.userPass
     }
 }
 
 # [UNDER CONSTRUCTION]
-# This class is instended to serve as a container for server metadata.  It is intended to 
+# This class is intended to serve as a container for server metadata.  It is intended to 
 # be used as a basis for server-to-server comparisons.
 class MirthServerSummary { 
     
@@ -2675,7 +2675,7 @@ function Get-MirthConfigMap {
 
     .EXAMPLE
         Connect-Mirth | Get-MirthConfigMap 
-        Get-MIrthConfigMap -asHashtable 
+        Get-MirthConfigMap -asHashtable 
 
     .NOTES
 
@@ -2726,7 +2726,7 @@ function Get-MirthConfigMap {
                 $returnMap = @{};
                 $entries = $r.map.entry | Sort-Object { [string]$_.string }
                 Write-Debug "There are $($entries.count) sorted entries to be placed into the hashtable..."
-                foreach ($entry in $entries) { 
+                foreach ($entry in $entries) {
                     $key = $entry.'string'
                     $value = $entry.'com.mirth.connect.util.ConfigurationProperty'.'value'
                     Write-Debug ("Adding Key: $key with value: $value")
@@ -3964,7 +3964,7 @@ function Get-MirthChannelIds {
         Write-Debug 'Get-MirthChannelIds Ending' 
     }
 }  # Get-MirthChannelIds
-        
+
 function Get-MirthChannelStatuses {
     <#
     .SYNOPSIS
@@ -4004,6 +4004,9 @@ function Get-MirthChannelStatuses {
         [string] $filter,
 
         [switch] $includeUndeployed,
+
+        # If true, return the raw xml response instead of a convenient object[]
+        [switch] $Raw,
    
         # Saves the response from the server as a file in the current location.
         [Parameter()]
@@ -4057,16 +4060,79 @@ function Get-MirthChannelStatuses {
                 }
             }
             Write-Verbose "$($r.OuterXml)"
-            return $r
+            if ($Raw) {
+                $r
+            }
+            else {
+                Convert-DashboardToArray $r.list.dashboardStatus
+            }
         }
         catch {
             Write-Error $_
-        }     
+        }
     }
     END {
         Write-Debug 'Get-MirthChannelStatuses Ending' 
     }
 }  # Get-MirthChannelStatuses
+
+function Convert-DashboardToArray {
+    [CmdletBinding()]
+    param (
+        $dashboards
+    )
+
+    $ReturnList = [System.Collections.ArrayList]::new($dashboards.Count)
+
+    #Write-Debug "Entering with dashboards: $($dashboards.Count)"
+
+    foreach ($dashboard in $dashboards) {
+        #Write-Debug "Starting dashboard"
+
+        $DashBoardMap = @{}
+
+        $PropNames = $dashboard | Get-Member -Type Property | Select-Object -ExpandProperty Name
+
+        foreach ($PropName in $PropNames) {
+
+            if ($dashboard.$PropName -is [System.Xml.XmlElement]) {
+
+                $innerContents = @{}
+                
+                if ($PropName -match "child") {
+                    #Write-Debug ("recursing for {0} using {1}" -f $PropName, $dashboard.$PropName.dashboardStatus)
+
+                    $innerContents = Convert-DashboardToArray $dashboard.$PropName.dashboardStatus
+                }
+                elseif ($Propname -match "stat") {
+                    #Write-Debug "Must be stats prop"
+                    foreach ($statItem in $dashboard.$PropName.entry) {
+                        $innerContents.Add($statItem['com.mirth.connect.donkey.model.message.Status'].InnerText, $statItem.long)
+                    }
+                }
+                else {
+                    #just copy the item over directly
+                    $innerContents = $dashboard.$PropName
+
+                    <#$DateProps = $dashboard.$PropName | Get-Member -Type Property | select -ExpandProperty Name
+                    foreach ($dateProp in $DateProps) {
+                        $innerContents.Add($dateProp, $dashboard.$PropName.$dateProp)
+                    }#>
+                }
+
+                $DashBoardMap.Add($PropName, $innerContents)
+            }
+            else {
+                $DashBoardMap.Add($PropName, $dashboard.$PropName)
+            }
+        }
+
+        $ReturnList.Add($DashBoardMap) | Out-Null
+    }
+    
+    $ReturnList.ToArray()
+}
+
 function Set-MirthChannelProperties { 
     <#
     .SYNOPSIS
@@ -4354,13 +4420,13 @@ function Get-MirthChannelMsgById {
         [xml] representation of a channel message;  the message itself is in 
 
     .EXAMPLE
-        Get-MirthChannelMsgById -channelId  ffe2e62c-5dd8-435e-a877-987d3f6c3d09 -messageId 8
+        Get-MirthChannelMsgById -channelId ffe2e62c-5dd8-435e-a877-987d3f6c3d09 -messageId 8
 
     .LINK
 
     .NOTES
 
-    #> 
+    #>
     [CmdletBinding()] 
     PARAM (
 
@@ -4933,7 +4999,7 @@ function Send-MirthChannelCommand {
             if ($saveXML) { 
                 Save-Content "Channel command: $command successful for targets: $payloadBody" $outFile
             }
-            Write-Verbose "Channel Command [$command]: SUCCESS"
+            Write-Debug "Channel Command [$command]: SUCCESS"
             return $true
         }
         catch {
@@ -5687,7 +5753,7 @@ function Remove-MirthChannels {
             $r = Invoke-RestMethod -Uri $uri -Method DELETE -WebSession $session
 
             if ($saveXML) { 
-                Save-Content "Deleted Channels: $id" $outFile
+                Save-Content "Deleted Channels: $channelIdsToRemove" $outFile
             }
             Write-Verbose $r
             return $r
@@ -7003,7 +7069,7 @@ function Get-MirthLoggedUsers {
         [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     ) 
     BEGIN {
-        Write-Debug 'Get-MirthLoggedUsers Beginning'
+        Write-Debug 'Get-MirthLoggedUsers Beginning'  
     }
     PROCESS { 
         if ($null -eq $connection) { 
