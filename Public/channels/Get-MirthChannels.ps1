@@ -179,7 +179,7 @@ function Get-MirthChannels {
             $channelMetaDataMap = Get-MirthServerChannelMetadata -connection $connection -asHashtable -saveXML:$saveXML
             Write-Debug "Channel Metadata map contains $($channelMetaDataMap.Count) entries..."
 
-            $currentTagSet = Get-MirthChannelTags -connection $connection -saveXML:$saveXML
+            $currentTagSet = Get-MirthChannelTags -connection $connection -saveXML:$saveXML -Raw
             $channelTagMap = @{}
             Write-Debug "Building channel to tag map..."
             foreach ($channelTag in $currentTagSet.set.channelTag) { 
@@ -212,41 +212,28 @@ function Get-MirthChannels {
                 $entry = $channelMetaDataMap[$($channel.id)]
                 if ($null -ne $entry) {
                     # enabled
-                    Write-Debug "setting enabled"
-                    try { 
-                        $enabledNode = $entry.SelectSingleNode("enabled")
-                        if ($null -ne $enabledNode) {
-                            $enabledNode = $r.ImportNode($enabledNode, $true) 
-                            $enabledNode = $metaDataNode.AppendChild($enabledNode)
-                        }
-                    }
-                    catch { 
-                        Write-Error $_
+                    if ($null -ne $entry.enabled) {
+                        Write-Debug "setting enabled"
+                        $NewElem = $r.CreateElement('enabled')
+                        $NewElem.InnerText = $entry.enabled
+                        $null = $metaDataNode.AppendChild($NewElem)
                     }
                     # lastModified
-                    Write-Debug "setting lastModified"
-                    try {
-                        $lastModifiedNode = $entry.SelectSingleNode("lastModified")
-                        if ($null -ne $lastModifiedNode) {
-                            $lastModifiedNode = $r.ImportNode($lastModifiedNode, $true) 
-                            $lastModifiedNode = $metaDataNode.AppendChild($lastModifiedNode)
-                        }
+                    if ($null -ne $entry.lastModified) {
+                        Write-Debug "setting lastModified"
+                        $NewElem = $r.CreateElement('lastModified')
+                        #$NewElem.InnerText = $entry.lastModified
+                        $NewElem = $metaDataNode.AppendChild($NewElem)
+                        Convert-HashToXml -Hash $entry.lastModified -Document $r | ForEach-Object { $NewElem.AppendChild($_) }
                     }
-                    catch { 
-                        Write-Error $_
-                    }                        
                     # pruningSettings
-                    Write-Debug "setting pruningSettings"
-                    try { 
-                        $pruningSettingsNode = $entry.SelectSingleNode("pruningSettings")
-                        if ($null -ne $pruningSettingsNode) {
-                            $pruningSettingsNode = $r.ImportNode($pruningSettingsNode, $true) 
-                            $pruningSettingsNode = $metaDataNode.AppendChild($pruningSettingsNode)
-                        }
+                    if ($null -ne $entry.pruningSettings) {
+                        Write-Debug "setting pruningSettings"
+                        $NewElem = $r.CreateElement('pruningSettings')
+                        #$NewElem.InnerText = $entry.pruningSettings
+                        $NewElem = $metaDataNode.AppendChild($NewElem)
+                        Convert-HashToXml -Hash $entry.pruningSettings -Document $r | ForEach-Object { $NewElem.AppendChild($_) }
                     }
-                    catch { 
-                        Write-Error $_
-                    }                        
                 }
                 else { 
                     Write-Warning "No metadata was found!"

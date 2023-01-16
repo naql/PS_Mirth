@@ -125,7 +125,7 @@ function Get-MirthCodeTemplateLibraries {
                 $r
             }
             else {
-                Convert-XmlToList $r.DocumentElement @{
+                ConvertFrom-Xml $r.DocumentElement @{
                     'list'               = 'codeTemplateLibrary'
                     'disabledChannelIds' = 'string'
                     'enabledChannelIds'  = 'string'

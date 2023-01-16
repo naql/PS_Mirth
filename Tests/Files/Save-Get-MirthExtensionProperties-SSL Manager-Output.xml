@@ -1,0 +1,9 @@
+<properties>
+  <property name="KeyStore">REDACTED</property>
+  <property name="KeyStorePassword">REDACTED</property>
+  <property name="TrustStore">REDACTED</property>
+  <property name="settings">&lt;com.mirth.connect.plugins.ssl.model.SSLManagerSettings&gt;
+    &lt;validationLoginWarning&gt;true&lt;/validationLoginWarning&gt;
+    &lt;expirationTimeUntil&gt;30d&lt;/expirationTimeUntil&gt;
+    &lt;/com.mirth.connect.plugins.ssl.model.SSLManagerSettings&gt;</property>
+</properties>

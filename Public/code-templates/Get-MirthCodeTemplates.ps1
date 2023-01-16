@@ -28,6 +28,9 @@ function Get-MirthCodeTemplates {
         # The ids of the code templates to retrieve, empty for all
         [Parameter(ValueFromPipelineByPropertyName = $True)]
         [string[]]$targetIds,
+
+        # If true, return the raw xml response instead of a convenient object[]
+        [switch] $Raw,
   
         # Saves the response from the server as a file in the current location.
         [Parameter()]
@@ -66,11 +69,18 @@ function Get-MirthCodeTemplates {
             $r = Invoke-RestMethod -Uri $uri -Method GET -WebSession $session 
             Write-Debug "...done."
 
+            Write-Verbose "$($r.OuterXml)"
+            
             if ($saveXML) { 
                 Save-Content $r $outFile
             }
-            Write-Verbose "$($r.OuterXml)"
-            return $r;
+            
+            if ($Raw) {
+                $r
+            }
+            else {
+                ConvertFrom-Xml $r.DocumentElement @{'list' = 'codeTemplate' }
+            }
         }
         catch {
             Write-Error $_

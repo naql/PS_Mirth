@@ -60,6 +60,9 @@ function Get-MirthServerSettings {
         [Parameter()]
         [switch]$saveXML,
         
+        [Parameter()]
+        [switch]$Raw,
+
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
         [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
@@ -84,7 +87,12 @@ function Get-MirthServerSettings {
                 Save-Content $r $outFile
             }
             Write-Verbose "$($r.OuterXml)"
-            return $r
+            if ($Raw) {
+                $r
+            }
+            else {
+                ConvertFrom-Xml $r.DocumentElement -ConvertAsList @{'defaultMetaDataColumns' = 'metaDataColumn' }
+            }
         }
         catch {
             Write-Error $_

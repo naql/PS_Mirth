@@ -97,9 +97,10 @@ function Get-MirthChannelStatuses {
                 $r
             }
             else {
-                Convert-XmlToList $r.list @{
-                    'list'          = 'dashboardStatus'
-                    'childStatuses' = 'dashboardStatus'
+                ConvertFrom-Xml $r.DocumentElement @{
+                    'list'               = 'dashboardStatus'
+                    'statistics'         = 'entry'
+                    'lifetimeStatistics' = 'entry'
                 }
             }
         }

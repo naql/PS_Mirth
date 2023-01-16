@@ -62,6 +62,9 @@ function Get-MirthExtensionProperties {
         [Parameter()]
         [switch]$decode,
 
+        [Parameter()]
+        [switch]$Raw,
+
         # Saves the response from the server as a file in the current location.
         [Parameter()]
         [switch]$saveXML,
@@ -99,7 +102,19 @@ function Get-MirthExtensionProperties {
             }
             Write-Verbose "$($r.OuterXml)"
 
-            return $r
+            if ($Raw) {
+                $r
+            }
+            else {
+                $ReturnMap = @{}
+                foreach ($Property in $r.properties.property) {
+                    #the key is an attribute named 'name'
+                    $Key = $Property.Attributes[0].Value
+                    $Value = $Property.InnerXml
+                    $ReturnMap[$Key] = $Value
+                }
+                $ReturnMap
+            }
         }
         catch {
             Write-Error $_

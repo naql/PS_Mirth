@@ -34,7 +34,10 @@ function Get-MirthChannelMsgById {
         # The message id to retrieve from the channel
         [Parameter(Mandatory = $True,
             ValueFromPipelineByPropertyName = $True)]
-        [long]  $messageId,        
+        [long]  $messageId,
+
+        # If true, return the raw xml response instead of a convenient object[]
+        [switch] $Raw,
 
         # Saves the response from the server as a file in the current location.
         [Parameter()]
@@ -62,12 +65,22 @@ function Get-MirthChannelMsgById {
             $r = Invoke-RestMethod -Uri $uri -Method GET -WebSession $session
             Write-Debug "...done."
 
+            #a non-match returns an empty string,
+            #so safety check before printing XML content
+            if ($r -is [System.Xml.XmlDocument]) {
+                Write-Verbose $r.innerXml
+            }
+
             if ($saveXML) { 
                 Save-Content $r $outFile
             }
-            Write-Verbose $r.innerXml
-            return $r
-                
+            
+            if ($Raw) {
+                $r
+            }
+            else {
+                ConvertFrom-Xml $r.DocumentElement @{'connectorMessages' = 'entry' }
+            }
         }
         catch {
             Write-Error $_

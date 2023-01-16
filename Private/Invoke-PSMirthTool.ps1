@@ -95,7 +95,7 @@ function Invoke-PSMirthTool {
             while (($null -eq $channelMsg) -and ($attempts -lt 3)) { 
                 Write-Verbose "Getting telemetry result..." 
                 $attempts++  
-                [xml]$channelMsg = Get-MirthChannelMsgById -connection $connection -channelId $toolId -messageId $maxMsgId 
+                [xml]$channelMsg = Get-MirthChannelMsgById -connection $connection -channelId $toolId -messageId $maxMsgId -Raw
                 if ($null -ne $channelMsg) {
                     $processedNode = $channelMsg.SelectSingleNode("/message/processed")
                     $result = $processedNode.InnerText.Trim()

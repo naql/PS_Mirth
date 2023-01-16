@@ -1,5 +1,5 @@
 function Get-MirthChannelTags {
-    <#
+  <#
     .SYNOPSIS
         Gets the Mirth Channel Tags
 
@@ -65,49 +65,58 @@ function Get-MirthChannelTags {
     .NOTES
 
     #> 
-    [CmdletBinding()] 
-    PARAM (
+  [CmdletBinding()] 
+  PARAM (
 
     
-        # A mirth session is required. You can obtain one or pipe one in from Connect-Mirth.
-        [Parameter(ValueFromPipeline = $True)]
-        [MirthConnection]$connection = $currentConnection,
+    # A mirth session is required. You can obtain one or pipe one in from Connect-Mirth.
+    [Parameter(ValueFromPipeline = $True)]
+    [MirthConnection]$connection = $currentConnection,
 
-        # Saves the response from the server as a file in the current location.
-        [Parameter()]
-        [switch]$saveXML,
+    # Saves the response from the server as a file in the current location.
+    [Parameter()]
+    [switch]$saveXML,
+
+    [switch]
+    $Raw,
         
-        # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
-        [Parameter()]
-        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
-    ) 
-    BEGIN {
-        Write-Debug "Get-MirthChannelTags Beginning" 
-    }
-    PROCESS { 
-        if ($null -eq $connection) { 
-            Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"    
-        }        
-        [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
-        $serverUrl = $connection.serverUrl
+    # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
+    [Parameter()]
+    [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
+  ) 
+  BEGIN {
+    Write-Debug "Get-MirthChannelTags Beginning" 
+  }
+  PROCESS { 
+    if ($null -eq $connection) { 
+      Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"    
+    }        
+    [Microsoft.PowerShell.Commands.WebRequestSession]$session = $connection.session
+    $serverUrl = $connection.serverUrl
 
-        $uri = $serverUrl + '/api/server/channelTags'
-        Write-Debug "Invoking GET Mirth at $uri"
-        try { 
-            $r = Invoke-RestMethod -Uri $uri -Method GET -WebSession $session
-            Write-Debug "...done."
+    $uri = $serverUrl + '/api/server/channelTags'
+    Write-Debug "Invoking GET Mirth at $uri"
+    try { 
+      $r = Invoke-RestMethod -Uri $uri -Method GET -WebSession $session
+      Write-Debug "...done."
 
-            if ($saveXML) {
-                Save-Content $r $outFile
-            }
-            Write-Verbose "$($r.OuterXml)"
-            return $r
-        }
-        catch {
-            Write-Error $_
-        }
+      if ($saveXML) {
+        Save-Content $r $outFile
+      }
+      Write-Verbose "$($r.OuterXml)"
+            
+      if ($Raw) {
+        $r
+      }
+      else {
+        ConvertFrom-Xml $r.DocumentElement @{'set' = 'channelTag'; 'channelIds' = 'string' }
+      }
     }
-    END { 
-        Write-Debug "Get-MirthChannelTags Ending" 
-    } 
+    catch {
+      Write-Error $_
+    }
+  }
+  END { 
+    Write-Debug "Get-MirthChannelTags Ending" 
+  } 
 }  #  Get-MirthChannelTags

@@ -35,6 +35,9 @@ function Get-MirthServerTime {
         # Saves the response from the server as a file in the current location.
         [Parameter()]
         [switch]$saveXML,
+
+        [Parameter()]
+        [switch]$Raw,
         
         # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
         [Parameter()]
@@ -63,7 +66,13 @@ function Get-MirthServerTime {
                 Save-Content $r $outFile
             }
             Write-Verbose "$($r.OuterXml)"
-            return $r
+            
+            if ($Raw) {
+                $r
+            }
+            else {
+                ConvertFrom-Xml $r.DocumentElement
+            }
         }
         catch {
             Write-Error $_

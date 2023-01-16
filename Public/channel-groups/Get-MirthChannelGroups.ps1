@@ -112,7 +112,7 @@ function Get-MirthChannelGroups {
                 $r
             }
             else {
-                Convert-XmlToList $r.DocumentElement @{
+                ConvertFrom-Xml $r.DocumentElement @{
                     'list'     = 'channelGroup'
                     'channels' = 'channel'
                 }

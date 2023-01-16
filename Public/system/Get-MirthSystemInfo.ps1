@@ -87,7 +87,7 @@ function Get-MirthSystemInfo {
         else { 
             Write-Debug "Converting XML response to hashtable"
 
-            Convert-XmlToHashtable $r.DocumentElement
+            ConvertFrom-Xml $r.DocumentElement
         }
     }
     catch {

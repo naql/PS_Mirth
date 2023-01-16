@@ -82,8 +82,8 @@ function Get-MirthServerChannelMetadata {
                 $returnMap = @{}
                 foreach ($entry in $r.map.entry) { 
                     $channelId = $entry.string
-                    $metaData = $entry.SelectSingleNode("com.mirth.connect.model.ChannelMetadata")
-                    $returnMap[$channelId] = $metaData
+                    $metaData = $entry."com.mirth.connect.model.ChannelMetadata"
+                    $returnMap[$channelId] = ConvertFrom-Xml $metaData
                 }
                 return $returnMap
             }

@@ -8,7 +8,7 @@
   CompanyName          = 'DataSprite'
   Copyright            = '(c) 2020 DataSprite. All rights reserved.'
   Description          = 'Provides a PowerShell wrapper for the Mirth RESTful API.'
-  FunctionsToExport    = @("*-Mirth*", "*-PSMirth*", "*-PSConfig", "*Completer")
+  FunctionsToExport    = "*"
   CmdletsToExport      = @()
   VariablesToExport    = @()
   AliasesToExport      = '*'

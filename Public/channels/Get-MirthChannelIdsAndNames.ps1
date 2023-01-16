@@ -6,7 +6,14 @@ function Get-MirthChannelIdsAndNames {
         [Parameter(ValueFromPipeline = $True)]
         [MirthConnection]$connection = $currentConnection,
         [switch]
-        $Raw
+        $Raw,
+        # Saves the response from the server as a file in the current location.
+        [Parameter()]
+        [switch]$saveXML,
+
+        # Optional output filename for the saveXML switch, default is "Save-[command]-Output.xml"
+        [Parameter()]
+        [string]$outFile = 'Save-' + $MyInvocation.MyCommand + '-Output.xml'
     )
     BEGIN {
         Write-Debug 'Get-MirthChannelIdsAndNames Beginning'
@@ -25,13 +32,24 @@ function Get-MirthChannelIdsAndNames {
         Write-Debug "Invoking GET Mirth at $uri"
         try {
             $r = Invoke-RestMethod -Uri $uri -Method GET -WebSession $session -Headers $headers
-            Write-Debug "Parsing response"
             
+            if ($saveXML) { 
+                Save-Content $r $outFile
+            }
+
             if ($Raw) {
                 $r
             }
             else {
-                $channelIdsAndNames = Convert-XmlMapToHashtable $r.DocumentElement "entry" "string"
+                Write-Debug "Parsing response"
+                
+                #$channelIdsAndNames = Convert-XmlMapToHashtable $r.DocumentElement "entry" "string"
+                
+                $channelIdsAndNames = @{}
+                #results are ordered ID then name
+                foreach ($entry in $r.map.entry) {
+                    $channelIdsAndNames.Add($entry.string[0], $entry.string[1])
+                }
     
                 NotifyChannelMapCacheUpdate $channelIdsAndNames
     
