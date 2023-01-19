@@ -105,7 +105,7 @@ function Get-MirthConfigMap {
           $returnMap[$channelId] = $metaData
         }
         return $returnMap#>
-        ConvertFrom-Xml $r.DocumentElement -MapNames @('com.mirth.connect.util.ConfigurationProperty/value')
+        ConvertFrom-Xml $r.DocumentElement -ConvertAsMap @{'map' = $true }
       }
     }
     catch {

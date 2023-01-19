@@ -79,7 +79,7 @@ function Get-MirthChannelMsgById {
                 $r
             }
             else {
-                ConvertFrom-Xml $r.DocumentElement @{'connectorMessages' = 'entry' }
+                ConvertFrom-Xml $r.DocumentElement -ConvertAsMap @{'connectorMessages' = $false }
             }
         }
         catch {

@@ -91,7 +91,7 @@ function Get-MirthServerSettings {
                 $r
             }
             else {
-                ConvertFrom-Xml $r.DocumentElement -ConvertAsList @{'defaultMetaDataColumns' = 'metaDataColumn' }
+                ConvertFrom-Xml $r.DocumentElement -ConvertAsList @('defaultMetaDataColumns')
             }
         }
         catch {
