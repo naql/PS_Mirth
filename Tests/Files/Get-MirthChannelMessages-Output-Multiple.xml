@@ -1,0 +1,234 @@
+<list>
+  <message>
+    <messageId>2</messageId>
+    <serverId>e58c38ae-740d-4225-b1d5-5f4d895d9a1d</serverId>
+    <channelId>024bb1b2-f235-4497-92e2-86d9b386918e</channelId>
+    <receivedDate>
+      <time>1674104862106</time>
+      <timezone>America/Chicago</timezone>
+    </receivedDate>
+    <processed>true</processed>
+    <connectorMessages class="linked-hash-map">
+      <entry>
+        <int>0</int>
+        <connectorMessage>
+          <messageId>2</messageId>
+          <metaDataId>0</metaDataId>
+          <channelId>024bb1b2-f235-4497-92e2-86d9b386918e</channelId>
+          <channelName>Useless new channel</channelName>
+          <connectorName>Source</connectorName>
+          <serverId>e58c38ae-740d-4225-b1d5-5f4d895d9a1d</serverId>
+          <receivedDate>
+            <time>1674104862106</time>
+            <timezone>America/Chicago</timezone>
+          </receivedDate>
+          <status>TRANSFORMED</status>
+          <sourceMapContent>
+            <encrypted>false</encrypted>
+            <content class="map" />
+          </sourceMapContent>
+          <connectorMapContent>
+            <encrypted>false</encrypted>
+            <content class="map" />
+          </connectorMapContent>
+          <channelMapContent>
+            <encrypted>false</encrypted>
+            <content class="map" />
+          </channelMapContent>
+          <responseMapContent>
+            <encrypted>false</encrypted>
+            <content class="map" />
+          </responseMapContent>
+          <metaDataMap />
+          <processingErrorContent>
+            <encrypted>false</encrypted>
+          </processingErrorContent>
+          <postProcessorErrorContent>
+            <encrypted>false</encrypted>
+          </postProcessorErrorContent>
+          <responseErrorContent>
+            <encrypted>false</encrypted>
+          </responseErrorContent>
+          <errorCode>0</errorCode>
+          <sendAttempts>1</sendAttempts>
+          <responseDate>
+            <time>1674104862111</time>
+            <timezone>America/Chicago</timezone>
+          </responseDate>
+          <chainId>0</chainId>
+          <orderId>0</orderId>
+        </connectorMessage>
+      </entry>
+      <entry>
+        <int>1</int>
+        <connectorMessage>
+          <messageId>2</messageId>
+          <metaDataId>1</metaDataId>
+          <channelId>024bb1b2-f235-4497-92e2-86d9b386918e</channelId>
+          <channelName>Useless new channel</channelName>
+          <connectorName>Destination 1</connectorName>
+          <serverId>e58c38ae-740d-4225-b1d5-5f4d895d9a1d</serverId>
+          <receivedDate>
+            <time>1674104862108</time>
+            <timezone>America/Chicago</timezone>
+          </receivedDate>
+          <status>SENT</status>
+          <sourceMapContent>
+            <encrypted>false</encrypted>
+            <content class="map" />
+          </sourceMapContent>
+          <connectorMapContent>
+            <encrypted>false</encrypted>
+            <content class="map" />
+          </connectorMapContent>
+          <channelMapContent>
+            <encrypted>false</encrypted>
+            <content class="map" />
+          </channelMapContent>
+          <responseMapContent>
+            <encrypted>false</encrypted>
+            <content class="map" />
+          </responseMapContent>
+          <metaDataMap />
+          <processingErrorContent>
+            <encrypted>false</encrypted>
+          </processingErrorContent>
+          <postProcessorErrorContent>
+            <encrypted>false</encrypted>
+          </postProcessorErrorContent>
+          <responseErrorContent>
+            <encrypted>false</encrypted>
+          </responseErrorContent>
+          <errorCode>0</errorCode>
+          <sendAttempts>1</sendAttempts>
+          <sendDate>
+            <time>1674104862110</time>
+            <timezone>America/Chicago</timezone>
+          </sendDate>
+          <responseDate>
+            <time>1674104862110</time>
+            <timezone>America/Chicago</timezone>
+          </responseDate>
+          <chainId>1</chainId>
+          <orderId>1</orderId>
+        </connectorMessage>
+      </entry>
+    </connectorMessages>
+  </message>
+  <message>
+    <messageId>1</messageId>
+    <serverId>e58c38ae-740d-4225-b1d5-5f4d895d9a1d</serverId>
+    <channelId>024bb1b2-f235-4497-92e2-86d9b386918e</channelId>
+    <receivedDate>
+      <time>1674103247236</time>
+      <timezone>America/Chicago</timezone>
+    </receivedDate>
+    <processed>true</processed>
+    <connectorMessages class="linked-hash-map">
+      <entry>
+        <int>0</int>
+        <connectorMessage>
+          <messageId>1</messageId>
+          <metaDataId>0</metaDataId>
+          <channelId>024bb1b2-f235-4497-92e2-86d9b386918e</channelId>
+          <channelName>Useless new channel</channelName>
+          <connectorName>Source</connectorName>
+          <serverId>e58c38ae-740d-4225-b1d5-5f4d895d9a1d</serverId>
+          <receivedDate>
+            <time>1674103247236</time>
+            <timezone>America/Chicago</timezone>
+          </receivedDate>
+          <status>TRANSFORMED</status>
+          <sourceMapContent>
+            <encrypted>false</encrypted>
+            <content class="map" />
+          </sourceMapContent>
+          <connectorMapContent>
+            <encrypted>false</encrypted>
+            <content class="map" />
+          </connectorMapContent>
+          <channelMapContent>
+            <encrypted>false</encrypted>
+            <content class="map" />
+          </channelMapContent>
+          <responseMapContent>
+            <encrypted>false</encrypted>
+            <content class="map" />
+          </responseMapContent>
+          <metaDataMap />
+          <processingErrorContent>
+            <encrypted>false</encrypted>
+          </processingErrorContent>
+          <postProcessorErrorContent>
+            <encrypted>false</encrypted>
+          </postProcessorErrorContent>
+          <responseErrorContent>
+            <encrypted>false</encrypted>
+          </responseErrorContent>
+          <errorCode>0</errorCode>
+          <sendAttempts>1</sendAttempts>
+          <responseDate>
+            <time>1674103247276</time>
+            <timezone>America/Chicago</timezone>
+          </responseDate>
+          <chainId>0</chainId>
+          <orderId>0</orderId>
+        </connectorMessage>
+      </entry>
+      <entry>
+        <int>1</int>
+        <connectorMessage>
+          <messageId>1</messageId>
+          <metaDataId>1</metaDataId>
+          <channelId>024bb1b2-f235-4497-92e2-86d9b386918e</channelId>
+          <channelName>Useless new channel</channelName>
+          <connectorName>Destination 1</connectorName>
+          <serverId>e58c38ae-740d-4225-b1d5-5f4d895d9a1d</serverId>
+          <receivedDate>
+            <time>1674103247246</time>
+            <timezone>America/Chicago</timezone>
+          </receivedDate>
+          <status>SENT</status>
+          <sourceMapContent>
+            <encrypted>false</encrypted>
+            <content class="map" />
+          </sourceMapContent>
+          <connectorMapContent>
+            <encrypted>false</encrypted>
+            <content class="map" />
+          </connectorMapContent>
+          <channelMapContent>
+            <encrypted>false</encrypted>
+            <content class="map" />
+          </channelMapContent>
+          <responseMapContent>
+            <encrypted>false</encrypted>
+            <content class="map" />
+          </responseMapContent>
+          <metaDataMap />
+          <processingErrorContent>
+            <encrypted>false</encrypted>
+          </processingErrorContent>
+          <postProcessorErrorContent>
+            <encrypted>false</encrypted>
+          </postProcessorErrorContent>
+          <responseErrorContent>
+            <encrypted>false</encrypted>
+          </responseErrorContent>
+          <errorCode>0</errorCode>
+          <sendAttempts>1</sendAttempts>
+          <sendDate>
+            <time>1674103247272</time>
+            <timezone>America/Chicago</timezone>
+          </sendDate>
+          <responseDate>
+            <time>1674103247272</time>
+            <timezone>America/Chicago</timezone>
+          </responseDate>
+          <chainId>1</chainId>
+          <orderId>1</orderId>
+        </connectorMessage>
+      </entry>
+    </connectorMessages>
+  </message>
+</list>

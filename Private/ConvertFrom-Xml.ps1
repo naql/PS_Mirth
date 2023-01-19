@@ -15,28 +15,26 @@ function ConvertFrom-Xml {
     }
     #$PSBoundParameters.Remove("Data")
     #Write-Debug "ConvertFrom-Xml with $Data, `@PSBoundParameters=$($PSBoundParameters.GetEnumerator())"
-    
+
     
     if ($Data -is [string]) {
-        #Write-Debug "Data is string"
+        #Write-Debug "ConvertFrom-Xml with string $Data"
         $Data
     }
     elseif ($Data -is [array]) {
-        #Write-Debug "Data is array"
-        $Result = foreach ($Item in $Data) {
-            ConvertFrom-Xml $Item @splat
-        }
+        #Write-Debug "ConvertFrom-Xml with array $Data"
+        [array]$Result = $Data | ForEach-Object { ConvertFrom-Xml $_ @splat }
         $Result
     }
     elseif ($Data -is [System.Xml.XmlElement]) {
-        #Write-Debug "Data is XML"
+        #Write-Debug "ConvertFrom-Xml with XML $($Data.Name)"
 
         if ($MapNames.Count -gt 0 -and $Data.LocalName -eq 'map') {
-            #Write-Debug "MAP AWARE MATCHED 'map' with non-empty `$MapNames"
+            Write-Debug "MAP AWARE MATCHED 'map' with non-empty `$MapNames"
 
             if ($Data.entry.Count -gt 0) {
                 #find a valid map name
-                $ValidMapName = $MapNames | where { $null -ne $Data.entry[0].SelectSingleNode($_) }
+                $ValidMapName = $MapNames | Where-Object { $null -ne $Data.entry[0].SelectSingleNode($_) }
 
                 if ($null -ne $ValidMapName -and $ValidMapName.Count -eq 1) {
                     #Write-Debug "Using `$ValidMapName=$ValidMapName"
@@ -65,7 +63,7 @@ function ConvertFrom-Xml {
         }
         
         if ($ConvertAsList.Keys -contains $Data.LocalName) {
-            #Write-Debug "Found element $($Data.LocalName) in conversion list"
+            Write-Debug "Found element '$($Data.LocalName)' in conversion list"
             #Write-Debug "`$ConvertAsList=$($ConvertAsList.GetEnumerator())"
             
             $ChildProperty = $ConvertAsList[$Data.LocalName]
@@ -74,10 +72,18 @@ function ConvertFrom-Xml {
             $Children = $Data.$ChildProperty
             #Write-Debug "Iterating $($Children.GetEnumerator())"
 
-            $ResultList = foreach ($Item in $Children) {
-                ConvertFrom-Xml $Item @splat
+            [array]$ResultList = $Children | ForEach-Object { ConvertFrom-Xml $_ @splat }
+            #Write-Debug "`$Data=$($Data.Name) has `$ResultList.GetType()=$($ResultList.GetType()) with Count=$($ResultList.Count)"
+            
+            #This is such a stupid bug to deal with: a 1-item array returns
+            # its first value from this function, not the array itself!
+            #So you can't just have: $ResultList
+            if ($ResultList.Count -eq 1) {
+                , $ResultList
             }
-            $ResultList
+            else {
+                $ResultList
+            }
         }
         else {
             $Properties = Get-XmlProperties $Data
@@ -90,7 +96,7 @@ function ConvertFrom-Xml {
         }
     }
     else {
-        Write-Error "Unknown type: $($Data.GetType())"
+        Write-Error "Unknown type: $($Data.GetType()), returning as-is"
         $Data
     }
 }

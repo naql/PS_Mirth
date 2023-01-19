@@ -52,6 +52,22 @@ Describe 'ConvertFrom-Xml' {
         $item.pruningSettings | Should -BeOfType hashtable
     }
 
+    It 'Given a channel with multiple "message" entries, it should return an array of hashtables' {
+        $test_input = ([xml](Get-Content .\Tests\Files\Get-MirthChannelMessages-Output-Multiple.xml)).DocumentElement
+        $response = ConvertFrom-Xml $test_input -ConvertAsList @{'list' = 'message'; 'connectorMessages' = 'entry' }
+        $response.Count | Should -be 2
+        #not sure why it fails with -BeOfType array, use alternative
+        $response -is [array] | Should -Be $true
+    }
+
+    It 'Given a channel with a single "message" entry, it should return a valid hashtable' {
+        $test_input = ([xml](Get-Content .\Tests\Files\Get-MirthChannelMessages-Output-Single.xml)).DocumentElement
+        $response = ConvertFrom-Xml $test_input -ConvertAsList @{'list' = 'message'; 'connectorMessages' = 'entry' }
+        $response.Count | Should -be 1
+        #not sure why it fails with -BeOfType array, use alternative
+        $response -is [array] | Should -be $true
+    }
+
     #this is currently a custom conversion
     <#It 'Given an extension properties xml, it should return valid data' {
         $test_input = ([xml](Get-Content ".\Tests\Files\Save-Get-MirthExtensionProperties-SSL Manager-Output.xml")).DocumentElement
