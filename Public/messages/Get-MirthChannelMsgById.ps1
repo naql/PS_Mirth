@@ -51,7 +51,7 @@ function Get-MirthChannelMsgById {
         Write-Debug "Get-MirthChannelMsgById Beginning"
     }
     PROCESS { 
-        #GET /channels/{channelId}/messages/maxMessageId
+        #GET /channels/{channelId}/messages/{messageId}
         if ($null -eq $connection) { 
             Throw "You must first obtain a MirthConnection by invoking Connect-Mirth"    
         }          

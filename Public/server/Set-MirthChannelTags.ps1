@@ -105,7 +105,7 @@ function Set-MirthChannelTags {
         
         $uri = $serverUrl + '/api/server/channelTags'
         $headers = $DEFAULT_HEADERS.Clone()
-        $headers.Add("Accept", "application/xml")
+        $headers.Add("accept", "application/xml")
         $headers.Add("Content-Type", "application/xml")
 
         Write-Debug "PUT to Mirth $uri "

@@ -105,7 +105,7 @@ function Set-MirthGlobalScripts {
             $payLoadXML = [xml]$payLoad
         }
         $headers = $DEFAULT_HEADERS.Clone()
-        $headers.Add("Accept", "application/xml")
+        $headers.Add("accept", "application/xml")
         $headers.Add("Content-Type", "application/xml")
 
         Write-Debug "Invoking PUT Mirth API server at: $uri "

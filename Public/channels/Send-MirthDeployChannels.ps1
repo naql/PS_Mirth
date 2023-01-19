@@ -69,7 +69,7 @@ function Send-MirthDeployChannels {
         }
 
         $headers = $DEFAULT_HEADERS.Clone()
-        $headers.Add("Accept", "application/xml")
+        $headers.Add("accept", "application/xml")
         $headers.Add("Content-Type", "application/xml")
 
         $uri = $serverUrl + '/api/channels/_deploy'

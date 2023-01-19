@@ -73,7 +73,7 @@ function Get-MirthUsers {
             $uri = "$uri/$targetId"
         }
         $headers = $DEFAULT_HEADERS.Clone()
-        $headers.Add("Accept", "application/xml")
+        $headers.Add("accept", "application/xml")
 
         Write-Debug "Invoking GET Mirth  $uri "
         try { 

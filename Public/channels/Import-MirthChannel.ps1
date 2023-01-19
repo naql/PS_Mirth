@@ -81,7 +81,7 @@ function Import-MirthChannel {
         $uri = $serverUrl + '/api/channels'
         Write-Debug "POST to Mirth $uri "
         $headers = $DEFAULT_HEADERS.Clone()
-        $headers.Add("Accept", 'text/plain')
+        $headers.Add("accept", 'text/plain')
         $headers.Add("Content-Type", 'application/xml')
         try {
             $r = Invoke-RestMethod -Uri $uri -WebSession $session -Method POST -Headers $headers -Body $channelXML.OuterXml

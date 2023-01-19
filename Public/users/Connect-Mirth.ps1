@@ -45,7 +45,7 @@ function Connect-Mirth {
         Write-Debug "userName = $userName"
         Write-Debug ("userPass = {0}" -f (ConvertFrom-SecureString $userPass -AsPlainText))
         $headers = $DEFAULT_HEADERS.Clone()
-        $headers.Add("Accept", "application/xml")
+        $headers.Add("accept", "application/xml")
         $uri = $serverUrl + '/api/users/_login'
         $body = ("username={0}&password={1}" -f $userName, (ConvertFrom-SecureString $userPass -AsPlainText))
         try { 

@@ -27,7 +27,7 @@ function Get-MirthChannelIdsAndNames {
 
         $uri = $serverUrl + '/api/channels/idsAndNames'
         $headers = $DEFAULT_HEADERS.Clone()
-        $headers.Add("Accept", "application/xml")
+        $headers.Add("accept", "application/xml")
         
         Write-Debug "Invoking GET Mirth at $uri"
         try {

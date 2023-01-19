@@ -55,7 +55,7 @@ function Get-MirthServerTime {
  
         $uri = $serverUrl + '/api/server/time'
         $headers = $DEFAULT_HEADERS.Clone();
-        $headers.Add("Accept", "application/xml")
+        $headers.Add("accept", "application/xml")
         $headers.Add("Content-Type", "application/xml")
 
         Write-Debug "Invoking GET Mirth API server at: $uri "

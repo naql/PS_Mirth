@@ -74,7 +74,7 @@ function Test-MirthFileReadWrite {
         $parameters.Add('channelName', $channelName)
 
         $headers = $DEFAULT_HEADERS.Clone()
-        $headers.Add("Accept", "application/xml")
+        $headers.Add("accept", "application/xml")
         $headers.Add("Content-Type", "application/xml")
       
         $result = $True

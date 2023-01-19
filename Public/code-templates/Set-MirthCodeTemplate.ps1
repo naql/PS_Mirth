@@ -80,7 +80,7 @@ function Set-MirthCodeTemplate {
         $parameters.Add('override', $override)
         $uri = $uri + '?' + $parameters.toString()
         $headers = $DEFAULT_HEADERS.Clone()
-        $headers.Add("Accept", "application/xml")
+        $headers.Add("accept", "application/xml")
         $headers.Add("Content-Type", "application/xml")
         Write-Debug "Invoking PUT Mirth API server at: $uri "
         try { 

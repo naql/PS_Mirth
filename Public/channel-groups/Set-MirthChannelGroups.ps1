@@ -94,7 +94,7 @@ function Set-MirthChannelGroups {
         $parameters.Add('override', $override)
         $uri = $uri + '?' + $parameters.toString()
         $headers = $DEFAULT_HEADERS.Clone()
-        $headers.Add("Accept", "application/xml")  
+        $headers.Add("accept", "application/xml")  
         $headers.Add("Content-Type", "multipart/form-data; boundary=`"$boundary`"")
 
         Write-Debug "POST to Mirth $uri "

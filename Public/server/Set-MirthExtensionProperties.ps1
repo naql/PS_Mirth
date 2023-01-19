@@ -78,7 +78,7 @@ function Set-MirthExtensionProperties {
         $serverUrl = $connection.serverUrl
          
         $headers = $DEFAULT_HEADERS.Clone()
-        $headers.Add("Accept", "application/xml")
+        $headers.Add("accept", "application/xml")
         $headers.Add("Content-Type", "application/xml")
         $targetId = [uri]::EscapeDataString($targetId)
         $uri = $serverUrl + '/api/extensions/' + $targetId + "/properties"

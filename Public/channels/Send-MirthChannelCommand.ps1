@@ -75,7 +75,7 @@ function Send-MirthChannelCommand {
 
         $headers = $DEFAULT_HEADERS.Clone()
         $headers.Add("Content-Type", "application/x-www-form-urlencoded");
-        $headers.Add("Accept", "application/xml")
+        $headers.Add("accept", "application/xml")
 
         $uri = $serverUrl + "/api/channels/_$command"
         $parameters = [System.Web.HttpUtility]::ParseQueryString([String]::Empty)

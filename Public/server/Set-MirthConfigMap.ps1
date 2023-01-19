@@ -165,7 +165,7 @@ function Set-MirthConfigMap {
         }  # if merging
 
         $headers = $DEFAULT_HEADERS.Clone()
-        $headers.Add("Accept", "application/xml")
+        $headers.Add("accept", "application/xml")
         $headers.Add("Content-Type", "application/xml")
 
         Write-Debug "Invoking PUT Mirth API server at: $uri "
