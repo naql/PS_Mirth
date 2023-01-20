@@ -30,6 +30,37 @@ function ConvertFrom-Xml {
     elseif ($Data -is [System.Xml.XmlElement]) {
         #Write-Debug "ConvertFrom-Xml with XML $($Data.Name)"
 
+        <#enum MapParseType {
+            None
+            Regular
+            Special
+        }#>
+
+        #$CurrentParseType = [MapParseType]::None
+        <#
+        $ConvertAsMap = $ConvertAsMap.Clone()
+        #$ConvertAsMap.Add($Data.Name, $true)
+
+        if ($Data.HasAttribute('class')) {
+            switch ($Data.Attributes['class'].Value) {
+                "map" {
+                    Write-Debug "Found class='map' for $($Data.Name)"
+                    $ConvertAsMap.Add($Data.Name, $true)
+                }
+                'java.util.Collections$UnmodifiableMap' {
+                    Write-Debug "Found class='java.util.Collections/UnmodifiableMap' for $($Data.Name)"
+                    # move down to the <m> element
+                    $Data = $Data.m
+                    $ConvertAsMap.Add($Data.Name, $true)
+                }
+                Default {}
+            }
+        }#>
+
+        <#if($CurrentParseType -eq [MapParseType]::None -and $ConvertAsMap.Keys -contains $Data.LocalName) {
+            $CurrentParseType = [MapParseType]::Regular
+        }#>
+
         #check for class attribute with specific value
         if ($Data.HasAttribute('class') -and $Data.Attributes['class'].Value -eq 'java.util.Collections$UnmodifiableMap') {
             Write-Debug "Found class java.util.Collections/UnmodifiableMap"
@@ -55,8 +86,8 @@ function ConvertFrom-Xml {
         }
 
         #should we convert this element as a map?
-        if ($ConvertAsMap.Count -gt 0 -and $ConvertAsMap.Keys -contains $Data.LocalName) {
-            Write-Debug "Matched name within `$ConvertAsMap"
+        if ($ConvertAsMap.Keys -contains $Data.LocalName) {
+            Write-Debug "Matched name '$($Data.LocalName)' within `$ConvertAsMap"
 
             #Determine the subelement to access
             $XmlProperty = Get-XmlProperties $Data
@@ -74,7 +105,7 @@ function ConvertFrom-Xml {
             #Write-Debug "`$SubElem=$SubElem"
 
             if ($SubElem.ChildNodes.Count -gt 0) {
-                Write-Debug "Continuing to process SubElement'$($SubElem.LocalName)' as a map as it contains entries"
+                Write-Debug "Continuing to process SubElement '$($SubElem.LocalName)' as a map as it contains entries"
 
                 #pull the first child node's name as that's the key
                 $MasterProperties = $SubElem.ChildNodes | Get-UsableChildNodeNames
@@ -91,16 +122,31 @@ function ConvertFrom-Xml {
                 $IsSimpleContent = $ConvertAsMap[$Data.LocalName] -eq $true
                 #Write-Debug "`$IsSimpleContent=$IsSimpleContent"
                 $grouped.Keys.Clone() | ForEach-Object {
-                    $InnerData = $grouped[$_][0].$ValueProperty
+                    $GroupKey = $_
+                    $InnerData = $grouped[$GroupKey][0].$ValueProperty
                     if ($IsSimpleContent) {
-                        #$grouped[$_] = $InnerData.InnerText.Trim()
-                        #$grouped[$_] = $InnerData.ChildNodes[0].InnerText
+                        #$grouped[$GroupKey] = $InnerData.InnerText.Trim()
+                        #$grouped[$GroupKey] = $InnerData.ChildNodes[0].InnerText
                         $InnerNodeName = $InnerData.ChildNodes | Get-UsableChildNodeNames
-                        $grouped[$_] = $InnerData.SelectSingleNode($InnerNodeName).InnerText
+                        Write-Debug "Found `$InnerNodeName=$InnerNodeName"
+                        $grouped[$GroupKey] = $InnerData.SelectSingleNode($InnerNodeName).InnerText
                     }
                     else {
-                        $grouped[$_] = ConvertFrom-Xml $InnerData @splat
+                        $grouped[$GroupKey] = ConvertFrom-Xml $InnerData @splat
                     }
+
+                    #$grouped[$GroupKey] = ConvertFrom-Xml $InnerData @splat
+                    <#$InnerNodeName = $InnerData.ChildNodes | Get-UsableChildNodeNames
+                    Write-Debug "Found `$InnerNodeName=$InnerNodeName"
+                    #determines if simple content
+                    If ($InnerNodeName.Count -eq 1) {
+                        Write-Debug "Found simple content"
+                        $grouped[$GroupKey] = $InnerData.SelectSingleNode($InnerNodeName).InnerText
+                    }
+                    else {
+                        Write-Debug "Found complex content"
+                        $grouped[$GroupKey] = ConvertFrom-Xml $InnerData @splat
+                    }#>
                 }
                 return $grouped
             }

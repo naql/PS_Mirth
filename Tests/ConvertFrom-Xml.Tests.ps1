@@ -16,20 +16,20 @@ Describe 'ConvertFrom-Xml' {
     It 'Given simple xml, it should return a single node' {
         $test_input = ([xml]"<list><entry/></list>").DocumentElement
         $response = ConvertFrom-Xml -Data $test_input
-        $response.Count | Should -Be 1
+        $response | Should -HaveCount 1
     }
 
     It 'Given simple xml with a class attr, it should return a single node' {
         $test_input = ([xml]"<list class='map'><entry/></list>").DocumentElement
         $response = ConvertFrom-Xml -Data $test_input
-        $response.Count | Should -Be 1
+        $response | Should -HaveCount 1
     }
     
     It 'Given a channel status xml, it should return multiple lists' {
         $test_input = ([xml](Get-Content .\Tests\Files\Save-Get-MirthChannelStatuses-Output.xml)).DocumentElement
         $response = ConvertFrom-Xml $test_input -ConvertAsList @('list', 'statistics', 'lifetimeStatistics')
         $response -is [array] | Should -Be $true
-        $response.Count | Should -Be 11
+        $response | Should -HaveCount 11
         $response[0].statistics -is [array] | Should -Be $true
         $response[0].lifetimeStatistics -is [array] | Should -Be $true
     }
@@ -37,6 +37,20 @@ Describe 'ConvertFrom-Xml' {
     It 'Given a channel message xml, it should return data of the correct types' {
         $test_input = ([xml](Get-Content .\Tests\Files\Save-Get-MirthChannelMsgById-Output.xml)).DocumentElement
         $response = ConvertFrom-Xml $test_input -ConvertAsMap @{'connectorMessages' = $false }
+        $response.Count | Should -Be 6
+        #TODO not sure why it's failing to see it as an array, sees a hashtable
+        #$response.connectorMessages | Should -BeOfType array
+        $response.connectorMessages.Count | Should -Be 2
+        $response.connectorMessages['0'] -is [hashtable] | Should -Be $true
+        $response.connectorMessages['0'].Count | Should -Be 23
+        $response.connectorMessages['0'].receivedDate.Count | Should -Be 2
+        $response.connectorMessages['0'].raw -is [hashtable] | Should -Be $true
+    }
+
+    #TODO implement this
+    It 'Given a content map with matching child nodes, it should return valid data' {
+        $test_input = ([xml](Get-Content .\Tests\Files\minimal-content-map-matching-node-names.xml)).DocumentElement
+        $response = ConvertFrom-Xml $test_input
         $response.Count | Should -Be 6
         #TODO not sure why it's failing to see it as an array, sees a hashtable
         #$response.connectorMessages | Should -BeOfType array
@@ -67,7 +81,7 @@ Describe 'ConvertFrom-Xml' {
     It 'Given a channel with multiple "message" entries, it should return an array of hashtables with an inner hashtable' {
         $test_input = ([xml](Get-Content .\Tests\Files\Get-MirthChannelMessages-Output-Multiple.xml)).DocumentElement
         $response = ConvertFrom-Xml $test_input -ConvertAsList @('list') -ConvertAsMap @{ 'connectorMessages' = $false }
-        $response.Count | Should -be 2
+        $response | Should -HaveCount 2
         #not sure why it fails with -BeOfType array, using alternative
         $response -is [array] | Should -Be $true
         $response[0].connectorMessages -is [hashtable] | Should -Be $true
@@ -76,10 +90,26 @@ Describe 'ConvertFrom-Xml' {
     It 'Given a channel with a single "message" entry, it should return a valid hashtable with an inner hashtable' {
         $test_input = ([xml](Get-Content .\Tests\Files\Get-MirthChannelMessages-Output-Single.xml)).DocumentElement
         $response = ConvertFrom-Xml $test_input -ConvertAsList @('list') -ConvertAsMap @{'connectorMessages' = $false }
-        $response.Count | Should -be 1
+        $response | Should -HaveCount 1
         #not sure why it fails with -BeOfType array, using alternative
         $response -is [array] | Should -be $true
         $response[0].connectorMessages -is [hashtable] | Should -Be $true
+    }
+
+    #TODO implement this
+    It 'Given a channel with a <content class="map">, it should return "content" as hashtable without "entry"' -Skip {
+        $test_input = ([xml](Get-Content .\Tests\Files\Get-MirthChannelMessages-Output-Multiple-WithContentIncluded.xml)).DocumentElement
+        $response = ConvertFrom-Xml $test_input -ConvertAsList @('list') -ConvertAsMap @{'connectorMessages' = $false }
+        $response[0].ConnectorMessages['0'].responseMapContent.content.Count | Should -Be 1
+        $response[0].ConnectorMessages['0'].responseMapContent.content.ContainsKey('entry') | Should -be $false
+    }
+
+    #TODO implement this
+    It 'Given minimal XML containing <content class="map">, it should return "content" as hashtable without "entry"' -Skip {
+        $test_input = ([xml](Get-Content .\Tests\Files\minimal-content-map.xml)).DocumentElement
+        $response = ConvertFrom-Xml $test_input
+        $response.content | Should -HaveCount 1
+        $response.content.ContainsKey('entry') | Should -be $false
     }
 
     #this is currently a custom conversion

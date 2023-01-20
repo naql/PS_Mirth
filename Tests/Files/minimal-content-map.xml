@@ -1,0 +1,14 @@
+<responseMapContent>
+  <encrypted>false</encrypted>
+  <content class="map">
+    <entry>
+      <string>d1</string>
+      <response>
+        <status>SENT</status>
+        <message>
+        </message>
+        <statusMessage>Message routed successfully to channel id: none</statusMessage>
+      </response>
+    </entry>
+  </content>
+</responseMapContent>

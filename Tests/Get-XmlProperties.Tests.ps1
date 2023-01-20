@@ -16,12 +16,12 @@ Describe 'ConvertFrom-Xml' {
     It 'Given a default call, no attributes should be returned' {
         $test_input = ([xml]"<list class='map'><entry/></list>").DocumentElement
         $Properties = Get-XmlProperties $test_input
-        $Properties.Count | Should -Be 1
+        $Properties | Should -HaveCount 1
     }
     
     It 'Given the switch IncludeAttributes, "class" should be returned' {
         $test_input = ([xml]"<list class='map'><entry/></list>").DocumentElement
         $Properties = Get-XmlProperties $test_input -IncludeAttributes
-        $Properties.Count | Should -Be 2
+        $Properties | Should -HaveCount 2
     }
 }
