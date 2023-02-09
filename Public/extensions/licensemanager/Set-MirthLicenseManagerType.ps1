@@ -20,7 +20,7 @@ function Set-MirthLicenseManagerType {
         $serverUrl = $connection.serverUrl
 
         $uri = $serverUrl + '/api/extensions/licensemanager/type'
-        Write-Debug "Invoking GET Mirth $uri "
+        Write-Debug "Invoking PUT Mirth $uri "
 
         $headers = $DEFAULT_HEADERS.clone()
         $headers.Add('Content-Type', 'application/xml')

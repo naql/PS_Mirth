@@ -9,7 +9,7 @@ function Set-MirthLicenseManagerKey {
         [Parameter(Mandatory)]
         [ValidateNotNullOrEmpty()]
         [string]
-        $ValidationResponse
+        $Key
     ) 
     BEGIN { 
         Write-Debug 'Set-MirthLicenseManagerKey Beginning'
@@ -22,14 +22,14 @@ function Set-MirthLicenseManagerKey {
         $serverUrl = $connection.serverUrl
 
         $uri = $serverUrl + '/api/extensions/licensemanager/key'
-        Write-Debug "Invoking GET Mirth $uri "
+        Write-Debug "Invoking PUT Mirth $uri "
 
         $headers = $DEFAULT_HEADERS.clone()
         $headers.Add('Content-Type', 'text/plain')
         $headers.Add('accept', 'application/xml')
 
         try { 
-            $r = Invoke-RestMethod -Uri $uri -Method PUT -Headers $headers -WebSession $session -Body $ValidationResponse
+            $r = Invoke-RestMethod -Uri $uri -Method PUT -Headers $headers -WebSession $session -Body $Key
 
             Write-Debug "...done."
         }

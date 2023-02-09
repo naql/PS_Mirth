@@ -22,7 +22,7 @@ function Set-MirthLicenseManagerValidationResponse {
         $serverUrl = $connection.serverUrl
 
         $uri = $serverUrl + '/api/extensions/licensemanager/validationResponse'
-        Write-Debug "Invoking GET Mirth $uri "
+        Write-Debug "Invoking PUT Mirth $uri "
 
         $headers = $DEFAULT_HEADERS.clone()
         $headers.Add('Content-Type', 'text/plain')
