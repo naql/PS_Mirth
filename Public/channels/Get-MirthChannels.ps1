@@ -224,7 +224,7 @@ function Get-MirthChannels {
                         $NewElem = $r.CreateElement('lastModified')
                         #$NewElem.InnerText = $entry.lastModified
                         $NewElem = $metaDataNode.AppendChild($NewElem)
-                        Convert-HashToXml -Hash $entry.lastModified -Document $r | ForEach-Object { $NewElem.AppendChild($_) }
+                        Convert-HashToXml -Hash $entry.lastModified -Document $r | ForEach-Object { $null = $NewElem.AppendChild($_) }
                     }
                     # pruningSettings
                     if ($null -ne $entry.pruningSettings) {
@@ -232,7 +232,7 @@ function Get-MirthChannels {
                         $NewElem = $r.CreateElement('pruningSettings')
                         #$NewElem.InnerText = $entry.pruningSettings
                         $NewElem = $metaDataNode.AppendChild($NewElem)
-                        Convert-HashToXml -Hash $entry.pruningSettings -Document $r | ForEach-Object { $NewElem.AppendChild($_) }
+                        Convert-HashToXml -Hash $entry.pruningSettings -Document $r | ForEach-Object { $null = $NewElem.AppendChild($_) } 
                     }
                 }
                 else { 
@@ -253,7 +253,7 @@ function Get-MirthChannels {
                     }
                     Write-Debug "channel tag data processed"
                 }
-                else { 
+                else {
                     Write-Debug "There were no channelTags associated with this channel id."
                 }
                 
@@ -263,7 +263,7 @@ function Get-MirthChannels {
                 if ($exportChannels) {
                     # iterate through list, saving each channel using the name
                     foreach ($channel in $r.list.channel) {
-                        Save-Content $channel $channel.name + '.xml' 
+                        Save-Content $channel ($channel.name + '.xml')
                     }
                 }
                 else {
