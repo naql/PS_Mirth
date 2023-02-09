@@ -19,6 +19,10 @@ function Save-Content {
         if ($Content -is [System.Xml.XmlElement]) {
             $Content = $Content.OuterXml
         }
+        #assume JSON
+        elseif ($Content -is [PSCustomObject]) {
+            $Content = ConvertTo-Json -InputObject $Content -Depth 100
+        }
         Set-Content -Path $destFile -Value $Content
         Write-Debug "Done!"
     }
