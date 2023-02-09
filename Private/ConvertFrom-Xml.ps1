@@ -82,7 +82,7 @@ function ConvertFrom-Xml {
             #>
             $Data = $Data.m
             $ConvertAsMap = $ConvertAsMap.Clone()
-            $ConvertAsMap.Add($Data.Name, $true)
+            $ConvertAsMap.Add($Data.Name, $false)
         }
 
         #should we convert this element as a map?
@@ -112,18 +112,39 @@ function ConvertFrom-Xml {
                 #Write-Debug "Found `$MasterProperties=$MasterProperties"
                 $KeyProperty = $MasterProperties[0]
                 $ValueProperty = $MasterProperties[1]
+
                 #Write-Debug "`$KeyProperty=$KeyProperty, `$ValueProperty=$ValueProperty"
-                #group by the key property
-                $grouped = $SubElems | Group-Object -Property $KeyProperty -AsHashTable
-                #Write-Debug "`$grouped.Count=$($grouped.Count)"
-                #then pipe Values to move each out of a collection, as it's
-                #$grouped['2'][0].messageId instead of $grouped['2'].messageId,
-                #and convert from XML as well.
-                $IsSimpleContent = $ConvertAsMap[$Data.LocalName] -eq $true
-                #Write-Debug "`$IsSimpleContent=$IsSimpleContent"
-                $grouped.Keys.Clone() | ForEach-Object {
+
+                $grouped = @{}
+                #do we have two nodes with the same name?
+                if ($KeyProperty -eq $ValueProperty) {
+                    $SubElems | ForEach-Object {
+                        $grouped[$_.$KeyProperty[0]] = $_.$KeyProperty[1]
+                    }
+                }
+                else {
+                    #group by the key property
+                    $SubElems | ForEach-Object {
+                        $grouped[$_.$KeyProperty] = $_.$ValueProperty
+                    }
+                }
+
+                #$IsSimpleContent = $ConvertAsMap[$Data.LocalName] -eq $true
+
+                #if not simple content
+                if ($ConvertAsMap[$Data.LocalName] -eq $false) {
+                    $grouped.Keys.Clone() | ForEach-Object {
+                        $GroupKey = $_
+                        $InnerData = $grouped[$GroupKey]
+                        Write-Debug "Processing complex content `$GroupKey=$GroupKey, `$InnerData=$InnerData"
+                        $grouped[$GroupKey] = ConvertFrom-Xml $InnerData @splat
+                    }
+                }
+
+                <#$grouped.Keys.Clone() | ForEach-Object {
                     $GroupKey = $_
-                    $InnerData = $grouped[$GroupKey][0].$ValueProperty
+                    $InnerData = $grouped[$GroupKey]
+                    Write-Debug "Processing `$GroupKey=$GroupKey, `$InnerData=$InnerData"
                     if ($IsSimpleContent) {
                         #$grouped[$GroupKey] = $InnerData.InnerText.Trim()
                         #$grouped[$GroupKey] = $InnerData.ChildNodes[0].InnerText
@@ -134,20 +155,8 @@ function ConvertFrom-Xml {
                     else {
                         $grouped[$GroupKey] = ConvertFrom-Xml $InnerData @splat
                     }
-
-                    #$grouped[$GroupKey] = ConvertFrom-Xml $InnerData @splat
-                    <#$InnerNodeName = $InnerData.ChildNodes | Get-UsableChildNodeNames
-                    Write-Debug "Found `$InnerNodeName=$InnerNodeName"
-                    #determines if simple content
-                    If ($InnerNodeName.Count -eq 1) {
-                        Write-Debug "Found simple content"
-                        $grouped[$GroupKey] = $InnerData.SelectSingleNode($InnerNodeName).InnerText
-                    }
-                    else {
-                        Write-Debug "Found complex content"
-                        $grouped[$GroupKey] = ConvertFrom-Xml $InnerData @splat
-                    }#>
-                }
+                }#>
+                
                 return $grouped
             }
         }

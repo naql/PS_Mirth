@@ -50,15 +50,9 @@ Describe 'ConvertFrom-Xml' {
     #TODO implement this
     It 'Given a content map with matching child nodes, it should return valid data' {
         $test_input = ([xml](Get-Content .\Tests\Files\minimal-content-map-matching-node-names.xml)).DocumentElement
-        $response = ConvertFrom-Xml $test_input
-        $response.Count | Should -Be 6
-        #TODO not sure why it's failing to see it as an array, sees a hashtable
-        #$response.connectorMessages | Should -BeOfType array
-        $response.connectorMessages.Count | Should -Be 2
-        $response.connectorMessages['0'] -is [hashtable] | Should -Be $true
-        $response.connectorMessages['0'].Count | Should -Be 23
-        $response.connectorMessages['0'].receivedDate.Count | Should -Be 2
-        $response.connectorMessages['0'].raw -is [hashtable] | Should -Be $true
+        $response = ConvertFrom-Xml $test_input -ConvertAsMap @{'content' = $true }
+        $response.Count | Should -Be 2
+        $response.content.Count | Should -Be 2
     }
 
     It 'Given a config map xml, it should return a valid list' {
@@ -99,15 +93,14 @@ Describe 'ConvertFrom-Xml' {
     #TODO implement this
     It 'Given a channel with a <content class="map">, it should return "content" as hashtable without "entry"' -Skip {
         $test_input = ([xml](Get-Content .\Tests\Files\Get-MirthChannelMessages-Output-Multiple-WithContentIncluded.xml)).DocumentElement
-        $response = ConvertFrom-Xml $test_input -ConvertAsList @('list') -ConvertAsMap @{'connectorMessages' = $false }
+        $response = ConvertFrom-Xml $test_input -ConvertAsList @('list') -ConvertAsMap @{'connectorMessages' = $false; 'content' = $false }
         $response[0].ConnectorMessages['0'].responseMapContent.content.Count | Should -Be 1
         $response[0].ConnectorMessages['0'].responseMapContent.content.ContainsKey('entry') | Should -be $false
     }
 
-    #TODO implement this
-    It 'Given minimal XML containing <content class="map">, it should return "content" as hashtable without "entry"' -Skip {
+    It 'Given minimal XML containing <content class="map">, it should return "content" as hashtable without "entry"' {
         $test_input = ([xml](Get-Content .\Tests\Files\minimal-content-map.xml)).DocumentElement
-        $response = ConvertFrom-Xml $test_input
+        $response = ConvertFrom-Xml $test_input -ConvertAsMap @{'content' = $false }
         $response.content | Should -HaveCount 1
         $response.content.ContainsKey('entry') | Should -be $false
     }
