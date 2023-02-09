@@ -17,10 +17,25 @@ function Connect-Mirth {
         the session is returned.  Otherwise, the [xml] response from the Mirth server is returned.
 
     .EXAMPLE
-        $session = Connect-Mirth -serverUrl https://localhost:5443 -adminUser myUser -adminPass myPass
-        $session = Connect-Mirth -serverUrl va-nrg-t-gold.tmdsmsat.akiproj.com:8443 
-        Connect-Mirth | Write-ServerConfig
+        $session = Connect-Mirth
 
+        Connect using the defaults
+    .EXAMPLE
+        $session = Connect-Mirth -serverUrl https://localhost:5443
+
+        Connect to the URL with default credentials
+    .EXAMPLE
+        $session = Connect-Mirth -serverUrl https://localhost:5443 -Credential $MyCredential
+        
+        Connect using all parameters
+    .EXAMPLE
+        Connect-Mirth | Write-ServerConfig
+    
+        Connect to the server using the defaults and write the server config
+    .EXAMPLE
+        $session = Connect-Mirth -ComputerName "testEnvMirth02" -Port 9000
+
+        Connect to the server using the alternative ParameterSet
     .LINK
         Links to further documentation.
 
