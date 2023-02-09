@@ -27,32 +27,45 @@ function Connect-Mirth {
     .NOTES
         [OutputType([Microsoft.PowerShell.Commands.WebRequestSession])]
     #> 
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName = "Default")]
     PARAM (
-        [Parameter()]
+        [Parameter(ParameterSetName = "Default")]
         [string]$serverUrl = "https://localhost:8443",
+        [Parameter(Mandatory, ParameterSetName = "Split")]
+        [ValidateNotNullOrEmpty()]
+        [string]$ComputerName,
+        [Parameter(Mandatory, ParameterSetName = "Split")]
+        [ValidateNotNull()]
+        [int]$Port,
         [Parameter()]
-        [string]$userName = "admin",
-        [Parameter()]
-        [securestring]$userPass = (ConvertTo-SecureString -String "admin" -AsPlainText)
+        [pscredential]$Credential = $DEFAULT_CREDENTIAL
     )
     BEGIN {
         Write-Debug "Connect-Mirth Beginning..."
     }
     PROCESS {
         Write-Debug "Logging into Mirth..."
-        Write-Debug "serverUrl = $serverUrl"
-        Write-Debug "userName = $userName"
-        Write-Debug ("userPass = {0}" -f (ConvertFrom-SecureString $userPass -AsPlainText))
+        
         $headers = $DEFAULT_HEADERS.Clone()
         $headers.Add("accept", "application/xml")
-        $uri = $serverUrl + '/api/users/_login'
-        $body = ("username={0}&password={1}" -f $userName, (ConvertFrom-SecureString $userPass -AsPlainText))
+
+        if ($ComputerName) {
+            #Write-Debug "Using computer name and port"
+            $uri = "https://{0}:{1}/api/users/_login" -f $ComputerName, $Port
+        }
+        else {
+            $uri = "{0}/api/users/_login" -f $serverUrl
+        }
+
+        Write-Debug "uri = $uri"
+        Write-Debug "Credential = $Credential"
+
+        $body = ("username={0}&password={1}" -f $Credential.UserName, $Credential.GetNetworkCredential().Password)
         try { 
             $r = Invoke-RestMethod -uri $uri -Headers $headers -Body $body -Method POST -SessionVariable session
             Write-Debug ("Response: {0}" -f $r.DocumentElement.status)
 
-            $script:currentConnection = [MirthConnection]::new($session, $serverUrl, $userName, $userPass)
+            $script:currentConnection = [MirthConnection]::new($session, $serverUrl, $Credential.UserName)
 
             if ($script:ChannelAutocomplete -eq [ChannelAutocompleteMode]::Cache) {
                 Get-MirthChannelIdsAndNames

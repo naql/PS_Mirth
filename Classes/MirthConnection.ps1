@@ -4,21 +4,19 @@
 #  When omitted, the dynamically scoped $currentConnection variable is used as the 
 #  default.)
 #
-# New-Object -TypeName MirthConnection -ArgumentList $session, $serverUrl, $userName, $userPass
+# New-Object -TypeName MirthConnection -ArgumentList $session, $serverUrl, $userName
 class MirthConnection {
     [ValidateNotNullOrEmpty()][Microsoft.PowerShell.Commands.WebRequestSession]$session
     [ValidateNotNullOrEmpty()][string]$serverUrl
-    [ValidateNotNullOrEmpty()][string]$userName
-    [ValidateNotNullOrEmpty()][securestring]$userPass
+    [ValidateNotNullOrEmpty()][string]$username
 
-    MirthConnection($session, $serverUrl, $userName, $userPass) {
+    MirthConnection($session, $serverUrl, $username) {
         $this.session = $session
         $this.serverUrl = $serverUrl
-        $this.userName = $userName
-        $this.userPass = $userPass
+        $this.username = $username
     }
 
     [String] ToString() {
-        return "MirthConnection" + ":" + $this.serverUrl + ":" + $this.userName + ":" + $this.userPass
+        return "MirthConnection" + ":" + $this.serverUrl + ":" + $this.username
     }
 }
