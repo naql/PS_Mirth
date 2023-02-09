@@ -39,6 +39,8 @@ $script:DEFAULT_HEADERS = @{
 [string]$script:DEFAULT_OUTPUT_FOLDER = Join-Path $pwd "PS_Mirth_Output"
 [string]$script:SavePath = $DEFAULT_OUTPUT_FOLDER
 
+[pscredential]$script:DEFAULT_CREDENTIAL = [pscredential]::new("admin", (ConvertTo-SecureString "admin" -AsPlainText -Force));
+
 [MirthConnection]$script:currentConnection = $null;
 
 #Option to enable autocompletions of ChannelIds and ChannelNames for specific Mirth functions.
