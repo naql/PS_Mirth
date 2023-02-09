@@ -1,0 +1,26 @@
+<map>
+  <entry>
+    <string>SMTP Sender</string>
+    <connectorMetaData path="smtp">
+      <name>SMTP Sender</name>
+      <author>NextGen Healthcare</author>
+      <mirthVersion>3.12.0</mirthVersion>
+      <pluginVersion>3.12.0</pluginVersion>
+      <url>http://www.nextgen.com</url>
+      <description>This connector allows Mirth Connect to send email messages via SMTP. A template
+        is available to dynamically create messages.</description>
+      <apiProvider type="SERVLET_INTERFACE"
+        name="com.mirth.connect.connectors.smtp.SmtpConnectorServletInterface" />
+      <apiProvider type="SERVER_CLASS" name="com.mirth.connect.connectors.smtp.SmtpConnectorServlet" />
+      <library path="smtp-client.jar" type="CLIENT" />
+      <library path="smtp-shared.jar" type="SHARED" />
+      <library path="smtp-server.jar" type="SERVER" />
+      <serverClassName>com.mirth.connect.connectors.smtp.SmtpDispatcher</serverClassName>
+      <sharedClassName>com.mirth.connect.connectors.smtp.SmtpDispatcherProperties</sharedClassName>
+      <clientClassName>com.mirth.connect.connectors.smtp.SmtpSender</clientClassName>
+      <transformers></transformers>
+      <protocol>smtp</protocol>
+      <type>DESTINATION</type>
+    </connectorMetaData>
+  </entry>
+</map>
