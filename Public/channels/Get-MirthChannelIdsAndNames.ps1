@@ -7,6 +7,9 @@ function Get-MirthChannelIdsAndNames {
         [MirthConnection]$connection = $currentConnection,
         [switch]
         $Raw,
+        # Reverse the hashtable, so the channel name is the key and the channel id is the value.
+        [switch]
+        $Reverse,
         # Saves the response from the server as a file in the current location.
         [Parameter()]
         [switch]$saveXML,
@@ -46,16 +49,29 @@ function Get-MirthChannelIdsAndNames {
                 #$channelIdsAndNames = Convert-XmlMapToHashtable $r.DocumentElement "entry" "string"
                 
                 $channelIdsAndNames = @{}
-                #results are ordered ID then name
+
+                #$KeyIndex, $ValueIndex = $Reverse ? 1, 0 : 0, 1
+
+                #map as ID->name
                 foreach ($entry in $r.map.entry) {
                     $channelIdsAndNames.Add($entry.string[0], $entry.string[1])
                 }
     
                 NotifyChannelMapCacheUpdate $channelIdsAndNames
+
+                #remap as name->ID if $Reverse
+                if ($Reverse) {
+                    $ReverseMap = @{}
+                    $channelIdsAndNames.GetEnumerator() | ForEach-Object {
+                        $ReverseMap.Add($_.Value, $_.Key)
+                    }
+                    $ReverseMap
+                }
+                else {
+                    $channelIdsAndNames
+                }
     
                 Write-Debug "...done."
-    
-                $channelIdsAndNames
             }
         }
         catch {
