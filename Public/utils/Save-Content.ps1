@@ -16,7 +16,7 @@ function Save-Content {
         $BaseFolder = Get-OutputFolder -create
         $destFile = Join-Path $BaseFolder $OutFile
         Write-Debug ("Saving output to {0}" -f $destFile)
-        if ($Content -is [System.Xml.XmlElement]) {
+        if ($Content -is [System.Xml.XmlElement] -or $Content -is [System.Xml.XmlDocument]) {
             $Content = $Content.OuterXml
         }
         #assume JSON
