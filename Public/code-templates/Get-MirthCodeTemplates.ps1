@@ -79,7 +79,7 @@ function Get-MirthCodeTemplates {
                 $r
             }
             else {
-                ConvertFrom-Xml $r.DocumentElement @{'list' = 'codeTemplate' }
+                ConvertFrom-Xml $r.DocumentElement -ConvertAsList @('list')
             }
         }
         catch {

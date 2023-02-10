@@ -125,12 +125,7 @@ function Get-MirthCodeTemplateLibraries {
                 $r
             }
             else {
-                ConvertFrom-Xml $r.DocumentElement @{
-                    'list'               = 'codeTemplateLibrary'
-                    'disabledChannelIds' = 'string'
-                    'enabledChannelIds'  = 'string'
-                    'codeTemplates'      = 'codeTemplate'
-                }
+                ConvertFrom-Xml $r.DocumentElement -ConvertAsList @('list', 'disabledChannelIds', 'enabledChannelIds', 'codeTemplates')
             }
         }
         catch {
@@ -140,4 +135,4 @@ function Get-MirthCodeTemplateLibraries {
     END { 
         Write-Debug "Get-MirthCodeTemplateLibraries Ending"
     }
-}  # Get-MirthCodeTemplateLibraries
+}
