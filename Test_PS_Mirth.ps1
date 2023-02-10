@@ -48,7 +48,7 @@ Write-InformationColored -MessageData "$($Version_PS_Mirth.Major).$($Version_PS_
 $serverUrl = "https://" + $server + ":" + $port
 Write-InformationColored -MessageData "Establishing Mirth connection to  " -ForegroundColor White -BackgroundColor Black -NoNewline
 Write-InformationColored -MessageData $serverUrl  -ForegroundColor Green   -BackgroundColor Black 
-$connection = Connect-Mirth -serverUrl $serverUrl -userName $username -userPass $password
+$connection = Connect-Mirth -serverUrl $serverUrl -Credential ([pscredential]::new("admin", (ConvertTo-SecureString "admin" -AsPlainText -Force)))
 if ($null -eq $connection) { 
     Write-InformationColored -MessageData "A connection to a running Mirth Server is required!"  -ForegroundColor Red   -BackgroundColor Black
     Write-InformationColored -MessageData "Unable to connect to server at $serverUrl" -ForegroundColor Red   -BackgroundColor Black
