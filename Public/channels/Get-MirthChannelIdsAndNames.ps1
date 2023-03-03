@@ -56,8 +56,6 @@ function Get-MirthChannelIdsAndNames {
                 foreach ($entry in $r.map.entry) {
                     $channelIdsAndNames.Add($entry.string[0], $entry.string[1])
                 }
-    
-                NotifyChannelMapCacheUpdate $channelIdsAndNames
 
                 #remap as name->ID if $Reverse
                 if ($Reverse) {

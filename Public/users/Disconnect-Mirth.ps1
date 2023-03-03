@@ -28,9 +28,6 @@ function Disconnect-Mirth {
             
             #expect statusCode=204
             Write-Debug "`$statusCode=$statusCode"
-
-            #clear this feature's data as they've logged out
-            NotifyChannelMapCacheUpdate @{}
             
             $script:currentConnection = $null
         }

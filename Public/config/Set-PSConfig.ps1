@@ -4,14 +4,6 @@ function Set-PSConfig([hashtable]$Config) {
             "DefaultHeaders" {
                 $script:DEFAULT_HEADERS = $Config[$Key].Clone();
             }
-            "ChannelAutocomplete" {
-                $Value = $Config[$Key] -as [ChannelAutocompleteMode]
-                if ($null -eq $Value) {
-                    Write-Warning "Invalid value for option '$Key', defaulting to None"
-                    $Value = [ChannelAutocompleteMode]::None
-                }
-                $script:ChannelAutocomplete = $Value
-            }
             "MirthConnection" {
                 $script:currentConnection = $Config[$Key]
             }

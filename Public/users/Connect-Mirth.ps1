@@ -82,10 +82,6 @@ function Connect-Mirth {
 
             $script:currentConnection = [MirthConnection]::new($session, $serverUrl, $Credential.UserName)
 
-            if ($script:ChannelAutocomplete -eq [ChannelAutocompleteMode]::Cache) {
-                Get-MirthChannelIdsAndNames
-            }
-
             return $script:currentConnection
         }
         catch {

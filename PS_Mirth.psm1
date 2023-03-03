@@ -39,14 +39,13 @@ $script:DEFAULT_HEADERS = @{
 [string]$script:DEFAULT_OUTPUT_FOLDER = Join-Path $pwd "PS_Mirth_Output"
 [string]$script:SavePath = $DEFAULT_OUTPUT_FOLDER
 
-[pscredential]$script:DEFAULT_CREDENTIAL = [pscredential]::new("admin", (ConvertTo-SecureString "admin" -AsPlainText -Force));
+[pscredential]$script:DEFAULT_CREDENTIAL = [pscredential]::new("admin", (ConvertTo-SecureString "admin" -AsPlainText -Force))
 
-[MirthConnection]$script:currentConnection = $null;
+[MirthConnection]$script:currentConnection = $null
 
-#Option to enable autocompletions of ChannelIds and ChannelNames for specific Mirth functions.
-#Valid values are of type ChannelAutocompleteMode.
-$script:ChannelAutocomplete = [ChannelAutocompleteMode]::None
-$script:CachedChannelMapForAutocompletion = @{}
+# functions which can auto-complete the ChannelId parameter
+# FunctionName -> ParameterName
+$script:AutocompleteFunctions = @{'Get-MirthChannelMessages' = 'channelId'; 'Get-MirthChannelMsgById' = 'channelId'; "Set-MirthTaggedChannels" = "channelIds" }
 
 # aliases
 Set-Alias cm Connect-Mirth
