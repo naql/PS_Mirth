@@ -94,7 +94,7 @@ function ConvertFrom-Xml {
             #Write-Debug "Found `$XmlProperty=$XmlProperty"
             #access either the list or a single element via the property
             $SubElems = $Data.$XmlProperty
-            #Write-Debug "`$SubElems=$($SubElems.Name)"
+            #Write-Debug "`$SubElems=$($SubElems.LocalName)"
             if ($SubElems.Count -gt 1) {
                 #Write-Debug "Count is greater than 1, so using the first element"
                 $SubElem = $SubElems[0]
@@ -102,7 +102,7 @@ function ConvertFrom-Xml {
             else {
                 $SubElem = $SubElems
             }
-            #Write-Debug "`$SubElem=$SubElem"
+            #Write-Debug "`$SubElem=$($SubElem.LocalName)"
 
             if ($SubElem.ChildNodes.Count -gt 0) {
                 Write-Debug "Continuing to process SubElement '$($SubElem.LocalName)' as a map as it contains entries"
@@ -128,6 +128,8 @@ function ConvertFrom-Xml {
                         $grouped[$_.$KeyProperty] = $_.$ValueProperty
                     }
                 }
+
+                #Write-Debug "Grouped `$grouped=$($grouped.GetEnumerator())"
 
                 #$IsSimpleContent = $ConvertAsMap[$Data.LocalName] -eq $true
 
