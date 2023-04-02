@@ -75,7 +75,7 @@ function Connect-Mirth {
         Write-Debug "uri = $uri"
         Write-Debug "Credential = $Credential"
 
-        $body = ("username={0}&password={1}" -f $Credential.UserName, $Credential.GetNetworkCredential().Password)
+        $body = ("username={0}&password={1}" -f $Credential.UserName, (ConvertFrom-SecureString $Credential.Password -AsPlainText))
         try { 
             $r = Invoke-RestMethod -uri $uri -Headers $headers -Body $body -Method POST -SessionVariable session
             Write-Debug ("Response: {0}" -f $r.DocumentElement.status)
