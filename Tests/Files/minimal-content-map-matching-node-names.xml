@@ -1,0 +1,14 @@
+<connectorMapContent>
+    <encrypted>false</encrypted>
+    <content class="map">
+        <entry>
+            <string>data</string>
+            <string>
+                &lt;Foo&gt;&lt;NUM&gt;357eea51-b715-4d28-b1c5-1e66ee35ae3a&lt;/NUM&gt;&lt;ID&gt;NEW_ID&lt;/ID&gt;&lt;/Foo&gt;</string>
+        </entry>
+        <entry>
+            <string>encrypted</string>
+            <string>false</string>
+        </entry>
+    </content>
+</connectorMapContent>
